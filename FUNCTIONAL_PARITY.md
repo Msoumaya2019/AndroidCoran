@@ -4,6 +4,62 @@ Référence immuable : `f538ae37565abf70032e7e215fe57c8b96c2152f` (branche main)
 
 Statuts autorisés : Non commencé, En développement, Implémenté, Testé, Validé, Bloqué. Un symbole inventorié ne prouve pas sa validation fonctionnelle. Les étapes nécessitant un compte et un appareil restent non validées.
 
+
+## Matrice des parcours et limitations actuelles
+
+Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaustif de symboles ci-dessous distingue les portages restant à faire. **La mission n’est pas terminée.**
+
+| Fonction / rôle | Source originale | Supabase / ressources | Android natif | Développement | Test |
+|---|---|---|---|---|---|
+| Lecture Hafs : 6236 versets, 114 sourates, pages/juz/hizb | src/core/quran.ts | Local | domain/Quran.kt | Testé | Testé (JVM + assets Android) |
+| Navigation sourates, juz, hizb et recherche | src/ui/MainScreens.tsx; src/SurahPicker.tsx | Local | ui/CoranApp.kt:QuranScreen | Implémenté | Non commencé |
+| Mushaf traditionnel en images, sélection, proportions | src/MushafPage.tsx; assets/mushaf | Local | ui/MushafView.kt | En développement | Testé (assets uniquement) |
+| Mushaf Tajwid en images | src/MushafPage.tsx; assets/mushaf-tajweed | Local | ui/MushafView.kt | En développement | Non commencé |
+| Mushaf QPC en glyphes, mots et lignes originaux | src/coranTest/CoranTestScreen.tsx; html.ts | Local / qcf-v4-page | ui/MushafView.kt + fonts TTF | En développement | Testé (pages 1–2 ; fidélité non validée) |
+| Tajwid simplifié et couleurs des règles | src/core/readerData.ts; src/MushafPage.tsx | Local | ui/TajwidReader.kt | Implémenté | Non commencé |
+| Traduction Rachid Maach | src/core/readerData.ts; src/data/translation-fr-rashid.json | Local | Quran.french + ReaderScreen | En développement (notes à compléter) | Testé (texte du premier verset) |
+| Coran 1441 : téléchargement reprenable et 15 lignes/page | src/services/quranDownload.ts; quranSources.ts | Archive externe originale | data/QuranDownloadWorker.kt + ui/ReaderAssets.kt | En développement | Non commencé (archive réseau non téléchargée) |
+| Zoom, gestes RTL et sélection de verset | src/ui/ZoomableReader.tsx; src/core/pageNavigation.ts | Local | ui/MushafView.kt | Implémenté | Non commencé |
+| Marques-pages et suppression conservant les tombstones | src/core/bookmarks.ts; BookmarksScreen.tsx | user_state.data.bookmarks | ReaderScreen + BookmarkScreen | En développement (lastUsedAt à porter) | Non commencé |
+| Reprise et suivi audio du verset | src/App.tsx; coranTest/model.ts | user_state.data.lastRead / reader | ReaderScreen + RecitationService | En développement | Non commencé |
+| Sept récitateurs et résolution URL | src/core/audio.ts | CDN Islamic Network / EveryAyah | domain/AudioRules.kt | Implémenté | Non commencé (tous les récitateurs) |
+| Répétitions passage / chaque verset / continues | src/core/audio.ts; PassageAudioPlayer.tsx | Local / fichiers audio | AudioRules + RecitationService | En développement | Testé (règles JVM ; lecture réseau en cours) |
+| Lecture continue par timestamps de sourate | src/services/quranAudioTimeline.ts | API Quran.com identique à la source | audio/ChapterAudio.kt | En développement | Non commencé |
+| Arrière-plan, audio focus et commandes système | src/services/audioFocus.ts; PassageAudioPlayer.tsx | Local | Media3 MediaSessionService | En développement | Non commencé (interruptions) |
+| Cache audio, téléchargement et reprise persistante | src/services/verseAudioCache.ts; PassageAudioPlayer.tsx | Local | Cache Media3 à ajouter | Non commencé | Non commencé |
+| Objectifs et rythmes ; ordre depuis An Nâs | src/core/program.ts; ui/GoalScreen.tsx | user_state.data.goal / pace | domain/Program.kt + GoalScreen | En développement (sélection fine à compléter) | Testé (ordre et jours JVM) |
+| Connaissances initiales et validation par verset | src/App.tsx; core/program.ts | user_state.data.knowledge | GoalScreen + Program.markKnowledge | En développement (hizb/juz/ranges à compléter) | Testé (mutations JVM) |
+| Création, report et régénération du programme | src/core/program.ts | user_state.data.sessions | Program.generate + ProgramScreen | En développement (extension legacy à porter) | Testé (JVM) |
+| Validation partielle et reprise exacte des séances | src/core/studyProgress.ts | user_state.data.studyProgress / memorizedAt | Program.complete + ReaderScreen | En développement | Testé (JVM, persistance à compléter) |
+| Révisions pondérées ; cycles et unités réelles | src/core/review.ts | user_state.data.reviewCycle | domain/Review.kt | En développement | Testé (partition JVM) |
+| Consolidations J+1/J+3/J+7 et priorités | src/core/review.ts | reviewConsolidations / difficultyMarkers | Review.prepare / grade / tasks | En développement (actions explicites à compléter) | Testé (consolidation JVM) |
+| Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen | En développement | Non commencé (parcours complet) |
+| Statistiques volume / progrès / hizb | src/core/program.ts; weeklyProgress.ts | user_state.data | ProgressScreen | En développement (semaine/mois à compléter) | Non commencé |
+| Auth, comptes existants, inscription, session | src/services/sync.ts; authStorage.ts | Supabase Auth existant | data/Repository.kt + AccountScreen | En développement | Bloqué — clé publique et compte de test absents |
+| Réinitialisation, liens et changement de mot de passe | src/services/sync.ts | Supabase Auth | Repository.resetPassword / changePassword | En développement (liens natifs à porter) | Bloqué |
+| Synchronisation, JSON compatible et isolation des comptes | src/services/sync.ts; storage.ts | user_state | Repository + LocalStore (SQLite natif) | En développement | Testé (isolation locale Android ; Supabase Bloqué) |
+| Fusion offline complète et files idempotentes | src/core/offlineMerge.ts; services/offlineSync.ts | user_state + queues | Conflits actuellement suspendus sans écrasement | En développement | Non commencé |
+| Amis, codes, demandes, liste et groupes | src/SocialScreens.tsx; services/social.ts | friend_profiles / friend_links / friend_groups + RPC | ui/CommunityScreens.kt:FriendsScreen | En développement | Bloqué — backend non connecté |
+| Messagerie texte privée et de groupe | src/services/social.ts | friend_messages | FriendsScreen | En développement (pagination/Realtimes/lectures à compléter) | Bloqué |
+| Avatars, présence, recherche, blocage et modération | src/services/social.ts; avatars.ts | friend_profiles / storage + RPC | À porter | Non commencé | Non commencé |
+| Objectifs partagés et rendez-vous de révision | src/services/social.ts | friend_shared_goals / friend_review_appointments | À porter | Non commencé | Non commencé |
+| Enregistrement natif Coran et sauvegarde offline | src/RecitationRecorder.tsx; services/recitations.ts | Local ; bucket recitations ; table recitations | ui/RecorderPanel.kt + Repository | En développement (invocations à compléter) | Non commencé (microphone) |
+| Liste, lecture et consultation de corrections | src/RecitationsScreen.tsx; services/recitations.ts | recitations / recitation_corrections | RecitationsScreen + Media3 | En développement | Bloqué |
+| Partage de récitations et retours vocaux | src/services/recitations.ts; social.ts | recitation_feedback / friend_messages / bucket | À porter | Non commencé | Non commencé |
+| Quiz quotidien, réponses et défis 5/10 questions | src/ui/QuizScreen.tsx; services/quiz.ts | quiz_snapshot / quiz_answer_daily / quiz_create_challenge / quiz_answer_challenge | QuizScreen | En développement (offline et résultats à compléter) | Bloqué |
+| Quiz thématiques, historique, statistiques et notifications | src/core/quiz.ts; services/quiz.ts | quiz_sets + RPC | À porter | Non commencé | Non commencé |
+| Contenus quotidiens, rappels et invocations | src/DailyContentsScreen.tsx; services/dailyContents.ts | daily_contents / daily_content_for_date | ContentsScreen | En développement (catégories/favoris/médias à compléter) | Bloqué |
+| Thèmes, accents, polices et papier | src/ui/AppearanceScreen.tsx; theme/* | user_state.data | SettingsScreen + Material3 | En développement (accents/polices/papier à compléter) | Non commencé |
+| Rappel local à 19 h, redémarrage et préférences | src/services/notifications.ts | user_state.data.notifications | LocalReminders + ReminderSettings | En développement | Non commencé (déclenchement/boot) |
+| Push messages, amis, corrections, admin et quiz | src/services/notifications.ts; supabase/*notifications* | Jetons Expo et RPC existants | Canal FCM additif proposé dans docs/FCM_PROPOSAL.md | Bloqué | Bloqué |
+| Signalement bug | src/ui/ProblemReport.tsx; services/problemReports.ts | app_problem_reports / screenshot bucket | ReportScreen | En développement (capture et queue à compléter) | Bloqué |
+| Contact administrateur | src/SocialScreens.tsx; supabase/admin-contact.sql | groupes administrateur et messages | À porter | Non commencé | Non commencé |
+| Administration comptes, quiz et quiz sets | src/AdminAccounts.tsx; ui/AdminQuiz*.tsx | admin_learning_accounts / quiz_admin_* | À porter | Non commencé | Non commencé |
+| Administration récitations, corrections et rapports | src/AdminRecitations.tsx; ui/AdminProblemReports.tsx | recitations / app_problem_reports / RPC | À porter | Non commencé | Non commencé |
+| Administration contenus, catégories et calendrier | src/AdminDailyContents.tsx | daily_contents / content_categories / daily_content_schedule | À porter | Non commencé | Non commencé |
+| Administration notifications et historique | src/AdminNotifications.tsx | send_admin_notification / admin_notifications | À porter | Non commencé | Non commencé |
+| CI : Gradle, tests, lint et APK debug | Nouveau dépôt seulement | Aucune |  .github/workflows/android.yml | Implémenté | Testé localement ; CI à exécuter |
+
 | Source | Fonction / rôle à vérifier | Supabase | Équivalent natif prévu | Développement | Test |
 |---|---|---|---|---|---|
 | src/AdminAccounts.tsx:7 | AdminAccounts | Local / via services | ui/AdminAccounts | Non commencé | Non commencé |
