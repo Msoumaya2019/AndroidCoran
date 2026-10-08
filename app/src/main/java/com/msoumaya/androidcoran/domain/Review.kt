@@ -62,6 +62,14 @@ class Review(private val q: Quran,private val program: Program) {
         val settings=s.obj("reviewSettings");val quantity=settings.str("mode")=="quantity";val days=if(quantity) partitionQuantity(corpus,settings.str("dailyQuantity","hizb")) else partition(corpus,settings.num("cycleDays",7))
         return json("index" to index,"startDate" to at.toString(),"lengthDays" to if(quantity) days.size.coerceAtLeast(1) else settings.num("cycleDays",7),"corpus" to corpus,"days" to days,"completed" to emptyList<Any>(),"assignments" to json())
     }
+    fun toggleDifficulty(s: JsonObject,id: Int,at: LocalDate=LocalDate.now()): JsonObject {
+        if(id !in 1..6236) return s
+        val key=id.toString();val markers=s.obj("difficultyMarkers").toMutableMap();val current=s.obj("difficultyMarkers").obj(key).toMutableMap();val due=s.obj("reviewPriorityDue").toMutableMap()
+        val removing=current["user"]!=null&&current["user"]!=JsonNull
+        if(removing) { current.remove("user");due.remove(key) } else { current["user"]=json("createdAt" to at.toString());due[key]=JsonPrimitive(at.toString()) }
+        if(current["user"]!=null&&current["user"]!=JsonNull||current["admin"]!=null&&current["admin"]!=JsonNull) markers[key]=JsonObject(current) else markers.remove(key)
+        return touch(s.with("difficultyMarkers" to JsonObject(markers),"reviewPriorityDue" to JsonObject(due),"difficultyHistory" to element(s.arr("difficultyHistory")+json("verseId" to id,"date" to at.toString(),"origin" to "user","action" to if(removing) "resolved" else "marked"))))
+    }
     fun setEnabled(s: JsonObject,enabled: Boolean,at: LocalDate=LocalDate.now()): JsonObject {
         if(s.obj("reviewSettings").flag("enabled",true)==enabled) return s
         var settings=s.obj("reviewSettings").with("enabled" to JsonPrimitive(enabled),"cycleDays" to JsonPrimitive(s.obj("reviewSettings").num("cycleDays",7)))

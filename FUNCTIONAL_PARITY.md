@@ -34,7 +34,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Validation partielle et reprise exacte des séances | src/core/studyProgress.ts | user_state.data.studyProgress / memorizedAt | Program.complete + ReaderScreen | En développement | Testé (JVM, persistance à compléter) |
 | Révisions pondérées ; cycles et unités réelles | src/core/review.ts | user_state.data.reviewCycle | domain/Review.kt + ReviewRhythmPicker | En développement (cycles et quantités implémentés ; compte réel non validé) | Testé (partition, changement de mode, historique et reprise JVM) |
 | Consolidations J+1/J+3/J+7 et priorités | src/core/review.ts | reviewConsolidations / difficultyMarkers | Review.prepare / grade / tasks / completeConsolidation + lecteur natif | En développement (validation anticipée et calendrier implémentés ; synchronisation authentifiée non validée) | Testé (JVM : dates ancrées, étapes, idempotence, conservation des champs ; deux parcours Compose Android 15) |
-| Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen | En développement | Non commencé (parcours complet) |
+| Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen + ReviewValidationActions ; parfait/hésitant/à retravailler | En développement | Testé (notes et validation partielle JVM, commandes Compose) ; parcours authentifié non validé |
 | Statistiques volume / progrès / hizb | src/core/program.ts; weeklyProgress.ts | user_state.data | LearningScreens.kt + Statistics.kt ; jour/semaine/mois, historique et séries | Implémenté | Testé (calculs JVM) ; parcours visuel Non commencé |
 | Auth, comptes existants, inscription, session | src/services/sync.ts; authStorage.ts | Supabase Auth existant | data/Repository.kt + AccountScreen | En développement | Testé (lectures publiques SDK Android sans activité) ; compte existant/RLS Bloqué |
 | Réinitialisation, liens et changement de mot de passe | src/services/sync.ts | Supabase Auth | Repository + MainActivity + AccountScreen ; liens implicites existants, récupération, renvoi de confirmation et mot de passe | Implémenté | Testé (contrats JVM et Intent Android réussi) ; session réelle Bloqué |
@@ -189,7 +189,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/review.ts:23 | partitionReviewCorpus | Local / via services | domain/partitionReviewCorpus | Non commencé | Non commencé |
 | src/core/review.ts:53 | setReviewsEnabled | Local / via services | domain/Review.setEnabled | Implémenté | Testé (JVM) |
 | src/core/review.ts:57 | setReviewCycle | Local / via services | domain/Review.setCycle | Implémenté | Testé (JVM) |
-| src/core/review.ts:62 | toggleDifficulty | Local / via services | domain/toggleDifficulty | Non commencé | Non commencé |
+| src/core/review.ts:62 | toggleDifficulty | difficultyMarkers / difficultyHistory / reviewPriorityDue | domain/Review.toggleDifficulty + SelectedVerseActions | Implémenté | Testé (JVM et Compose) |
 | src/core/review.ts:79 | prepareReviewSchedule | Local / via services | domain/prepareReviewSchedule | Non commencé | Non commencé |
 | src/core/review.ts:106 | reviewQuantity | Local / via services | domain/reviewQuantity | Non commencé | Non commencé |
 | src/core/review.ts:116 | reviewPlan | Local / via services | domain/reviewPlan | Non commencé | Non commencé |
@@ -540,3 +540,9 @@ Le sélecteur propose les cycles de 7/14/21/30 jours et les quantités Nisf/Hizb
 Le calcul des tâches prépare aussi l’affectation du jour immédiatement après un changement de rythme, sans attendre la réouverture de l’écran. Test JVM sur le premier Hizb réel. Deux tests Compose couvrent les choix de rythme, la fermeture du sélecteur, son état sauvegardé et le résumé des préférences persistées.
 
 Validation finale de ce lot : 68 tests JVM et les 24 tests Android exécutés intégralement sur Android 15 réussissent. La compilation APK et Lint réussissent. Les tests authentifiés avec les données d’un utilisateur réel restent non validés.
+
+### Difficultés et résultat hésitant — 9 octobre 2026
+
+Le lecteur permet de marquer un verset difficile et de retirer uniquement le marquage utilisateur. Les marqueurs administrateur et leurs métadonnées sont conservés, avec les mêmes événements difficultyHistory et échéances reviewPriorityDue que la source. Le marquage n’invente aucune connaissance ni tâche de révision pour un verset non mémorisé. Le résultat « Quelques hésitations » est maintenant accessible dans le lecteur et utilise le délai source de deux jours ; la validation partielle conserve son point de reprise. Les validations d’apprentissage et de révision arrêtent l’audio avant la mutation, comme dans Expo. Aucun changement de schéma/backend.
+
+Validation de ce lot : 72 tests JVM et huit tests Android ciblés réussis sur Android 15 (trois nouveaux tests Android, plus cinq tests de régression). Le parcours réel apprentissage → retour → révision confirme que le contexte d’apprentissage est effacé. Le profil invité utilisé dans ce test est restauré ensuite ; aucun compte réel ni donnée Supabase privée n’est utilisé. L’APK et Lint compilent.

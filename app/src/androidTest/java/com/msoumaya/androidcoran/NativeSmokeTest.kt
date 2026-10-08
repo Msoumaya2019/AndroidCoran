@@ -40,4 +40,26 @@ class NativeSmokeTest {
         assertEquals(b,reopened.load("test-b")!!.data);assertFalse(reopened.load("test-b")!!.pending)
         reopened.close()
     }
+    @Test fun revisionDoesNotReusePreviousLearningSession() {
+        val repo=(compose.activity.application as CoranApplication).repository
+        assertNull(repo.user.value)
+        var saved=defaultState()
+        val today=java.time.LocalDate.now()
+        val learning=json("id" to "navigation-learning","start" to 6236,"end" to 6236,"date" to today.toString(),"scheduledDate" to today.toString(),"status" to "todo")
+        val known=markKnowledge(defaultState(),VerseRange(1,3),"perfect",today).with("sessions" to element(listOf(learning)))
+        kotlinx.coroutines.runBlocking { repo.awaitReady();saved=repo.state.value;repo.mutate { repo.review.prepare(repo.review.setQuantity(known,"hizb",today),today) } }
+        try {
+            compose.waitForIdle()
+            compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
+            compose.onNodeWithText(repo.quran.reference(VerseRange(6236,6236))).performClick()
+            compose.onNodeWithText("Valider jusqu’au verset sélectionné").assertExists()
+            compose.onNodeWithText("Quelques hésitations").assertDoesNotExist()
+            compose.onNodeWithContentDescription("Retour").performClick()
+            compose.onNodeWithText("Accueil",useUnmergedTree=true).performClick()
+            compose.onNodeWithText("Révisions").performScrollTo().performClick()
+            compose.onNodeWithText(repo.quran.reference(VerseRange(1,3))).performScrollTo().performClick()
+            compose.onNodeWithText("Quelques hésitations").assertExists()
+            compose.onNodeWithText("À retravailler").assertExists()
+        } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
+    }
 }
