@@ -21,3 +21,5 @@ Contrôle de la référence : 3279 empreintes SHA-256 identiques au relevé init
 APK avec toutes les ressources embarquées : environ 377 Mo. Il s'agit d'un build de développement ; ni signature production ni publication Google Play n'ont été effectuées.
 
 GitHub Actions : **Bloqué**. Le run `37758520117` a échoué avant toute étape et sans runner : GitHub indique des paiements récents du compte en échec ou un plafond de dépenses à augmenter. Aucun changement de facturation n'a été effectué. Le workflow devra être relancé après résolution côté compte. Un APK compilé localement peut être distribué en préversion privée dans le nouveau dépôt.
+
+Mise à jour : le dépôt est devenu public à la demande de l'utilisateur. Une nouvelle tentative du run `37758520117` a démarré un runner, levant le blocage précédent. L'installation SDK a ensuite échoué car le paquet Android historique `tools` n'existe plus. Le workflow demande désormais explicitement `platform-tools`, `platforms;android-36` et `build-tools;35.0.0`. Validation du nouveau run en cours.
