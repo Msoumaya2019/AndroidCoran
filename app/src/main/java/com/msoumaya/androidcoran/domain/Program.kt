@@ -10,10 +10,10 @@ fun touch(s: JsonObject) = s.with("updatedAt" to JsonPrimitive(Instant.now().toS
 fun known(s: JsonObject,id: Int) = s.obj("knowledge").str(id.toString()) in listOf("perfect","review")
 fun knownIds(s: JsonObject) = s.obj("knowledge").keys.mapNotNull { it.toIntOrNull() }.filter { known(s,it) && it in 1..6236 }.sorted()
 fun range(o: JsonObject) = VerseRange(o.num("start"),o.num("end"))
-fun markKnowledge(s: JsonObject,r: VerseRange,mastery: String): JsonObject {
+fun markKnowledge(s: JsonObject,r: VerseRange,mastery: String,at: LocalDate=LocalDate.now()): JsonObject {
     require(mastery in listOf("perfect","review","learning"))
     val k=s.obj("knowledge").toMutableMap();val dates=s.obj("memorizedAt").toMutableMap();val due=s.obj("reviewDue").toMutableMap()
-    r.ids.forEach { val key=it.toString();k[key]=JsonPrimitive(mastery);if(mastery=="learning") { dates.remove(key);due.remove(key) } }
+    r.ids.forEach { val key=it.toString();if(mastery!="learning"&&s.flag("onboardingDone")&&!known(s,it)&&key !in dates) dates[key]=JsonPrimitive(at.toString());k[key]=JsonPrimitive(mastery);if(mastery=="learning") { dates.remove(key);due.remove(key) } }
     return touch(s.with("knowledge" to JsonObject(k),"memorizedAt" to JsonObject(dates),"reviewDue" to JsonObject(due)))
 }
 class Program(private val q: Quran) {
@@ -42,6 +42,7 @@ class Program(private val q: Quran) {
     fun complete(original: JsonObject,id: String,through: Int,at: LocalDate=LocalDate.now()): JsonObject {
         val session=original.arr("sessions").map { it.jsonObject }.firstOrNull { it.str("id")==id } ?: return original
         val r=range(session);val old=original.obj("studyProgress").obj("learning:$id");val start=maxOf(r.start,old.num("through",r.start-1)+1)
+        if(old.isNotEmpty()&&(old.num("start")!=r.start||old.num("end")!=r.end)) return original
         if(through !in start..r.end || session.str("status")=="done") return original
         val now=Instant.now().toString();val dates=original.obj("memorizedAt").toMutableMap()
         (start..through).forEach { if(!known(original,it)&&it.toString() !in dates) dates[it.toString()]=JsonPrimitive(at.toString()) }
@@ -50,6 +51,20 @@ class Program(private val q: Quran) {
         val record=json("id" to id,"mode" to "learning","start" to r.start,"end" to r.end,"through" to through,"page" to q.sourcePage(through,s.obj("reader").str("mushaf","traditional")),"source" to s.obj("reader").str("mushaf","traditional"),"updatedAt" to now,"status" to if(through==r.end) "completed" else "partial","validations" to old.arr("validations")+json("start" to start,"end" to through,"date" to at.toString(),"validatedAt" to now))
         val sessions=s.arr("sessions").map { val v=it.jsonObject;if(v.str("id")==id&&through==r.end) v.with("status" to JsonPrimitive("done"),"completedAt" to JsonPrimitive(now),"completedDate" to JsonPrimitive(at.toString())) else v }
         s=s.with("revisions" to element(revisions),"sessions" to element(sessions),"studyProgress" to s.obj("studyProgress").with("learning:$id" to record))
-        return touch(s)
+        return if(through==r.end) extend(touch(s),at) else touch(s)
+    }
+    fun postpone(state: JsonObject,id: String): JsonObject {
+        val partial=state.obj("studyProgress").obj("learning:$id").str("status")=="partial"
+        return touch(state.with("sessions" to JsonArray(state.arr("sessions").map { val row=it.jsonObject;if(row.str("id")==id) row.with("status" to JsonPrimitive(if(partial) "todo" else "postponed")) else row })))
+    }
+    fun extend(state: JsonObject,at: LocalDate=LocalDate.now()): JsonObject {
+        val sessions=state.arr("sessions").map { it.jsonObject }
+        val covered=sessions.filter { it.str("status") in listOf("todo","done") }.flatMap { range(it).ids }.toSet()
+        if(order(state).none { it !in covered&&!known(state,it) }) return state
+        val temporary=state.obj("knowledge").toMutableMap();covered.forEach { temporary[it.toString()]=JsonPrimitive("perfect") }
+        val latest=sessions.map { it.str("scheduledDate",it.str("date")) }.maxOrNull()
+        val start=if(latest==null) at else LocalDate.parse(latest).plusDays(1)
+        val extension=generate(state.with("knowledge" to JsonObject(temporary),"sessions" to JsonArray(emptyList())),start)
+        return touch(state.with("sessions" to JsonArray(state.arr("sessions")+extension.arr("sessions"))))
     }
 }

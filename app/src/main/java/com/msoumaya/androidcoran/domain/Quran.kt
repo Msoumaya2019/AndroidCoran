@@ -42,6 +42,12 @@ class Quran(private val asset: (String)->JsonElement) {
     fun page(id: Int) = pages.indexOfFirst { id in it.start..it.end }+1
     fun qcfPage(id: Int) = index.obj("${verse(id).surah}:${verse(id).ayah}").arr("pages").first().jsonPrimitive.int
     fun sourcePage(id: Int,source: String) = when(source) { "coranTest"->qcfPage(id);"coran_1441"->zipIndex[id]?.firstOrNull()?:1;else->page(id) }
+    fun sourceLastPage(id: Int,source: String) = when(source) { "coranTest" -> index.obj("${verse(id).surah}:${verse(id).ayah}").arr("pages").last().jsonPrimitive.int;"coran_1441" -> zipIndex[id]?.maxOrNull()?:sourcePage(id,source);else -> page(id) }
+    fun studyEndpoint(page: Int,r: VerseRange,source: String): Int {
+        var id=minOf(r.end,sourceRange(page,source).end)
+        while(id>=r.start&&sourceLastPage(id,source)>page) id--
+        return id
+    }
     fun sourceRange(page: Int,source: String): VerseRange = when(source) {
         "coran_1441" -> zipBounds[page.toString()]!!.jsonArray.map { val a=it.jsonArray;id(a[0].jsonPrimitive.int,a[1].jsonPrimitive.int) }.let { VerseRange(it.min(),it.max()) }
         "coranTest" -> index.values.filter { it.jsonObject.arr("pages").any { p -> p.jsonPrimitive.int==page } }.map { it.jsonObject.num("id") }.let { VerseRange(it.min(),it.max()) }

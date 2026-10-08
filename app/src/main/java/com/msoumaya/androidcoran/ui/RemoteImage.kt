@@ -27,7 +27,7 @@ import javax.net.ssl.HttpsURLConnection
                 }
                 if(bytes.size>8*1024*1024) return@withContext null
                 val bounds=BitmapFactory.Options().apply { inJustDecodeBounds=true };BitmapFactory.decodeByteArray(bytes,0,bytes.size,bounds)
-                val options=BitmapFactory.Options();while(maxOf(bounds.outWidth,bounds.outHeight)/options.inSampleSize>1024) options.inSampleSize*=2
+                val options=BitmapFactory.Options().apply { inSampleSize=1 };while(maxOf(bounds.outWidth,bounds.outHeight)/options.inSampleSize>1024) options.inSampleSize*=2
                 BitmapFactory.decodeByteArray(bytes,0,bytes.size,options)
             } catch(e: Exception) { if(e is CancellationException) throw e;null } finally { connection.disconnect() }
         }

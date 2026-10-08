@@ -34,35 +34,35 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Révisions pondérées ; cycles et unités réelles | src/core/review.ts | user_state.data.reviewCycle | domain/Review.kt | En développement | Testé (partition JVM) |
 | Consolidations J+1/J+3/J+7 et priorités | src/core/review.ts | reviewConsolidations / difficultyMarkers | Review.prepare / grade / tasks | En développement (actions explicites à compléter) | Testé (consolidation JVM) |
 | Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen | En développement | Non commencé (parcours complet) |
-| Statistiques volume / progrès / hizb | src/core/program.ts; weeklyProgress.ts | user_state.data | ProgressScreen | En développement (semaine/mois à compléter) | Non commencé |
+| Statistiques volume / progrès / hizb | src/core/program.ts; weeklyProgress.ts | user_state.data | LearningScreens.kt + Statistics.kt ; jour/semaine/mois, historique et séries | Implémenté | Testé (calculs JVM) ; parcours visuel Non commencé |
 | Auth, comptes existants, inscription, session | src/services/sync.ts; authStorage.ts | Supabase Auth existant | data/Repository.kt + AccountScreen | En développement | Bloqué — clé publique et compte de test absents |
 | Réinitialisation, liens et changement de mot de passe | src/services/sync.ts | Supabase Auth | Repository.resetPassword / changePassword | En développement (liens natifs à porter) | Bloqué |
 | Synchronisation, JSON compatible et isolation des comptes | src/services/sync.ts; storage.ts | user_state | Repository + LocalStore (SQLite natif) | En développement | Testé (isolation locale Android ; Supabase Bloqué) |
-| Fusion offline complète et files idempotentes | src/core/offlineMerge.ts; services/offlineSync.ts | user_state + queues | domain/OfflineMerge.kt + Repository ; files de services encore à compléter | En développement | Testé (fusion JVM) ; serveur Bloqué |
+| Fusion offline complète et files idempotentes | src/core/offlineMerge.ts; services/offlineSync.ts | user_state + queues | domain/OfflineMerge.kt + Repository + OutboxWorker ; quiz et signalements persistés par compte, autres services à compléter | En développement | Testé (fusion JVM) ; serveur Bloqué |
 | Amis, codes, demandes, liste et groupes | src/SocialScreens.tsx; services/social.ts | friend_profiles / friend_links / friend_groups + RPC | data/SocialService.kt + ui/SocialScreens.kt ; invitations et rôles de groupe | En développement | Bloqué — backend non connecté |
 | Messagerie texte privée et de groupe | src/services/social.ts | friend_messages | ConversationScreen ; pages de 50, masquage, lectures et Realtime au premier plan | Implémenté | Testé (contrats JVM) ; serveur Bloqué |
 | Avatars, présence, recherche, blocage et modération | src/services/social.ts; avatars.ts | friend_profiles / storage + RPC | SocialScreens + Avatars + AvatarEditor ; profils, photo, présence, blocage, signalement et rôles ; staging photo avant inscription et rapports de groupe à compléter | En développement | Bloqué — serveur ; sélection photo et orientation à valider |
 | Objectifs partagés et rendez-vous de révision | src/services/social.ts | friend_shared_goals / friend_review_appointments | SocialService + ConversationDetails ; calendrier et heure natifs | Implémenté | Bloqué — backend non connecté |
 | Enregistrement natif Coran et sauvegarde offline | src/RecitationRecorder.tsx; services/recitations.ts | Local ; bucket recitations ; table recitations | RecorderPanel + recordingPayload ; Coran et invocations avec snapshot original | En développement | Testé (payloads JVM) ; microphone Non commencé |
-| Liste, lecture et consultation de corrections | src/RecitationsScreen.tsx; services/recitations.ts | recitations / recitation_corrections | RecitationsScreen + Media3 | En développement | Bloqué |
+| Liste, lecture et consultation de corrections | src/RecitationsScreen.tsx; services/recitations.ts | recitations / recitation_corrections | RecitationsScreen + Media3 ; invocations, retours généraux et voix, écoute locale | En développement | Bloqué — serveur ; interface compilée |
 | Partage de récitations et retours vocaux | src/services/recitations.ts; social.ts | recitation_feedback / friend_messages / bucket | À porter | Non commencé | Non commencé |
-| Quiz quotidien, réponses et défis 5/10 questions | src/ui/QuizScreen.tsx; services/quiz.ts | quiz_snapshot / quiz_answer_daily / quiz_create_challenge / quiz_answer_challenge | QuizScreen | En développement (offline et résultats à compléter) | Bloqué |
-| Quiz thématiques, historique, statistiques et notifications | src/core/quiz.ts; services/quiz.ts | quiz_sets + RPC | À porter | Non commencé | Non commencé |
+| Quiz quotidien, réponses et défis 5/10 questions | src/ui/QuizScreen.tsx; services/quiz.ts | quiz_snapshot / quiz_answer_daily / quiz_create_challenge / quiz_answer_challenge | QuizScreens.kt + QuizService + Quiz.kt ; réponses offline et défis | En développement | Testé (règles JVM) ; serveur Bloqué |
+| Quiz thématiques, historique, statistiques et notifications | src/core/quiz.ts; services/quiz.ts | quiz_sets + RPC | QuizScreens.kt ; choix thématique, historique, scores et préférences | En développement | Testé (scores JVM) ; serveur Bloqué |
 | Contenus quotidiens, rappels et invocations | src/DailyContentsScreen.tsx; services/dailyContents.ts | daily_contents / daily_content_for_date | ContentService + ContentScreens ; catégories, favoris, pagination, image, audio et enregistrement invocation | En développement | Bloqué — backend ; médias sur appareil Non commencé |
 | Thèmes, accents, polices et papier | src/ui/AppearanceScreen.tsx; theme/* | user_state.data | SettingsScreen + Material3 | En développement (accents/polices/papier à compléter) | Non commencé |
 | Rappel local à 19 h, redémarrage et préférences | src/services/notifications.ts | user_state.data.notifications | LocalReminders + ReminderSettings | En développement | Non commencé (déclenchement/boot) |
 | Push messages, amis, corrections, admin et quiz | src/services/notifications.ts; supabase/*notifications* | Jetons Expo et RPC existants | Canal FCM additif proposé dans docs/FCM_PROPOSAL.md | Bloqué | Bloqué |
-| Signalement bug | src/ui/ProblemReport.tsx; services/problemReports.ts | app_problem_reports / screenshot bucket | ReportScreen | En développement (capture et queue à compléter) | Bloqué |
+| Signalement bug | src/ui/ProblemReport.tsx; services/problemReports.ts | app_problem_reports / screenshot bucket | ProblemReportScreen + ProblemReportService + OutboxWorker ; pièce jointe et reprise réseau | En développement | Testé (persistance Android) ; serveur Bloqué |
 | Contact administrateur | src/SocialScreens.tsx; supabase/admin-contact.sql | groupes administrateur et messages | FriendsScreen → open_admin_contact → conversation de groupe native | Implémenté | Bloqué — backend non connecté |
-| Administration comptes, quiz et quiz sets | src/AdminAccounts.tsx; ui/AdminQuiz*.tsx | admin_learning_accounts / quiz_admin_* | À porter | Non commencé | Non commencé |
+| Administration comptes, quiz et quiz sets | src/AdminAccounts.tsx; ui/AdminQuiz*.tsx | admin_learning_accounts / quiz_admin_* | AdminService + AdminScreen : comptes/recherche/progression ; édition des quiz à porter | En développement | Bloqué — serveur non connecté |
 | Administration récitations, corrections et rapports | src/AdminRecitations.tsx; ui/AdminProblemReports.tsx | recitations / app_problem_reports / RPC | À porter | Non commencé | Non commencé |
 | Administration contenus, catégories et calendrier | src/AdminDailyContents.tsx | daily_contents / content_categories / daily_content_schedule | À porter | Non commencé | Non commencé |
-| Administration notifications et historique | src/AdminNotifications.tsx | send_admin_notification / admin_notifications | À porter | Non commencé | Non commencé |
+| Administration notifications et historique | src/AdminNotifications.tsx | send_admin_notification / admin_notifications | AdminScreen : historique ; rédaction/envoi à porter | En développement | Bloqué — serveur non connecté |
 | CI : Gradle, tests, lint et APK debug | Nouveau dépôt seulement | Aucune |  .github/workflows/android.yml | Implémenté | Testé — run public 37761443828 réussi, APK et rapports publiés |
 
 | Source | Fonction / rôle à vérifier | Supabase | Équivalent natif prévu | Développement | Test |
 |---|---|---|---|---|---|
-| src/AdminAccounts.tsx:7 | AdminAccounts | Local / via services | ui/AdminAccounts | Non commencé | Non commencé |
+| src/AdminAccounts.tsx:7 | AdminAccounts | Local / via services | ui/AdminScreen | Implémenté | Bloqué — serveur |
 | src/AdminDailyContents.tsx:9 | AdminDailyContents | Local / via services | ui/AdminDailyContents | Non commencé | Non commencé |
 | src/AdminNotifications.tsx:8 | AdminNotifications | Local / via services | ui/AdminNotifications | Non commencé | Non commencé |
 | src/AdminRecitations.tsx:11 | AdminRecitations | Local / via services | ui/AdminRecitations | Non commencé | Non commencé |
@@ -141,12 +141,12 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/program.ts:257 | completedHizbs | Local / via services | domain/completedHizbs | Non commencé | Non commencé |
 | src/core/program.ts:258 | stats | Local / via services | domain/stats | Non commencé | Non commencé |
 | src/core/quiz.ts:1 | quizCategories | Local / via services | ui/quizCategories | Non commencé | Non commencé |
-| src/core/quiz.ts:7 | emptyQuiz | Local / via services | ui/emptyQuiz | Non commencé | Non commencé |
+| src/core/quiz.ts:7 | emptyQuiz | Local / via services | domain/Quiz.kt | Implémenté | Testé (JVM) |
 | src/core/quiz.ts:8 | quizDay | Local / via services | ui/quizDay | Non commencé | Non commencé |
 | src/core/quiz.ts:9 | challengeStatus | Local / via services | ui/challengeStatus | Non commencé | Non commencé |
-| src/core/quiz.ts:14 | quizStatistics | Local / via services | ui/quizStatistics | Non commencé | Non commencé |
-| src/core/quiz.ts:15 | mergeQuizSnapshot | Local / via services | ui/mergeQuizSnapshot | Non commencé | Non commencé |
-| src/core/quiz.ts:16 | recordDailyAnswer | Local / via services | ui/recordDailyAnswer | Non commencé | Non commencé |
+| src/core/quiz.ts:14 | quizStatistics | Local / via services | domain/Quiz.kt | Implémenté | Testé (JVM) |
+| src/core/quiz.ts:15 | mergeQuizSnapshot | Local / via services | domain/Quiz.kt | Implémenté | Testé (JVM) |
+| src/core/quiz.ts:16 | recordDailyAnswer | Local / via services | domain/Quiz.kt | Implémenté | Testé (JVM) |
 | src/core/quran.ts:9 | verses | Local / via services | domain/verses | Non commencé | Non commencé |
 | src/core/quran.ts:10 | surahs | Local / via services | domain/surahs | Non commencé | Non commencé |
 | src/core/quran.ts:11 | juzs | Local / via services | domain/juzs | Non commencé | Non commencé |

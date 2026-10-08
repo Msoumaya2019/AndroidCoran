@@ -40,3 +40,11 @@ Les objectifs et connaissances peuvent sélectionner une sourate, un hizb, un ju
 ## Sécurité des dépôts
 
 L'historique est créé de zéro. L'unique remote de push doit être `https://github.com/Msoumaya2019/AndroidCoran.git`. Le dépôt Expo est une source de lecture ; sa copie d'audit reste hors du dépôt Android. Aucun dépôt Swift n'est utilisé pour le développement.
+
+## Portage en cours : apprentissage, quiz et synchronisation différée
+
+Les écrans natifs présentent désormais les statistiques par jour/semaine/mois, la reprise des séances partielles et leur historique. Le quiz propose les défis de 5/10 questions, les séries thématiques, les scores et corrections confirmés par le serveur. Les réponses quotidiennes hors connexion et les signalements avec capture sont sauvegardés dans une file SQLite par compte, reprise par WorkManager avec connexion réseau.
+
+Les récitations distinguent le Coran des invocations ; les enregistrements locaux et les retours vocaux sont accessibles via Media3. L'administration permet la recherche paginée des comptes et l'historique des notifications sous le rôle Supabase existant. L'édition administrative et plusieurs parcours restent à porter : consulter FUNCTIONAL_PARITY.md. La parité complète n'est pas atteinte.
+
+Validation locale : 32 tests JVM réussis et huit tests Android réussis sur Android 15. Les accès aux comptes existants et aux RPC nécessitent encore la clé publique Supabase ; ils ne sont pas annoncés comme validés.

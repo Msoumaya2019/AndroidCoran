@@ -18,7 +18,7 @@ suspend fun Repository.uploadAvatar(context: Context,uri: Uri) {
         val bounds=BitmapFactory.Options().apply { inJustDecodeBounds=true }
         context.contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it,null,bounds) }
         require(bounds.outWidth>0&&bounds.outHeight>0) { "Image illisible" }
-        val options=BitmapFactory.Options();while(maxOf(bounds.outWidth,bounds.outHeight)/options.inSampleSize>1024) options.inSampleSize*=2
+        val options=BitmapFactory.Options().apply { inSampleSize=1 };while(maxOf(bounds.outWidth,bounds.outHeight)/options.inSampleSize>1024) options.inSampleSize*=2
         val original=context.contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it,null,options) }?:error("Image illisible")
         val side=minOf(original.width,original.height)
         val crop=Bitmap.createBitmap(original,(original.width-side)/2,(original.height-side)/2,side,side)

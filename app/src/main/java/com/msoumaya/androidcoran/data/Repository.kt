@@ -29,7 +29,12 @@ class Repository(private val context: Context) {
     private val _notice=MutableStateFlow("");val notice=_notice.asStateFlow()
     private val _user=MutableStateFlow<String?>(null);val user=_user.asStateFlow()
     private var account="guest"
-    init { scope.launch { _state.value=local.load(account)?.data?:defaultState();val key=context.config.data.first()[stringPreferencesKey("publicKey")];if(!key.isNullOrBlank()) configure(key) } }
+    private val ready=CompletableDeferred<Unit>()
+    val quiz by lazy { QuizService(this,local,context) }
+    val reports by lazy { ProblemReportService(this,local,context) }
+    suspend fun awaitReady()=ready.await()
+    internal fun pendingState(owner: String)=local.load(owner)?.pending==true
+    init { scope.launch { try { _state.value=local.load(account)?.data?:defaultState();val key=context.config.data.first()[stringPreferencesKey("publicKey")];if(!key.isNullOrBlank()) configure(key) } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value=e.message?:"Configuration indisponible" } finally { ready.complete(Unit) } } }
     suspend fun configure(key: String) {
         require(key.isNotBlank()&&!key.contains("service_role")) { "Une clé publique est nécessaire" }
         if(key.startsWith("eyJ")) { val payload=String(android.util.Base64.decode(key.split('.')[1],android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP));require(Json.parseToJsonElement(payload).jsonObject.str("role")=="anon") { "Clé anon uniquement" } }
@@ -45,7 +50,8 @@ class Repository(private val context: Context) {
     }
     private suspend fun activate(id: String) = lock.withLock {
         account=id;_user.value=id;_state.value=local.load(id)?.data?:defaultState().with("userId" to JsonPrimitive(id))
-        try { syncLocked() } catch(e: Exception) { _notice.value="Compte connecté ; synchronisation en attente : ${e.message}" }
+        try { syncLocked() } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Compte connecté ; synchronisation en attente : ${e.message}" }
+        OutboxWorker.enqueue(context,id)
     }
     suspend fun logout() = lock.withLock { client?.auth?.signOut();LocalReminders.schedule(context,false,account);account="guest";_user.value=null;_state.value=local.load("guest")?.data?:defaultState();_notice.value="Déconnecté" }
     suspend fun resetPassword(email: String) { db().auth.resetPasswordForEmail(email.trim());_notice.value="Lien de réinitialisation envoyé" }
@@ -54,7 +60,7 @@ class Repository(private val context: Context) {
         val next=transform(_state.value);if(next==_state.value) return@withLock
         val old=local.load(account);val stored=StoredState(next,old?.base,old?.remoteVersion,account!="guest")
         local.save(account,stored);_state.value=next
-        if(account!="guest") scope.launch { runCatching { sync() }.onFailure { _notice.value="Sauvegardé sur cet appareil. ${it.message}" } }
+        if(account!="guest") { val owner=account;scope.launch { try { sync() } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Sauvegardé sur cet appareil. ${e.message}";OutboxWorker.enqueue(context,owner) } } }
     }
     suspend fun sync() = lock.withLock { syncLocked() }
     private suspend fun syncLocked() {
@@ -98,7 +104,7 @@ class Repository(private val context: Context) {
         for(i in recordings.indices) { val row=recordings[i];if(row.flag("synced")) continue;check(row.str("user_id")==id);val path="$id/${row.str("id")}.m4a";val file=java.io.File(row.str("local_path"));check(file.isFile);check(file.length()<=100_000_000) { "Récitation trop volumineuse" }
             val remote=db().from("recitations").select { filter { eq("id",row.str("id"));eq("user_id",id) } }.decodeList<JsonObject>().singleOrNull()
             if(remote==null) {
-                val alreadyUploaded=runCatching { signedRecitation(path) }.isSuccess
+                val alreadyUploaded=try { signedRecitation(path);true } catch(e: Exception) { if(e is CancellationException) throw e;false }
                 if(!alreadyUploaded) db().storage.from("recitations").upload(path,file.readBytes())
                 db().from("recitations").insert(recordingPayload(row,id,path))
             }
