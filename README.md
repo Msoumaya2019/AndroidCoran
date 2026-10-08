@@ -19,7 +19,7 @@ L'APK debug est généré dans `app/build/outputs/apk/debug/app-debug.apk`. GitH
 
 Le projet reste `https://npbwnvrqmajwqtnncuyv.supabase.co`. Saisir sa **clé publique publishable/anon** dans Réglages. Aucun secret `service_role`, mot de passe ou clé privée n'est nécessaire à la compilation. Aucun SQL de migration n'est exécuté par cette application.
 
-Les documents `user_state.data` conservent leurs champs JSON inconnus, pour éviter de supprimer des propriétés ajoutées par Expo ou Swift. Les sauvegardes locales sont séparées par compte. Un changement distant concurrent suspend les écritures plutôt que d'écraser les données ; la résolution et la fusion complète d'Expo restent à porter.
+Les documents `user_state.data` conservent leurs champs JSON inconnus, pour éviter de supprimer des propriétés ajoutées par Expo ou Swift. Les sauvegardes locales sont séparées par compte. La fusion à trois versions reprend les règles Expo : champs locaux explicites, historiques réunis, séances terminées conservées et avancement maximal. Une modification concurrente survenant pendant la sauvegarde suspend la publication ; les données locales restent conservées. Une base distante absente ou une identité incompatible suspend aussi la fusion. La connexion et la fusion contre le serveur réel restent non validées.
 
 La connexion réutilise les comptes Auth existants. La clé réelle est absente de la référence : la connexion et les politiques RLS doivent être validées avec un compte de test avant toute diffusion.
 
@@ -28,6 +28,10 @@ La connexion réutilise les comptes Auth existants. La clé réelle est absente 
 Les données Hafs, métadonnées, traduction française, pages, coordonnées et glyphes sont copiés de la référence immuable. Les images sont conservées sans retouche. Les polices WOFF2 ont été converties en TTF pour Canvas Android ; la fidélité aux polices COLR et aux repères doit encore être comparée sur appareils. Conserver les licences et attributions ; `app/src/main/assets/TANZIL-LICENSE.txt` est inclus.
 
 Toutes les pages de deux éditions sont embarquées pour l'accès hors connexion. L'APK est volumineux : préparer Play Asset Delivery ou des téléchargements vérifiés avant publication Google Play.
+
+Les récitations publiques utilisent un cache Media3 de 250 Mo, évacuant les fichiers les moins récemment utilisés. Les portions réellement téléchargées peuvent être relues hors connexion ; écouter un début de sourate ne télécharge pas automatiquement sa totalité. Android peut vider ce cache. Les URL signées des enregistrements personnels restent hors de ce cache partagé. Le téléchargement audio explicite et la reprise après arrêt du processus restent à porter.
+
+Les objectifs et connaissances peuvent sélectionner une sourate, un hizb, un juz ou une plage de versets globaux. La contrainte de volume minimal du programme est conservée. Les traductions incluent leurs notes originales et permettent de sélectionner un verset. Les marques-pages conservent les dates d'utilisation et les marqueurs de suppression ; la synchronisation distante de ces marqueurs reste à valider avec un compte réel.
 
 ## Production et signature
 

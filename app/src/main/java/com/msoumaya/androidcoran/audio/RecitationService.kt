@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.media3.common.*
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.*
 import com.msoumaya.androidcoran.CoranApplication
 import com.msoumaya.androidcoran.domain.*
@@ -12,6 +13,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class RecitationService: MediaSessionService() {
     private lateinit var player: ExoPlayer;private var session: MediaSession?=null
     private val handler=Handler(Looper.getMainLooper());private var generation=0
@@ -22,7 +24,7 @@ class RecitationService: MediaSessionService() {
     private var range=VerseRange(1,7);private var position=AudioPosition(1);private var mode=RepeatMode.PASSAGE;private var count: Int?=1;private var reciter=reciters[3]
     companion object { private val _current=MutableStateFlow<AudioPosition?>(null);val current=_current.asStateFlow();private val _playing=MutableStateFlow(false);val playing=_playing.asStateFlow() }
     override fun onCreate() {
-        super.onCreate();player=ExoPlayer.Builder(this).build();player.setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(),true);player.setHandleAudioBecomingNoisy(true)
+        super.onCreate();player=ExoPlayer.Builder(this).setMediaSourceFactory(QuranAudioCache.factory(this)).build();player.setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(),true);player.setHandleAudioBecomingNoisy(true)
         player.addListener(object: Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) { _playing.value=isPlaying }
             override fun onPlaybackStateChanged(state: Int) { if(state==Player.STATE_ENDED) { if(timeline!=null&&!standalone) { position=position.copy(verseId=chapterEnd);_current.value=position };val next=if(standalone) null else nextAudioPosition(range,position,mode,count);if(next==null) { player.pause();_playing.value=false;handler.removeCallbacks(follow) } else { val expected=generation;handler.postDelayed({ if(expected==generation&&player.playWhenReady) { position=next;startAudio() } },200) } } }
@@ -32,7 +34,7 @@ class RecitationService: MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
     override fun onStartCommand(intent: Intent?,flags: Int,startId: Int): Int {
         when(intent?.action) {
-            "PLAY_URL" -> { val url=intent.getStringExtra("url")?:return super.onStartCommand(intent,flags,startId);if(!url.startsWith("https://")) return super.onStartCommand(intent,flags,startId);generation++;handler.removeCallbacksAndMessages(null);standalone=true;_current.value=null;player.setMediaItem(MediaItem.fromUri(url));player.prepare();player.play() }
+            "PLAY_URL" -> { val url=intent.getStringExtra("url")?:return super.onStartCommand(intent,flags,startId);if(!url.startsWith("https://")) return super.onStartCommand(intent,flags,startId);generation++;handler.removeCallbacksAndMessages(null);standalone=true;timeline=null;_current.value=null;player.setMediaSource(DefaultMediaSourceFactory(this).createMediaSource(MediaItem.fromUri(url)));player.prepare();player.play() }
             "PLAY_RANGE" -> { val start=intent.getIntExtra("start",1);val end=intent.getIntExtra("end",7);if(start !in 1..6236||end !in start..6236) return super.onStartCommand(intent,flags,startId);generation++;handler.removeCallbacksAndMessages(null);player.stop();range=VerseRange(start,end);position=AudioPosition(range.start);reciter=reciters.firstOrNull { it.id==intent.getStringExtra("reciter") }?:reciters[3];count=intent.getIntExtra("count",1).let { if(it==0) null else it };mode=if(intent.getBooleanExtra("each",false)) RepeatMode.EACH_VERSE else RepeatMode.PASSAGE;startAudio() }
             "TOGGLE" -> { generation++;handler.removeCallbacksAndMessages(null);if(player.isPlaying) player.pause() else if(player.playbackState==Player.STATE_ENDED) { if(standalone) { player.seekTo(0);player.play() } else { position=position.copy(repetition=1);startAudio() } } else { player.play();if(timeline!=null) handler.post(follow) } }
             "STOP" -> { generation++;handler.removeCallbacksAndMessages(null);player.stop();_current.value=null;stopSelf() }

@@ -49,6 +49,7 @@ class Quran(private val asset: (String)->JsonElement) {
     }
     fun volume(ids: List<Int>) = ids.sumOf { weights[it-1] }
     fun reference(r: VerseRange): String = if(verse(r.start).surah==verse(r.end).surah) "${surah(r.start).name} ${verse(r.start).ayah}–${verse(r.end).ayah}" else "${surah(r.start).name} ${verse(r.start).ayah} → ${surah(r.end).name} ${verse(r.end).ayah}"
+    fun frenchNotes(id: Int): String = (translation as? JsonArray)?.getOrNull(id-1)?.let { (it as? JsonObject)?.str("footnotes") } ?: ""
     fun french(id: Int): String = when(translation) {
         is JsonArray -> translation.getOrNull(id-1)?.let { if(it is JsonPrimitive) it.content else it.jsonObject.str("translation",it.jsonObject.str("text")) } ?: ""
         is JsonObject -> translation.str("${verse(id).surah}:${verse(id).ayah}",translation.str(id.toString()))

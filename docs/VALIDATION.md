@@ -3,9 +3,9 @@
 Ce document doit être mis à jour avec les résultats réels ; aucune fonctionnalité distante n'est validée sans connexion réelle.
 
 - Compilation locale : Testé — `assembleDebug` réussi, APK debug produit.
-- Tests JVM : Testé — 11 tests, 0 échec.
+- Tests JVM : Testé — 18 tests, 0 échec.
 - Android Lint : Testé — `lintDebug` réussi ; les avertissements ne constituent pas une validation de tous les parcours.
-- Tests instrumentés sur émulateur : Testé — 4 tests, 0 échec, AVD coran Android 15.
+- Tests instrumentés sur émulateur : Testé — 6 tests, 0 échec, AVD coran Android 15 : navigation, ressources, isolation des comptes, audio répété, cache après disparition de la source et sélecteur hizb.
 - Authentification d'un compte existant : Bloqué — clé publique Supabase absente.
 - Synchronisation et RLS : Bloqué — pas de compte de test connecté.
 - Audio réseau : Testé — un verset Alafasy réellement lu par Media3, troisième répétition atteinte sur l'émulateur. Autres récitateurs, passages continus, arrière-plan et interruptions : Non commencé pour la validation sur appareil.
@@ -14,12 +14,13 @@ Ce document doit être mis à jour avec les résultats réels ; aucune fonctionn
 
 Les tests automatisés couvrent les règles de répétition, les 6236 versets/604 pages, l'ordre depuis An Nâs, les jours sélectionnés, les validations partielles, la préservation des champs JSON, la partition des révisions et les étapes de consolidation.
 
-Limites connues : outils administrateur, avatar, téléchargements audio, fusion hors connexion complète, push FCM et fonctions sociales avancées restent à porter. L'enregistrement natif, la lecture continue, les rappels locaux et les services Supabase sont codés mais ne sont pas validés intégralement. Le document de parité recense leurs sources.
+Limites connues : outils administrateur, avatar, téléchargements audio, files hors connexion des services sociaux, push FCM et fonctions sociales avancées restent à porter. L'enregistrement natif, la lecture continue, les rappels locaux et les services Supabase sont codés mais ne sont pas validés intégralement. Le document de parité recense leurs sources.
 
 Contrôle de la référence : 3279 empreintes SHA-256 identiques au relevé initial ; checkout d'audit propre ; HEAD/main et toutes les branches/refs distantes Expo identiques avant et après les opérations. Aucun outil d'écriture n'a ciblé Expo, Supabase ni Swift. Le dépôt Swift n'a pas été consulté : absence d'intervention, et non audit de son état.
 
 APK avec toutes les ressources embarquées : environ 377 Mo. Il s'agit d'un build de développement ; ni signature production ni publication Google Play n'ont été effectuées.
 
-GitHub Actions : **Bloqué**. Le run `37758520117` a échoué avant toute étape et sans runner : GitHub indique des paiements récents du compte en échec ou un plafond de dépenses à augmenter. Aucun changement de facturation n'a été effectué. Le workflow devra être relancé après résolution côté compte. Un APK compilé localement peut être distribué en préversion privée dans le nouveau dépôt.
+GitHub Actions : **Testé** — run public `37761443828` réussi : tests JVM, Lint, compilation et artefacts APK/rapports publiés. Le passage en public a levé le blocage de facturation du premier run. Le SDK utilise les paquets explicites Android 36 et build-tools 35.0.0. Aucun paramètre de facturation modifié.
+Suite du portage natif : règles des marques-pages et notes françaises testées en JVM ; sélection personnalisée sourates/hizb/juz/plages et niveaux de connaissance intégrés. Les choix du programme sont sauvegardables par Compose ; la rotation réelle de ce parcours reste à valider. Le cache audio public Media3 est limité à 250 Mo ; la lecture des octets en cache après suppression de la source a été réellement testée sur Android. Les URL signées personnelles ne passent pas par ce cache.
 
-Mise à jour : le dépôt est devenu public à la demande de l'utilisateur. Une nouvelle tentative du run `37758520117` a démarré un runner, levant le blocage précédent. L'installation SDK a ensuite échoué car le paquet Android historique `tools` n'existe plus. Le workflow demande désormais explicitement `platform-tools`, `platforms;android-36` et `build-tools;35.0.0`. Validation du nouveau run en cours.
+Fusion offline : portage de `src/core/offlineMerge.ts`, avec quatre tests JVM couvrant les champs indépendants/inconnus, les historiques, l’avancement maximal, les séances terminées, les suppressions explicites, la remise à zéro et les comptes distincts. La mise à jour distante conserve le filtre `updated_at` et ne supprime pas la sauvegarde locale en cas de conflit. Authentification, RLS et fusion avec le serveur réel : Bloqué, clé publique et compte de test absents.

@@ -63,14 +63,19 @@ class Repository(private val context: Context) {
         val row=db().from("user_state").select { filter { eq("user_id",id) } }.decodeList<JsonObject>().singleOrNull()
         val remote=row?.obj("data");val version=row?.str("updated_at");val stored=local.load(id)
         if(stored?.pending==true) {
-            check(remote==stored.base) { "Les données ont changé sur un autre appareil. Synchronisation suspendue pour préserver les deux versions." }
             check(stored.data.str("userId")==id) { "Ces données appartiennent à un autre compte" }
-            val payload=json("user_id" to id,"data" to stored.data,"updated_at" to stored.data.str("updatedAt"))
+            val next=if(remote==stored.base) stored.data else {
+                check(remote!=null&&stored.base!=null) { "La base distante a changé : sauvegarde locale conservée" }
+                require(remote.num("schema")==1&&remote["sessions"] is JsonArray&&remote["revisions"] is JsonArray) { "Schéma utilisateur non reconnu" }
+                check(listOf(remote,stored.base).all { it.str("userId").isBlank()||it.str("userId")==id }) { "Identité distante incompatible" }
+                mergeOfflineState(stored.base.with("userId" to JsonPrimitive(id)),stored.data,remote.with("userId" to JsonPrimitive(id)))
+            }
+            val payload=json("user_id" to id,"data" to next,"updated_at" to next.str("updatedAt"))
             if(row==null) db().from("user_state").insert(payload) else {
                 val changed=db().from("user_state").update(payload) { filter { eq("user_id",id);eq("updated_at",version!!) };select(Columns.list("user_id")) }.decodeList<JsonObject>()
                 check(changed.size==1) { "Conflit concurrent : sauvegarde locale conservée" }
             }
-            local.save(id,StoredState(stored.data,stored.data,stored.data.str("updatedAt"),false));_state.value=stored.data
+            local.save(id,StoredState(next,next,next.str("updatedAt"),false));_state.value=next
         } else if(remote!=null) {
             require(remote.num("schema")==1&&remote["sessions"] is JsonArray&&remote["revisions"] is JsonArray) { "Schéma utilisateur non reconnu" }
             val restored=remote.with("userId" to JsonPrimitive(id));local.save(id,StoredState(restored,remote,version,false));_state.value=restored
