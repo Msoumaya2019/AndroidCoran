@@ -22,6 +22,7 @@ class AudioRepeatPauseTest {
         scenario.onActivity { it.startService(Intent(it,RecitationService::class.java).setAction("TOGGLE")) }
         runBlocking { withTimeout(5000) { RecitationService.playing.first { !it } };delay(2500) }
         assertEquals(1,RecitationService.current.value!!.repetition)
+        assertEquals(1,RecitationService.passageProgress.value!!.verseIndex)
         scenario.onActivity { it.startService(Intent(it,RecitationService::class.java).setAction("TOGGLE")) }
         runBlocking { withTimeout(10000) { assertEquals(2,RecitationService.current.first { it?.repetition==2 }!!.repetition) } }
       } finally { scenario.onActivity { it.startService(Intent(it,RecitationService::class.java).setAction("STOP")) } }
