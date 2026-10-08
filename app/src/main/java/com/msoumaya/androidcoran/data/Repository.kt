@@ -2,6 +2,10 @@ package com.msoumaya.androidcoran.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.*
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.datastore.preferences.preferencesDataStore
 import com.msoumaya.androidcoran.domain.*
 import io.github.jan.supabase.createSupabaseClient
@@ -34,14 +38,27 @@ class Repository(private val context: Context) {
     val reports by lazy { ProblemReportService(this,local,context) }
     suspend fun awaitReady()=ready.await()
     internal fun pendingState(owner: String)=local.load(owner)?.pending==true
-    init { scope.launch { try { _state.value=local.load(account)?.data?:defaultState();val key=context.config.data.first()[stringPreferencesKey("publicKey")];if(!key.isNullOrBlank()) configure(key) } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value=e.message?:"Configuration indisponible" } finally { ready.complete(Unit) } } }
+    init {
+        scope.launch(Dispatchers.Main.immediate) {
+            ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) { scope.launch {
+                    ready.await()
+                    val auth=client?.auth ?: return@launch
+                    if(auth.currentSessionOrNull()!=null&&!auth.isAutoRefreshRunning) try { auth.startAutoRefreshForCurrentSession() } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Session conservée ; actualisation en attente" }
+                } }
+                override fun onStop(owner: LifecycleOwner) { client?.auth?.stopAutoRefreshForCurrentSession() }
+            })
+        }
+        scope.launch { try { _state.value=local.load(account)?.data?:defaultState();val key=context.config.data.first()[stringPreferencesKey("publicKey")]?:com.msoumaya.androidcoran.BuildConfig.SUPABASE_PUBLIC_KEY;if(!key.isNullOrBlank()) configure(key) } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value=e.message?:"Configuration indisponible" } finally { ready.complete(Unit) } } }
     suspend fun configure(key: String) {
         require(key.isNotBlank()&&!key.contains("service_role")) { "Une clé publique est nécessaire" }
         if(key.startsWith("eyJ")) { val payload=String(android.util.Base64.decode(key.split('.')[1],android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP));require(Json.parseToJsonElement(payload).jsonObject.str("role")=="anon") { "Clé anon uniquement" } }
         require(key.startsWith("sb_publishable_")||key.startsWith("eyJ")) { "Format de clé publique non reconnu" }
-        client?.close();client=createSupabaseClient(SUPABASE_URL,key) { install(Auth);install(Postgrest);install(Storage);install(Realtime) }
+        client?.close();client=createSupabaseClient(SUPABASE_URL,key) { install(Auth) { enableLifecycleCallbacks=false };install(Postgrest);install(Storage);install(Realtime) }
         context.config.edit { it[stringPreferencesKey("publicKey")]=key }
-        client!!.auth.awaitInitialization();client!!.auth.currentUserOrNull()?.let { activate(it.id) }
+        client!!.auth.awaitInitialization()
+        withContext(Dispatchers.Main.immediate) { if(!ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) client!!.auth.stopAutoRefreshForCurrentSession() }
+        client!!.auth.currentUserOrNull()?.let { activate(it.id) }
     }
     internal fun db() = client ?: error("Renseigne la clé publique du projet Supabase dans les réglages")
     suspend fun login(email: String,password: String,register: Boolean=false) {

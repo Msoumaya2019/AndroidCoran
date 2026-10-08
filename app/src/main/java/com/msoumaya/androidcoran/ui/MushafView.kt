@@ -9,6 +9,7 @@ import kotlinx.serialization.json.*
 
 /** Native Canvas painter: keeps the reference's words, 122-unit lines and page proportions. */
 class MushafView(context: Context): View(context) {
+    var paper="#faf7f2"
     var page=1;var source="coranTest";var selected: Int?=null;var playing: Int?=null
     var bookmarks=emptySet<Int>();var difficulties=emptySet<Int>();var onVerse: (Int)->Unit={};var onPage: (Int)->Unit={}
     private var data: JsonObject?=null;private var bitmap: Bitmap?=null;private var bounds: JsonArray?=null
@@ -32,7 +33,7 @@ class MushafView(context: Context): View(context) {
         if(b!=null) { paint.color=Color.WHITE;canvas.drawBitmap(b,0f,0f,paint)
             bounds?.forEach { raw -> val r=raw.jsonArray;if(r.size>=7) { val surah=r[0].jsonPrimitive.int;val ayah=r[1].jsonPrimitive.int;val q=(context.applicationContext as com.msoumaya.androidcoran.CoranApplication).repository.quran;val id=q.id(surah,ayah);val rect=RectF(r[3].jsonPrimitive.float,r[5].jsonPrimitive.float,r[4].jsonPrimitive.float,r[6].jsonPrimitive.float);regions+=rect to id;overlay(canvas,rect,id) } }
         } else data?.let { d ->
-            paint.color=Color.rgb(250,247,242);canvas.drawRect(0f,0f,w,h,paint);paint.color=Color.rgb(121,94,80);paint.typeface=Typeface.DEFAULT;paint.textSize=30f;canvas.drawText("Juz ${d.num("juz")}",40f,135f,paint);canvas.drawText(page.toString(),480f,2070f,paint)
+            paint.color=Color.parseColor(paper);canvas.drawRect(0f,0f,w,h,paint);paint.color=Color.rgb(121,94,80);paint.typeface=Typeface.DEFAULT;paint.textSize=30f;canvas.drawText("Juz ${d.num("juz")}",40f,135f,paint);canvas.drawText(page.toString(),480f,2070f,paint)
             val lines=d.arr("lines");val start=175f+(1830f-lines.size*122f)/2
             lines.forEachIndexed { i,raw -> val line=raw.jsonObject;val cy=start+i*122f+61f
                 when(line.str("type")) {

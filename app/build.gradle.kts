@@ -1,8 +1,12 @@
+import java.util.Properties
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id("org.jetbrains.kotlin.plugin.compose"); id("org.jetbrains.kotlin.plugin.serialization") }
+val nativeLocal = Properties().apply { rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) } }
+val publishableKey = providers.environmentVariable("SUPABASE_PUBLISHABLE_KEY").orNull ?: nativeLocal.getProperty("supabase.publicKey", "")
+require(publishableKey.isBlank() || Regex("sb_publishable_[A-Za-z0-9_-]+").matches(publishableKey)) { "Only a publishable client key is allowed" }
 android {
  namespace = "com.msoumaya.androidcoran"
  compileSdk = 36
- defaultConfig { applicationId = "com.msoumaya.androidcoran"; minSdk = 26; targetSdk = 36; versionCode = 1; versionName = "0.1.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+ defaultConfig { applicationId = "com.msoumaya.androidcoran"; minSdk = 26; targetSdk = 36; versionCode = 1; versionName = "0.1.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"; buildConfigField("String", "SUPABASE_PUBLIC_KEY", "\"$publishableKey\"") }
  buildFeatures { compose = true; buildConfig = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  buildTypes { release { isMinifyEnabled = false; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") } }

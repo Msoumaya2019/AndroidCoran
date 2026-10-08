@@ -17,11 +17,11 @@ L'APK debug est généré dans `app/build/outputs/apk/debug/app-debug.apk`. GitH
 
 ## Backend existant
 
-Le projet reste `https://npbwnvrqmajwqtnncuyv.supabase.co`. Saisir sa **clé publique publishable/anon** dans Réglages. Aucun secret `service_role`, mot de passe ou clé privée n'est nécessaire à la compilation. Aucun SQL de migration n'est exécuté par cette application.
+Le projet reste `https://npbwnvrqmajwqtnncuyv.supabase.co`. La clé publique publishable est injectée par la variable GitHub Actions `SUPABASE_PUBLISHABLE_KEY`, ou par `supabase.publicKey` dans `local.properties` (ignoré par Git). Les APK de cette configuration sont prêts à se connecter ; Réglages permet aussi une configuration manuelle. Aucun secret `service_role`, mot de passe ou clé privée n'est nécessaire à la compilation. Aucun SQL de migration n'est exécuté par cette application.
 
 Les documents `user_state.data` conservent leurs champs JSON inconnus, pour éviter de supprimer des propriétés ajoutées par Expo ou Swift. Les sauvegardes locales sont séparées par compte. La fusion à trois versions reprend les règles Expo : champs locaux explicites, historiques réunis, séances terminées conservées et avancement maximal. Une modification concurrente survenant pendant la sauvegarde suspend la publication ; les données locales restent conservées. Une base distante absente ou une identité incompatible suspend aussi la fusion. La connexion et la fusion contre le serveur réel restent non validées.
 
-La connexion réutilise les comptes Auth existants. La clé réelle est absente de la référence : la connexion et les politiques RLS doivent être validées avec un compte de test avant toute diffusion.
+La connexion réutilise les comptes Auth existants. La clé publique a été récupérée depuis les variables de compilation de la référence, consultées en lecture seule. Le service Auth existant répond HTTP 200 depuis Windows. La connexion d’un compte existant et les politiques RLS restent à valider avec une session réelle.
 
 ## Ressources coraniques
 
@@ -47,7 +47,6 @@ Les écrans natifs présentent désormais les statistiques par jour/semaine/mois
 
 Les récitations distinguent le Coran des invocations ; les enregistrements locaux et les retours vocaux sont accessibles via Media3. L'administration permet la recherche paginée des comptes et l'historique des notifications sous le rôle Supabase existant. Plusieurs parcours restent à compléter et valider : consulter FUNCTIONAL_PARITY.md. La parité complète n'est pas atteinte.
 
-Validation locale : 43 tests JVM réussis et neuf tests Android réussis sur Android 15. Les accès aux comptes existants et aux RPC nécessitent encore la clé publique Supabase ; ils ne sont pas annoncés comme validés.
-mme validés.
+Validation locale : 47 tests JVM réussis et dix tests Android réussis sur Android 15. La clé publique est configurée ; les accès authentifiés ne sont pas annoncés comme validés. Le dixième test lit le serveur Supabase public sans activité ni secours par cache.
 
-Le portage administratif comprend maintenant les questions et séries thématiques, les notifications personnalisées (confirmation et identifiant de nouvelle tentative), les signalements avec captures privées, les corrections textuelles/vocales des récitations, ainsi que les contenus, catégories, programmation et pièces jointes. Les médias de daily-content-media passent par une URL signée, comme dans la version source. Aucun envoi réel ni compte administrateur validé : la clé publique et une session sont nécessaires pour les tests serveur.
+Le portage administratif comprend maintenant les questions et séries thématiques, les notifications personnalisées (confirmation et identifiant de nouvelle tentative), les signalements avec captures privées, les corrections textuelles/vocales des récitations, ainsi que les contenus, catégories, programmation et pièces jointes. Les médias de daily-content-media passent par une URL signée, comme dans la version source. Aucun envoi réel ni compte administrateur validé : une session administrateur réelle est nécessaire pour les tests serveur.

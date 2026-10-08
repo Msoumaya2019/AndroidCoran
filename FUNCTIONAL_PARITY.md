@@ -35,7 +35,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Consolidations J+1/J+3/J+7 et priorités | src/core/review.ts | reviewConsolidations / difficultyMarkers | Review.prepare / grade / tasks | En développement (actions explicites à compléter) | Testé (consolidation JVM) |
 | Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen | En développement | Non commencé (parcours complet) |
 | Statistiques volume / progrès / hizb | src/core/program.ts; weeklyProgress.ts | user_state.data | LearningScreens.kt + Statistics.kt ; jour/semaine/mois, historique et séries | Implémenté | Testé (calculs JVM) ; parcours visuel Non commencé |
-| Auth, comptes existants, inscription, session | src/services/sync.ts; authStorage.ts | Supabase Auth existant | data/Repository.kt + AccountScreen | En développement | Bloqué — clé publique et compte de test absents |
+| Auth, comptes existants, inscription, session | src/services/sync.ts; authStorage.ts | Supabase Auth existant | data/Repository.kt + AccountScreen | En développement | Testé (lectures publiques SDK Android sans activité) ; compte existant/RLS Bloqué |
 | Réinitialisation, liens et changement de mot de passe | src/services/sync.ts | Supabase Auth | Repository.resetPassword / changePassword | En développement (liens natifs à porter) | Bloqué |
 | Synchronisation, JSON compatible et isolation des comptes | src/services/sync.ts; storage.ts | user_state | Repository + LocalStore (SQLite natif) | En développement | Testé (isolation locale Android ; Supabase Bloqué) |
 | Fusion offline complète et files idempotentes | src/core/offlineMerge.ts; services/offlineSync.ts | user_state + queues | domain/OfflineMerge.kt + Repository + OutboxWorker ; quiz et signalements persistés par compte, autres services à compléter | En développement | Testé (fusion JVM) ; serveur Bloqué |
@@ -49,7 +49,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Quiz quotidien, réponses et défis 5/10 questions | src/ui/QuizScreen.tsx; services/quiz.ts | quiz_snapshot / quiz_answer_daily / quiz_create_challenge / quiz_answer_challenge | QuizScreens.kt + QuizService + Quiz.kt ; réponses offline et défis | En développement | Testé (règles JVM) ; serveur Bloqué |
 | Quiz thématiques, historique, statistiques et notifications | src/core/quiz.ts; services/quiz.ts | quiz_sets + RPC | QuizScreens.kt ; choix thématique, historique, scores et préférences | En développement | Testé (scores JVM) ; serveur Bloqué |
 | Contenus quotidiens, rappels et invocations | src/DailyContentsScreen.tsx; services/dailyContents.ts | daily_contents / daily_content_for_date | ContentService + ContentScreens ; catégories, favoris, pagination, image, audio et enregistrement invocation | En développement | Bloqué — backend ; médias sur appareil Non commencé |
-| Thèmes, accents, polices et papier | src/ui/AppearanceScreen.tsx; theme/* | user_state.data | SettingsScreen + Material3 | En développement (accents/polices/papier à compléter) | Non commencé |
+| Thèmes, accents, polices et papier | src/ui/AppearanceScreen.tsx; theme/* | user_state.data | NativeAppTheme + AppearanceOptions ; palettes originales, quatre accents, trois modes de police et papier QCF | Implémenté | Testé (règles JVM) ; fidélité exhaustive Non commencé |
 | Rappel local à 19 h, redémarrage et préférences | src/services/notifications.ts | user_state.data.notifications | LocalReminders + ReminderSettings | En développement | Non commencé (déclenchement/boot) |
 | Push messages, amis, corrections, admin et quiz | src/services/notifications.ts; supabase/*notifications* | Jetons Expo et RPC existants | Canal FCM additif proposé dans docs/FCM_PROPOSAL.md | Bloqué | Bloqué |
 | Signalement bug | src/ui/ProblemReport.tsx; services/problemReports.ts | app_problem_reports / screenshot bucket | ProblemReportScreen + ProblemReportService + OutboxWorker ; pièce jointe et reprise réseau | En développement | Testé (persistance Android) ; serveur Bloqué |
@@ -522,7 +522,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 
 ## Limites connues
 
-- La clé Supabase publique réelle ne figure pas dans la référence ; authentification de comptes existants et RLS non testées.
+- La clé Supabase publique est maintenant injectée depuis la variable de compilation existante, sans secret committé ; authentification de comptes existants et RLS non testées.
 - Le backend push utilise Expo. Ne jamais inscrire un jeton FCM dans la table Expo. Un canal FCM additif nécessite une proposition puis une autorisation avant toute modification serveur.
 - Les polices Mushaf WOFF2 seront converties sans modifier les originaux ; fidélité visuelle à valider sur appareil.
 - Les deux éditions en images conservent leurs pixels et rapports de dimensions.

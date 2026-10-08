@@ -13,6 +13,9 @@ import org.junit.runner.RunWith
 class NativeSmokeTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
     @Test fun readerRendersAndNavigatesToAnotherPage() {
+        val repo=(compose.activity.application as CoranApplication).repository
+        kotlinx.coroutines.runBlocking { repo.awaitReady();repo.mutate { it.with("lastRead" to json("verseId" to 1,"page" to 1)) } }
+        compose.waitForIdle()
         compose.onNodeWithText("Lire le Coran").performClick()
         compose.onNodeWithText("1 / 604").assertExists()
         compose.onNodeWithText("Suivante").performClick()
