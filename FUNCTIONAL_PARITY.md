@@ -30,10 +30,10 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Cache audio et préchargement des versets | src/services/verseAudioCache.ts; PassageAudioPlayer.tsx | Local | Cache Media3 borné à 250 Mo ; fichiers publics uniquement ; préchargement des trois versets suivants borné au passage. La source ne propose pas de téléchargement audio explicite ni de reprise du lecteur après arrêt du processus | Implémenté | Testé (cache Android et relecture complète sans source réseau) |
 | Objectifs et rythmes ; ordre depuis An Nâs | src/core/program.ts; ui/GoalScreen.tsx | user_state.data.goal / pace | domain/Program.kt + GoalScreen | En développement (sourates/hizb/juz/plages disponibles ; parcours complet à valider) | Testé (ordre et jours JVM) |
 | Connaissances initiales et validation par verset | src/App.tsx; core/program.ts | user_state.data.knowledge | GoalScreen + Program.markKnowledge | Implémenté (sourates/hizb/juz/plages et niveaux acquis/révision/apprentissage) | Testé (mutations JVM) |
-| Création, report et régénération du programme | src/core/program.ts | user_state.data.sessions | Program.generate + ProgramScreen | En développement (extension legacy à porter) | Testé (JVM) |
+| Création, report et régénération du programme | src/core/program.ts | user_state.data.sessions | Program.generate + ProgramScreen | En développement (extension legacy implémentée et testée) | Testé (JVM) |
 | Validation partielle et reprise exacte des séances | src/core/studyProgress.ts | user_state.data.studyProgress / memorizedAt | Program.complete + ReaderScreen | En développement | Testé (JVM, persistance à compléter) |
 | Révisions pondérées ; cycles et unités réelles | src/core/review.ts | user_state.data.reviewCycle | domain/Review.kt | En développement | Testé (partition JVM) |
-| Consolidations J+1/J+3/J+7 et priorités | src/core/review.ts | reviewConsolidations / difficultyMarkers | Review.prepare / grade / tasks | En développement (actions explicites à compléter) | Testé (consolidation JVM) |
+| Consolidations J+1/J+3/J+7 et priorités | src/core/review.ts | reviewConsolidations / difficultyMarkers | Review.prepare / grade / tasks / completeConsolidation + lecteur natif | En développement (validation anticipée et calendrier implémentés ; synchronisation authentifiée non validée) | Testé (JVM : dates ancrées, étapes, idempotence, conservation des champs ; deux parcours Compose Android 15) |
 | Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen | En développement | Non commencé (parcours complet) |
 | Statistiques volume / progrès / hizb | src/core/program.ts; weeklyProgress.ts | user_state.data | LearningScreens.kt + Statistics.kt ; jour/semaine/mois, historique et séries | Implémenté | Testé (calculs JVM) ; parcours visuel Non commencé |
 | Auth, comptes existants, inscription, session | src/services/sync.ts; authStorage.ts | Supabase Auth existant | data/Repository.kt + AccountScreen | En développement | Testé (lectures publiques SDK Android sans activité) ; compte existant/RLS Bloqué |
@@ -197,7 +197,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/review.ts:160 | reviewRhythm | Local / via services | domain/reviewRhythm | Non commencé | Non commencé |
 | src/core/review.ts:171 | partitionDailyQuantity | Local / via services | domain/partitionDailyQuantity | Non commencé | Non commencé |
 | src/core/review.ts:176 | setReviewQuantity | Local / via services | domain/setReviewQuantity | Non commencé | Non commencé |
-| src/core/review.ts:181 | completeConsolidation | Local / via services | domain/completeConsolidation | Non commencé | Non commencé |
+| src/core/review.ts:181 | completeConsolidation | reviewConsolidations / consolidationHistory | domain/Review.completeConsolidation + ReaderScreen | Implémenté | Testé (JVM) |
 | src/core/sourceNavigation.ts:4 | sourceVersePage | Local / via services | ui/sourceVersePage | Non commencé | Non commencé |
 | src/core/sourceNavigation.ts:5 | sourcePageRange | Local / via services | ui/sourcePageRange | Non commencé | Non commencé |
 | src/core/studyProgress.ts:7 | studyKey | Local / via services | domain/studyKey | Non commencé | Non commencé |
@@ -528,3 +528,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 - Les polices Mushaf sont converties en TTF dans le projet Android, sans modifier les originaux. Les tailles décimales de chaque page sont conservées ; fidélité visuelle exhaustive à valider sur appareil.
 - Les deux éditions en images conservent leurs pixels et rapports de dimensions.
 - Le téléchargement Coran 1441 contient 9060 images de lignes : conserver les 15 lignes par page.
+
+### Consolidation native — 9 octobre 2026
+
+Le tableau des nouveaux versets affiche J+1/J+3/J+7 et ouvre le lecteur avec une validation explicite du passage entier, comme la source. Les dates restent ancrées au jour de mémorisation même en cas de validation anticipée. Les événements utilisent consolidationHistory et reviewConsolidations existants ; aucune adaptation du backend. La tâche de révision est conservée dans l’état sauvegardé Compose. Les tests serveur avec un compte réel restent non validés.

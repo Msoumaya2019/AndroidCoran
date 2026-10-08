@@ -6,7 +6,9 @@ import java.time.temporal.ChronoUnit
 import kotlinx.serialization.json.*
 import kotlin.math.abs
 
-data class ReviewTask(val id: String,val range: VerseRange,val category: String,val scheduledDate: String)
+data class ReviewTask(val id: String,val range: VerseRange,val category: String,val scheduledDate: String,val consolidationOffset: Int?=null)
+data class ConsolidationStep(val offset: Int,val due: String,val completed: String?)
+data class ConsolidationRow(val range: VerseRange,val learnedAt: String,val steps: List<ConsolidationStep>)
 class Review(private val q: Quran,private val program: Program) {
     private val offsets=listOf(1,3,7)
     private fun weight(id: Int) = q.weights[id-1].toDouble()/q.volume(q.pages[q.page(id)-1].ids).coerceAtLeast(1)
@@ -28,6 +30,31 @@ class Review(private val q: Quran,private val program: Program) {
         val events=s.arr("reviewHistory").map { it.jsonObject }.filter { id in it.num("start")..it.num("end") && it.str("date")>=date }.sortedBy { it.str("date") }
         for(offset in offsets) { val event=events.firstOrNull { it.str("date")>=learned.plusDays(offset.toLong()).toString()&&it.str("date")>previous } ?: break;previous=event.str("date");completed[offset.toString()]=JsonPrimitive(previous) }
         return json("learnedAt" to date,"scheduledDates" to dates,"completed" to JsonObject(completed))
+    }
+    fun consolidations(s: JsonObject): List<ConsolidationRow> {
+        if(!s.obj("reviewSettings").flag("enabled",true)) return emptyList()
+        val rows=mutableListOf<ConsolidationRow>()
+        knownIds(s).sorted().forEach { id ->
+            val c=consolidation(s,id) ?: return@forEach
+            if(c.obj("completed")["7"]!=null) return@forEach
+            val steps=offsets.map { ConsolidationStep(it,c.obj("scheduledDates").str(it.toString()),c.obj("completed").str(it.toString()).ifEmpty { null }) }
+            val last=rows.lastOrNull()
+            if(last!=null&&last.range.end+1==id&&q.verse(last.range.start).surah==q.verse(id).surah&&last.learnedAt==c.str("learnedAt")&&last.steps==steps) rows[rows.lastIndex]=last.copy(range=VerseRange(last.range.start,id))
+            else rows+=ConsolidationRow(VerseRange(id,id),c.str("learnedAt"),steps)
+        }
+        return rows
+    }
+    fun completeConsolidation(original: JsonObject,range: VerseRange,at: LocalDate=LocalDate.now(),completedAt: String=Instant.now().toString(),targetOffset: Int?=null): JsonObject {
+        require(targetOffset==null||targetOffset in offsets)
+        val s=prepare(original,at);val records=s.obj("reviewConsolidations").toMutableMap();val events=s.arr("consolidationHistory").toMutableList()
+        range.ids.filter { known(s,it) }.forEach { id ->
+            val c=consolidation(s,id) ?: return@forEach
+            val offset=offsets.firstOrNull { c.obj("completed")[it.toString()]==null } ?: return@forEach
+            if(targetOffset!=null&&targetOffset!=offset) return@forEach
+            records[id.toString()]=c.with("completed" to c.obj("completed").with(offset.toString() to JsonPrimitive(at.toString())),"completedAt" to c.obj("completedAt").with(offset.toString() to JsonPrimitive(completedAt)))
+            events+=json("id" to "$id-${c.str("learnedAt") }-$offset","verseId" to id,"offset" to offset,"learnedAt" to c.str("learnedAt"),"scheduledDate" to c.obj("scheduledDates").str(offset.toString()),"completedAt" to completedAt)
+        }
+        return if(events==s.arr("consolidationHistory")) s else touch(s.with("reviewConsolidations" to JsonObject(records),"consolidationHistory" to element(events)))
     }
     private fun createCycle(s: JsonObject,at: LocalDate,index: Int): JsonObject {
         val start=s.str("reviewModelStartedAt",at.toString())
