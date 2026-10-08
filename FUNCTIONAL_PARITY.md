@@ -36,7 +36,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen | En développement | Non commencé (parcours complet) |
 | Statistiques volume / progrès / hizb | src/core/program.ts; weeklyProgress.ts | user_state.data | LearningScreens.kt + Statistics.kt ; jour/semaine/mois, historique et séries | Implémenté | Testé (calculs JVM) ; parcours visuel Non commencé |
 | Auth, comptes existants, inscription, session | src/services/sync.ts; authStorage.ts | Supabase Auth existant | data/Repository.kt + AccountScreen | En développement | Testé (lectures publiques SDK Android sans activité) ; compte existant/RLS Bloqué |
-| Réinitialisation, liens et changement de mot de passe | src/services/sync.ts | Supabase Auth | Repository.resetPassword / changePassword | En développement (liens natifs à porter) | Bloqué |
+| Réinitialisation, liens et changement de mot de passe | src/services/sync.ts | Supabase Auth | Repository + MainActivity + AccountScreen ; liens implicites existants, récupération, renvoi de confirmation et mot de passe | Implémenté | Testé (contrats JVM et Intent Android réussi) ; session réelle Bloqué |
 | Synchronisation, JSON compatible et isolation des comptes | src/services/sync.ts; storage.ts | user_state | Repository + LocalStore (SQLite natif) | En développement | Testé (isolation locale Android ; Supabase Bloqué) |
 | Fusion offline complète et files idempotentes | src/core/offlineMerge.ts; services/offlineSync.ts | user_state + queues | domain/OfflineMerge.kt + Repository + OutboxWorker ; quiz et signalements persistés par compte, autres services à compléter | En développement | Testé (fusion JVM) ; serveur Bloqué |
 | Amis, codes, demandes, liste et groupes | src/SocialScreens.tsx; services/social.ts | friend_profiles / friend_links / friend_groups + RPC | data/SocialService.kt + ui/SocialScreens.kt ; invitations et rôles de groupe | En développement | Bloqué — backend non connecté |
@@ -393,8 +393,8 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/services/sync.ts:16 | signIn | from:user_state | data/signIn | Non commencé | Non commencé |
 | src/services/sync.ts:22 | signOut | from:user_state | data/signOut | Non commencé | Non commencé |
 | src/services/sync.ts:23 | requestPasswordLink | from:user_state | data/requestPasswordLink | Non commencé | Non commencé |
-| src/services/sync.ts:28 | resendSignupConfirmation | from:user_state | data/resendSignupConfirmation | Non commencé | Non commencé |
-| src/services/sync.ts:33 | consumeAuthLink | from:user_state | data/consumeAuthLink | Non commencé | Non commencé |
+| src/services/sync.ts:28 | resendSignupConfirmation | from:user_state | Repository + MainActivity + AccountScreen | Implémenté | Testé (contrats JVM) ; serveur authentifié Bloqué |
+| src/services/sync.ts:33 | consumeAuthLink | from:user_state | Repository + MainActivity + AccountScreen | Implémenté | Testé (contrats JVM) ; serveur authentifié Bloqué |
 | src/services/sync.ts:44 | changePassword | from:user_state | data/changePassword | Non commencé | Non commencé |
 | src/services/sync.ts:49 | pullState | from:user_state | data/pullState | Non commencé | Non commencé |
 | src/services/sync.ts:57 | pushState | from:user_state | data/pushState | Non commencé | Non commencé |

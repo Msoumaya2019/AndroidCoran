@@ -32,6 +32,7 @@ class Repository(private val context: Context) {
     private val _state=MutableStateFlow(defaultState());val state=_state.asStateFlow()
     private val _notice=MutableStateFlow("");val notice=_notice.asStateFlow()
     private val _user=MutableStateFlow<String?>(null);val user=_user.asStateFlow()
+    private val _passwordRecovery=MutableStateFlow(false);val passwordRecovery=_passwordRecovery.asStateFlow()
     private var account="guest"
     private val ready=CompletableDeferred<Unit>()
     val quiz by lazy { QuizService(this,local,context) }
@@ -54,7 +55,7 @@ class Repository(private val context: Context) {
         require(key.isNotBlank()&&!key.contains("service_role")) { "Une clé publique est nécessaire" }
         if(key.startsWith("eyJ")) { val payload=String(android.util.Base64.decode(key.split('.')[1],android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP));require(Json.parseToJsonElement(payload).jsonObject.str("role")=="anon") { "Clé anon uniquement" } }
         require(key.startsWith("sb_publishable_")||key.startsWith("eyJ")) { "Format de clé publique non reconnu" }
-        client?.close();client=createSupabaseClient(SUPABASE_URL,key) { install(Auth) { enableLifecycleCallbacks=false };install(Postgrest);install(Storage);install(Realtime) }
+        client?.close();client=createSupabaseClient(SUPABASE_URL,key) { install(Auth) { enableLifecycleCallbacks=false;flowType=FlowType.IMPLICIT;scheme="coranmemoire";host="auth" };install(Postgrest);install(Storage);install(Realtime) }
         context.config.edit { it[stringPreferencesKey("publicKey")]=key }
         client!!.auth.awaitInitialization()
         withContext(Dispatchers.Main.immediate) { if(!ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) client!!.auth.stopAutoRefreshForCurrentSession() }
@@ -62,7 +63,7 @@ class Repository(private val context: Context) {
     }
     internal fun db() = client ?: error("Renseigne la clé publique du projet Supabase dans les réglages")
     suspend fun login(email: String,password: String,register: Boolean=false) {
-        if(register) db().auth.signUpWith(Email) { this.email=email.trim();this.password=password } else db().auth.signInWith(Email) { this.email=email.trim();this.password=password }
+        if(register) db().auth.signUpWith(Email,redirectUrl=MOBILE_AUTH_REDIRECT) { this.email=email.trim();this.password=password } else db().auth.signInWith(Email) { this.email=email.trim();this.password=password }
         val user=db().auth.currentUserOrNull();if(user!=null) activate(user.id) else _notice.value="Consulte ton e-mail pour confirmer l’inscription"
     }
     private suspend fun activate(id: String) = lock.withLock {
@@ -70,9 +71,21 @@ class Repository(private val context: Context) {
         try { syncLocked() } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Compte connecté ; synchronisation en attente : ${e.message}" }
         OutboxWorker.enqueue(context,id)
     }
-    suspend fun logout() = lock.withLock { client?.auth?.signOut();LocalReminders.schedule(context,false,account);account="guest";_user.value=null;_state.value=local.load("guest")?.data?:defaultState();_notice.value="Déconnecté" }
-    suspend fun resetPassword(email: String) { db().auth.resetPasswordForEmail(email.trim());_notice.value="Lien de réinitialisation envoyé" }
-    suspend fun changePassword(password: String) { db().auth.updateUser { this.password=password };_notice.value="Mot de passe mis à jour" }
+    suspend fun logout() = lock.withLock { client?.auth?.signOut();LocalReminders.schedule(context,false,account);account="guest";_passwordRecovery.value=false;_user.value=null;_state.value=local.load("guest")?.data?:defaultState();_notice.value="Déconnecté" }
+    suspend fun consumeAuthLink(raw: String) {
+        val link=mobileAuthLink(raw) ?: return
+        awaitReady()
+        val auth=db().auth
+        val session=try { io.github.jan.supabase.auth.user.UserSession(accessToken=link.accessToken,refreshToken=link.refreshToken,expiresIn=link.expiresIn,tokenType="bearer",user=auth.retrieveUser(link.accessToken),type=if(link.recovery) "recovery" else "signup") } catch(_: io.github.jan.supabase.exceptions.UnauthorizedRestException) { auth.refreshSession(link.refreshToken) }
+        val verified=session.user ?: error("Session sans utilisateur")
+        auth.importSession(session)
+        activate(verified.id)
+        _passwordRecovery.value=link.recovery
+        _notice.value=if(link.recovery) "Choisis ton nouveau mot de passe" else "Compte confirmé ; données retrouvées"
+    }
+    suspend fun resendSignupConfirmation(email: String) { db().auth.resendEmail(OtpType.Email.SIGNUP,email.trim(),redirectUrl=MOBILE_AUTH_REDIRECT);_notice.value="Nouveau courriel de confirmation envoyé" }
+    suspend fun resetPassword(email: String) { db().auth.resetPasswordForEmail(email.trim(),redirectUrl=MOBILE_AUTH_REDIRECT);_notice.value="Lien de réinitialisation envoyé" }
+    suspend fun changePassword(password: String) { require(password.length>=8) { "Utilise au moins 8 caractères" };db().auth.updateUser { this.password=password };_passwordRecovery.value=false;_notice.value="Mot de passe mis à jour" }
     suspend fun mutate(transform: (JsonObject)->JsonObject) = lock.withLock {
         val next=transform(_state.value);if(next==_state.value) return@withLock
         val old=local.load(account);val stored=StoredState(next,old?.base,old?.remoteVersion,account!="guest")

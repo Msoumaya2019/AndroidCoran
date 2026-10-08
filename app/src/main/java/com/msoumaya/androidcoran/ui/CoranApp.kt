@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.msoumaya.androidcoran.audio.RecitationService
 import com.msoumaya.androidcoran.domain.*
 import com.msoumaya.androidcoran.data.*
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
@@ -39,6 +40,8 @@ import java.time.Instant
 @Composable fun CoranApp(vm: CoranViewModel=viewModel()) {
     val s by vm.repo.state.collectAsStateWithLifecycle();val notice by vm.repo.notice.collectAsStateWithLifecycle();val user by vm.repo.user.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf("Accueil") };var route by rememberSaveable { mutableStateOf<String?>(null) }
+    val recovery by vm.repo.passwordRecovery.collectAsStateWithLifecycle()
+    LaunchedEffect(recovery,user) { if(recovery&&user!=null) route="Compte" }
     var page by rememberSaveable { mutableIntStateOf(1) };var sessionId by rememberSaveable { mutableStateOf<String?>(null) };var reviewTask by remember { mutableStateOf<ReviewTask?>(null) }
     NativeAppTheme(s) {
         BackHandler(route!=null) { route=null;sessionId=null;reviewTask=null }
@@ -119,10 +122,30 @@ import java.time.Instant
         }
     }
 }
-@Composable fun AccountScreen(vm: CoranViewModel,user: String?) { var email by rememberSaveable { mutableStateOf("") };var password by rememberSaveable { mutableStateOf("") };var register by rememberSaveable { mutableStateOf(false) };PageList {
-    Text(if(user==null) "Retrouver mon compte" else "Compte connecté",style=MaterialTheme.typography.headlineSmall)
-    if(user!=null) { Text(user);Button(onClick={vm.action { vm.repo.sync() }}) { Text("Synchroniser") };Button(onClick={vm.action { vm.repo.logout() }}) { Text("Déconnexion") } } else { OutlinedTextField(email,{email=it},label={Text("E-mail")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Email));OutlinedTextField(password,{password=it},label={Text("Mot de passe")},visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password));Row { Checkbox(register,{register=it});Text("Créer un compte",Modifier.padding(top=12.dp)) };Button(onClick={vm.action { vm.repo.login(email,password,register) }}) { Text(if(register) "Inscription" else "Connexion") };TextButton(onClick={vm.action { vm.repo.resetPassword(email) }}) { Text("Mot de passe oublié") } }
-} }
+@Composable fun AccountScreen(vm: CoranViewModel,user: String?) {
+    var email by rememberSaveable { mutableStateOf("") };var password by remember { mutableStateOf("") };var newPassword by remember { mutableStateOf("") }
+    var register by rememberSaveable { mutableStateOf(false) };var busy by remember { mutableStateOf(false) };val recovery by vm.repo.passwordRecovery.collectAsStateWithLifecycle();val scope=rememberCoroutineScope()
+    fun run(block: suspend ()->Unit) { if(busy) return;busy=true;scope.launch { try { withContext(Dispatchers.IO) { block() } } catch(e: Exception) { if(e is kotlinx.coroutines.CancellationException) throw e;vm.repo.feedback(e.message?:"Opération impossible") } finally { busy=false } } }
+    PageList {
+        Text(if(user==null) "Retrouver mon compte" else "Compte connecté",style=MaterialTheme.typography.headlineSmall)
+        if(user!=null) {
+            Text(user)
+            if(recovery) {
+                Text("Choisir mon mot de passe",style=MaterialTheme.typography.titleMedium);Text("Utilise au moins 8 caractères. Ton mot de passe reste privé.")
+                OutlinedTextField(newPassword,{newPassword=it},label={Text("Nouveau mot de passe")},visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password))
+                Button(enabled=!busy&&newPassword.length>=8,onClick={run { vm.repo.changePassword(newPassword);newPassword="" }}) { Text("Enregistrer mon mot de passe") }
+            }
+            Button(enabled=!busy,onClick={run { vm.repo.sync() }}) { Text("Synchroniser") };Button(enabled=!busy,onClick={run { vm.repo.logout() }}) { Text("Déconnexion") }
+        } else {
+            OutlinedTextField(email,{email=it},label={Text("E-mail")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Email));OutlinedTextField(password,{password=it},label={Text("Mot de passe")},visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password))
+            Row { Checkbox(register,{register=it});Text("Créer un compte",Modifier.padding(top=12.dp)) }
+            Button(enabled=!busy&&email.isNotBlank()&&password.length>=(if(register) 6 else 1),onClick={run { vm.repo.login(email,password,register);password="" }}) { Text(if(register) "Inscription" else "Connexion") }
+            TextButton(enabled=!busy&&email.contains('@'),onClick={run { vm.repo.resendSignupConfirmation(email) }}) { Text("Renvoyer le courriel de confirmation") }
+            TextButton(enabled=!busy&&email.contains('@'),onClick={run { vm.repo.resetPassword(email) }}) { Text("Mot de passe oublié") }
+        }
+        if(busy) CircularProgressIndicator(Modifier.size(24.dp))
+    }
+}
 @Composable fun SettingsScreen(vm: CoranViewModel,s: JsonObject,navigate: (String)->Unit) { var key by rememberSaveable { mutableStateOf("") };var name by rememberSaveable { mutableStateOf(s.obj("profile").str("firstName")) };PageList {
     AdminEntry(vm,navigate)
     Text("Profil");OutlinedTextField(name,{name=it},label={Text("Prénom")});Button(onClick={vm.action { vm.repo.mutate { touch(it.with("profile" to it.obj("profile").with("firstName" to JsonPrimitive(name)))) } }}) { Text("Enregistrer") }
