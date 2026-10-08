@@ -32,7 +32,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Connaissances initiales et validation par verset | src/App.tsx; core/program.ts | user_state.data.knowledge | GoalScreen + Program.markKnowledge | Implémenté (sourates/hizb/juz/plages et niveaux acquis/révision/apprentissage) | Testé (mutations JVM) |
 | Création, report et régénération du programme | src/core/program.ts | user_state.data.sessions | Program.generate + ProgramScreen | En développement (extension legacy implémentée et testée) | Testé (JVM) |
 | Validation partielle et reprise exacte des séances | src/core/studyProgress.ts | user_state.data.studyProgress / memorizedAt | Program.complete + ReaderScreen | En développement | Testé (JVM, persistance à compléter) |
-| Révisions pondérées ; cycles et unités réelles | src/core/review.ts | user_state.data.reviewCycle | domain/Review.kt | En développement | Testé (partition JVM) |
+| Révisions pondérées ; cycles et unités réelles | src/core/review.ts | user_state.data.reviewCycle | domain/Review.kt + ReviewRhythmPicker | En développement (cycles et quantités implémentés ; compte réel non validé) | Testé (partition, changement de mode, historique et reprise JVM) |
 | Consolidations J+1/J+3/J+7 et priorités | src/core/review.ts | reviewConsolidations / difficultyMarkers | Review.prepare / grade / tasks / completeConsolidation + lecteur natif | En développement (validation anticipée et calendrier implémentés ; synchronisation authentifiée non validée) | Testé (JVM : dates ancrées, étapes, idempotence, conservation des champs ; deux parcours Compose Android 15) |
 | Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen | En développement | Non commencé (parcours complet) |
 | Statistiques volume / progrès / hizb | src/core/program.ts; weeklyProgress.ts | user_state.data | LearningScreens.kt + Statistics.kt ; jour/semaine/mois, historique et séries | Implémenté | Testé (calculs JVM) ; parcours visuel Non commencé |
@@ -187,16 +187,16 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/review.ts:10 | reviewCycleDays | Local / via services | domain/reviewCycleDays | Non commencé | Non commencé |
 | src/core/review.ts:18 | reviewWeight | Local / via services | domain/reviewWeight | Non commencé | Non commencé |
 | src/core/review.ts:23 | partitionReviewCorpus | Local / via services | domain/partitionReviewCorpus | Non commencé | Non commencé |
-| src/core/review.ts:53 | setReviewsEnabled | Local / via services | domain/setReviewsEnabled | Non commencé | Non commencé |
-| src/core/review.ts:57 | setReviewCycle | Local / via services | domain/setReviewCycle | Non commencé | Non commencé |
+| src/core/review.ts:53 | setReviewsEnabled | Local / via services | domain/Review.setEnabled | Implémenté | Testé (JVM) |
+| src/core/review.ts:57 | setReviewCycle | Local / via services | domain/Review.setCycle | Implémenté | Testé (JVM) |
 | src/core/review.ts:62 | toggleDifficulty | Local / via services | domain/toggleDifficulty | Non commencé | Non commencé |
 | src/core/review.ts:79 | prepareReviewSchedule | Local / via services | domain/prepareReviewSchedule | Non commencé | Non commencé |
 | src/core/review.ts:106 | reviewQuantity | Local / via services | domain/reviewQuantity | Non commencé | Non commencé |
 | src/core/review.ts:116 | reviewPlan | Local / via services | domain/reviewPlan | Non commencé | Non commencé |
 | src/core/review.ts:138 | gradeReviewTask | Local / via services | domain/gradeReviewTask | Non commencé | Non commencé |
 | src/core/review.ts:160 | reviewRhythm | Local / via services | domain/reviewRhythm | Non commencé | Non commencé |
-| src/core/review.ts:171 | partitionDailyQuantity | Local / via services | domain/partitionDailyQuantity | Non commencé | Non commencé |
-| src/core/review.ts:176 | setReviewQuantity | Local / via services | domain/setReviewQuantity | Non commencé | Non commencé |
+| src/core/review.ts:171 | partitionDailyQuantity | Local / via services | domain/Review.partitionQuantity | Implémenté | Testé (JVM) |
+| src/core/review.ts:176 | setReviewQuantity | Local / via services | domain/Review.setQuantity | Implémenté | Testé (JVM) |
 | src/core/review.ts:181 | completeConsolidation | reviewConsolidations / consolidationHistory | domain/Review.completeConsolidation + ReaderScreen | Implémenté | Testé (JVM) |
 | src/core/sourceNavigation.ts:4 | sourceVersePage | Local / via services | ui/sourceVersePage | Non commencé | Non commencé |
 | src/core/sourceNavigation.ts:5 | sourcePageRange | Local / via services | ui/sourcePageRange | Non commencé | Non commencé |
@@ -532,3 +532,11 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 ### Consolidation native — 9 octobre 2026
 
 Le tableau des nouveaux versets affiche J+1/J+3/J+7 et ouvre le lecteur avec une validation explicite du passage entier, comme la source. Les dates restent ancrées au jour de mémorisation même en cas de validation anticipée. Les événements utilisent consolidationHistory et reviewConsolidations existants ; aucune adaptation du backend. La tâche de révision est conservée dans l’état sauvegardé Compose. Les tests serveur avec un compte réel restent non validés.
+
+### Rythmes de révision natifs — 9 octobre 2026
+
+Le sélecteur propose les cycles de 7/14/21/30 jours et les quantités Nisf/Hizb/Juz/2 Juz par jour. Un changement archive le cycle précédent, prend un nouvel instantané du corpus et préserve les champs synchronisés inconnus. Désactiver/réactiver conserve le cycle en attente ; resumedAt suit le contrat Expo. Les quatre quantités ont été testées sur les 6 236 versets et le passage quantité → cycle de même durée est couvert. La progression affichée compte uniquement les versets du corpus réellement validés.
+
+Le calcul des tâches prépare aussi l’affectation du jour immédiatement après un changement de rythme, sans attendre la réouverture de l’écran. Test JVM sur le premier Hizb réel. Deux tests Compose couvrent les choix de rythme, la fermeture du sélecteur, son état sauvegardé et le résumé des préférences persistées.
+
+Validation finale de ce lot : 68 tests JVM et les 24 tests Android exécutés intégralement sur Android 15 réussissent. La compilation APK et Lint réussissent. Les tests authentifiés avec les données d’un utilisateur réel restent non validés.

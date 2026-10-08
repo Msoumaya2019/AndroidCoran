@@ -100,8 +100,22 @@ import java.time.Instant
         KnowledgePicker(vm)
     }
 }
-@Composable fun RevisionScreen(vm: CoranViewModel,s: JsonObject,open: (ReviewTask)->Unit) { LaunchedEffect(Unit) { vm.action { vm.repo.mutate { vm.repo.review.prepare(it) } } };val tasks=vm.repo.review.tasks(s);PageList { Text("Révision quotidienne",style=MaterialTheme.typography.headlineSmall);Row { Text("Révisions activées",Modifier.weight(1f));Switch(s.obj("reviewSettings").flag("enabled",true),{ enabled -> vm.action { vm.repo.mutate { touch(it.with("reviewSettings" to it.obj("reviewSettings").with("enabled" to JsonPrimitive(enabled)))) } } }) }
-    Row { listOf(7,14,21,30).forEach { n -> FilterChip(selected=s.obj("reviewSettings").num("cycleDays",7)==n,onClick={vm.action { vm.repo.mutate { vm.repo.review.prepare(touch(it.with("reviewSettings" to it.obj("reviewSettings").with("cycleDays" to JsonPrimitive(n),"mode" to JsonPrimitive("cycle"))))) } }},label={Text("$n j")}) } }
+@Composable fun ReviewRhythmPicker(settings: JsonObject,onCycle: (Int)->Unit,onQuantity: (String)->Unit) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val quantities=listOf("nisf" to "1 Nisf / jour","hizb" to "1 Hizb / jour","juz" to "1 Juz / jour","juz2" to "2 Juz / jour")
+    Column {
+        Text(if(settings.str("mode")=="quantity") quantities.firstOrNull { it.first==settings.str("dailyQuantity","hizb") }?.second?:"1 Hizb / jour" else "Cycle de ${settings.num("cycleDays",7)} jours")
+        TextButton(onClick={expanded=!expanded}) { Text("Modifier le rythme") }
+        if(expanded) {
+            Row { listOf(7,14,21,30).forEach { n -> FilterChip(selected=settings.str("mode")!="quantity"&&settings.num("cycleDays",7)==n,onClick={onCycle(n);expanded=false},label={Text("$n j")}) } }
+            quantities.forEach { (quantity,label) -> FilterChip(selected=settings.str("mode")=="quantity"&&settings.str("dailyQuantity","hizb")==quantity,onClick={onQuantity(quantity);expanded=false},label={Text(label)}) }
+        }
+    }
+}
+@Composable fun RevisionScreen(vm: CoranViewModel,s: JsonObject,open: (ReviewTask)->Unit) { LaunchedEffect(Unit) { vm.action { vm.repo.mutate { vm.repo.review.prepare(it) } } };val tasks=vm.repo.review.tasks(s);PageList { Text("Révision quotidienne",style=MaterialTheme.typography.headlineSmall);Row { Text("Révisions activées",Modifier.weight(1f));Switch(s.obj("reviewSettings").flag("enabled",true),{ enabled -> vm.action { vm.repo.mutate { vm.repo.review.prepare(vm.repo.review.setEnabled(it,enabled)) } } }) }
+    ReviewRhythmPicker(s.obj("reviewSettings"),{ n -> vm.action { vm.repo.mutate { vm.repo.review.prepare(vm.repo.review.setCycle(it,n)) } } },{ quantity -> vm.action { vm.repo.mutate { vm.repo.review.prepare(vm.repo.review.setQuantity(it,quantity)) } } })
+    val cycle=s.obj("reviewCycle");val corpus=cycle.arr("corpus").map { it.jsonPrimitive.int }.toSet();val completed=cycle.arr("completed").map { it.jsonPrimitive.int }.count { it in corpus }
+    if(cycle.isNotEmpty()) { Text("Mon cycle de révision");Text("${cycle.num("lengthDays",7)} jours · $completed / ${corpus.size} versets réellement révisés");LinearProgressIndicator(progress={if(corpus.isEmpty()) 0f else completed.toFloat()/corpus.size},modifier=Modifier.fillMaxWidth());Text("Une journée manquée reste à faire et peut décaler la fin du cycle.") }
     val rows=vm.repo.review.consolidations(s)
     if(rows.isNotEmpty()) { Text("Nouveaux versets à consolider");Text("Consolidations J+1, J+3 et J+7. Les dates restent liées à l’apprentissage.") }
     rows.forEach { row -> val pending=row.steps.first { it.completed==null };Panel(vm.repo.quran.reference(row.range),"Appris le ${row.learnedAt}\n"+row.steps.joinToString(" · ") { "J+${it.offset} : "+(it.completed?.let { date -> "validé le $date" }?:it.due) },{open(ReviewTask("consolidation-${row.range.start}-${row.range.end}",row.range,"recent",pending.due,pending.offset))}) }

@@ -62,6 +62,28 @@ class Review(private val q: Quran,private val program: Program) {
         val settings=s.obj("reviewSettings");val quantity=settings.str("mode")=="quantity";val days=if(quantity) partitionQuantity(corpus,settings.str("dailyQuantity","hizb")) else partition(corpus,settings.num("cycleDays",7))
         return json("index" to index,"startDate" to at.toString(),"lengthDays" to if(quantity) days.size.coerceAtLeast(1) else settings.num("cycleDays",7),"corpus" to corpus,"days" to days,"completed" to emptyList<Any>(),"assignments" to json())
     }
+    fun setEnabled(s: JsonObject,enabled: Boolean,at: LocalDate=LocalDate.now()): JsonObject {
+        if(s.obj("reviewSettings").flag("enabled",true)==enabled) return s
+        var settings=s.obj("reviewSettings").with("enabled" to JsonPrimitive(enabled),"cycleDays" to JsonPrimitive(s.obj("reviewSettings").num("cycleDays",7)))
+        if(enabled) settings=settings.with("resumedAt" to JsonPrimitive(at.toString()))
+        return touch(s.with("reviewSettings" to settings))
+    }
+    private fun replaceCycle(s: JsonObject,settings: JsonObject,at: LocalDate): JsonObject {
+        val old=s.obj("reviewCycle");var next=s.with("reviewSettings" to settings)
+        if(old.isNotEmpty()) next=next.with("reviewCycleHistory" to element(s.arr("reviewCycleHistory")+old))
+        return touch(next.with("reviewCycle" to createCycle(next,at,old.num("index")+1)))
+    }
+    fun setCycle(s: JsonObject,days: Int,at: LocalDate=LocalDate.now()): JsonObject {
+        require(days in listOf(7,14,21,30))
+        val settings=s.obj("reviewSettings")
+        if(settings.num("cycleDays",7)==days&&settings.str("mode")!="quantity") return s
+        return replaceCycle(s,settings.with("enabled" to JsonPrimitive(settings.flag("enabled",true)),"cycleDays" to JsonPrimitive(days),"mode" to JsonPrimitive("cycle")),at)
+    }
+    fun setQuantity(s: JsonObject,quantity: String,at: LocalDate=LocalDate.now()): JsonObject {
+        require(quantity in listOf("nisf","hizb","juz","juz2"))
+        val settings=s.obj("reviewSettings")
+        return replaceCycle(s,settings.with("enabled" to JsonPrimitive(settings.flag("enabled",true)),"cycleDays" to JsonPrimitive(settings.num("cycleDays",7)),"mode" to JsonPrimitive("quantity"),"dailyQuantity" to JsonPrimitive(quantity)),at)
+    }
     fun prepare(original: JsonObject,at: LocalDate=LocalDate.now()): JsonObject {
         if(!original.obj("reviewSettings").flag("enabled",true)) return original
         val old=original.obj("reviewCycle");var cycle=old
@@ -74,7 +96,8 @@ class Review(private val q: Quran,private val program: Program) {
         if(old.isNotEmpty()&&cycle.num("index")!=old.num("index")) result=result.with("reviewCycleHistory" to element(original.arr("reviewCycleHistory")+old))
         return if(result==original) original else touch(result)
     }
-    fun tasks(s: JsonObject,at: LocalDate=LocalDate.now()): List<ReviewTask> {
+    fun tasks(original: JsonObject,at: LocalDate=LocalDate.now()): List<ReviewTask> {
+        val s=prepare(original,at)
         if(!s.obj("reviewSettings").flag("enabled",true)) return emptyList()
         val today=at.toString();val reviewed=s.arr("reviewHistory").map { it.jsonObject }.filter { it.str("date")==today }.flatMap { range(it).ids }.toSet();val seen=reviewed.toMutableSet();val tasks=mutableListOf<ReviewTask>()
         fun add(ids: List<Int>,category: String,date: String=today,id: String?=null) { program.split(ids.distinct().sorted().filter { known(s,it)&&seen.add(it) }).forEach { r -> tasks+=ReviewTask(id?:"$category-${r.start}-${r.end}",r,category,date) } }

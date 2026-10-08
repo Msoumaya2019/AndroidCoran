@@ -47,7 +47,7 @@ Les écrans natifs présentent désormais les statistiques par jour/semaine/mois
 
 Les récitations distinguent le Coran des invocations ; les enregistrements locaux et les retours vocaux sont accessibles via Media3. L'administration permet la recherche paginée des comptes et l'historique des notifications sous le rôle Supabase existant. Plusieurs parcours restent à compléter et valider : consulter FUNCTIONAL_PARITY.md. La parité complète n'est pas atteinte.
 
-Validation locale : 63 tests JVM réussis et vingt-deux tests Android réussis (vingt précédemment, deux nouveaux tests de consolidation exécutés) sur Android 15. La clé publique est configurée ; les accès authentifiés ne sont pas annoncés comme validés. Les tests incluent la lecture du serveur Supabase public sans activité ni secours par cache, et l’ouverture/rejet d’un lien Auth expiré.
+Validation locale : 68 tests JVM réussis et 24 tests Android réussis dans une exécution complète sur Android 15 sur Android 15. La clé publique est configurée ; les accès authentifiés ne sont pas annoncés comme validés. Les tests incluent la lecture du serveur Supabase public sans activité ni secours par cache, et l’ouverture/rejet d’un lien Auth expiré.
 
 Le portage administratif comprend maintenant les questions et séries thématiques, les notifications personnalisées (confirmation et identifiant de nouvelle tentative), les signalements avec captures privées, les corrections textuelles/vocales des récitations, ainsi que les contenus, catégories, programmation et pièces jointes. Les médias de daily-content-media passent par une URL signée, comme dans la version source. Aucun envoi réel ni compte administrateur validé : une session administrateur réelle est nécessaire pour les tests serveur.
 
