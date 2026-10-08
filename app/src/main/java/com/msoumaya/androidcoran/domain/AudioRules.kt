@@ -21,3 +21,5 @@ fun nextAudioPosition(range: VerseRange,current: AudioPosition,mode: RepeatMode,
 }
 fun verseAudioUrl(v: Verse,r: Reciter) = r.folder?.let { "https://everyayah.com/data/$it/${v.surah.toString().padStart(3,'0')}${v.ayah.toString().padStart(3,'0')}.mp3" }
     ?: "https://cdn.islamic.network/quran/audio/${r.bitrate}/${r.id}/${v.id}.mp3"
+
+fun upcomingAudioVerses(range: VerseRange,current: Int): List<Int> { require(current in range.start..range.end);return if(current==range.end) emptyList() else ((current+1)..minOf(range.end,current+3)).toList() }

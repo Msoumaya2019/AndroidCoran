@@ -9,6 +9,9 @@ import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import java.io.File
+import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.cache.CacheWriter
+import kotlinx.coroutines.*
 
 /** Process-wide cache: only public Quran media enters this factory. */
 @UnstableApi
@@ -25,6 +28,15 @@ object QuranAudioCache {
             .setCache(cache(context))
             .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context.applicationContext))
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+    suspend fun prefetch(context: Context,url: String) = withContext(Dispatchers.IO) {
+        require(url.startsWith("https://"))
+        val job=currentCoroutineContext().job
+        lateinit var writer: CacheWriter
+        writer=CacheWriter(dataSourceFactory(context).createDataSource(),DataSpec.Builder().setUri(url).build(),ByteArray(64*1024),CacheWriter.ProgressListener { _,_,_->if(!job.isActive) writer.cancel() })
+        try { writer.cache() } catch(e: Exception) { currentCoroutineContext().ensureActive();throw e }
+        currentCoroutineContext().ensureActive()
+    }
 
     fun factory(context: Context): DefaultMediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory(context))
 }

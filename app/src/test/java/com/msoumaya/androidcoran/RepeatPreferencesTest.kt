@@ -1,0 +1,12 @@
+package com.msoumaya.androidcoran
+import com.msoumaya.androidcoran.domain.*
+import org.junit.Assert.*
+import org.junit.Test
+class RepeatPreferencesTest {
+ @Test fun preloadStaysWithinSelectedRangeAndNeverExceedsThreeVerses() { assertEquals(listOf(11,12,13),upcomingAudioVerses(VerseRange(10,20),10));assertEquals(listOf(20),upcomingAudioVerses(VerseRange(10,20),19));assertTrue(upcomingAudioVerses(VerseRange(6236,6236),6236).isEmpty()) }
+ @Test fun sourcePreferencesRoundTripAndInvalidChoicesFallBack() { val p=RepeatPreferences("custom","23",RepeatMode.EACH_VERSE,5,0.75f,false);assertEquals(p,RepeatPreferences.from(p.json()));assertEquals(23,p.count);assertEquals(RepeatPreferences(),RepeatPreferences.from(json("countChoice" to "other","gap" to 7,"speed" to 2))) }
+ @Test fun continuousEachVerseAndNonStoppingFiniteCyclesRemainDistinct() { val r=VerseRange(10,11);assertEquals(AudioPosition(10,4),nextAudioPosition(r,AudioPosition(10,3),RepeatMode.EACH_VERSE,null,false));assertEquals(AudioPosition(11),nextAudioPosition(r,AudioPosition(10,3),RepeatMode.EACH_VERSE,3,false));assertEquals(AudioPosition(10),nextAudioPosition(r,AudioPosition(11,3),RepeatMode.EACH_VERSE,3,false));assertNull(nextAudioPosition(r,AudioPosition(11,3),RepeatMode.EACH_VERSE,3,true)) }
+ @Test fun selectedGapAppliesOnlyToRepeatsAndPassageRestarts() { val r=VerseRange(10,11);assertEquals(200L,repetitionDelay(r,AudioPosition(10),AudioPosition(11),RepeatMode.PASSAGE,5));assertEquals(5000L,repetitionDelay(r,AudioPosition(11),AudioPosition(10,2),RepeatMode.PASSAGE,5));assertEquals(2000L,repetitionDelay(r,AudioPosition(10),AudioPosition(10,2),RepeatMode.EACH_VERSE,2));assertEquals(200L,repetitionDelay(r,AudioPosition(10),AudioPosition(10,2),RepeatMode.EACH_VERSE,0)) }
+ @Test fun pausingGapRetainsNextPositionAndExactRemainingWait() { val wait=RepeatPause();wait.start(AudioPosition(11,2),5000,1000);wait.pause(3000);assertFalse(wait.active);assertNull(wait.takeDue(10000));assertEquals(3000L,wait.resume(20000));assertNull(wait.takeDue(22999));assertEquals(AudioPosition(11,2),wait.takeDue(23000));assertNull(wait.next) }
+ @Test fun repeatedPauseResumeDoesNotRestartGapAndStopCancelsTransition() { val wait=RepeatPause();wait.start(AudioPosition(10,2),2000,0);assertEquals(1500L,wait.resume(500));wait.pause(750);wait.pause(900);assertEquals(1250L,wait.resume(1000));wait.clear();assertNull(wait.takeDue(10000));assertNull(wait.next) }
+}

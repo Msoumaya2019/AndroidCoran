@@ -23,10 +23,10 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Marques-pages et suppression conservant les tombstones | src/core/bookmarks.ts; BookmarksScreen.tsx | user_state.data.bookmarks | ReaderScreen + BookmarkScreen | Implémenté (dates, ordre et tombstones) | Testé (règles JVM ; synchronisation Bloqué) |
 | Reprise et suivi audio du verset | src/App.tsx; coranTest/model.ts | user_state.data.lastRead / reader | ReaderScreen + RecitationService | En développement | Non commencé |
 | Sept récitateurs et résolution URL | src/core/audio.ts | CDN Islamic Network / EveryAyah | domain/AudioRules.kt | Implémenté | Non commencé (tous les récitateurs) |
-| Répétitions passage / chaque verset / continues | src/core/audio.ts; PassageAudioPlayer.tsx | Local / fichiers audio | AudioRules + RecitationService | En développement | Testé (règles JVM ; lecture réseau en cours) |
+| Répétitions, pauses, vitesse, nombre personnalisé et arrêt automatique | src/core/audio.ts; PassageAudioPlayer.tsx | Local / fichiers audio | AudioRules + RepeatPreferences + RepeatPause + ReaderAudioDialog + RecitationService ; paramètres locaux DataStore | En développement | Testé (JVM, formulaire Compose, pause/reprise Media3 et remplacement du passage) |
 | Lecture continue par timestamps de sourate | src/services/quranAudioTimeline.ts | API Quran.com identique à la source | audio/ChapterAudio.kt | En développement | Non commencé |
 | Arrière-plan, audio focus et commandes système | src/services/audioFocus.ts; PassageAudioPlayer.tsx | Local | Media3 MediaSessionService | En développement | Non commencé (interruptions) |
-| Cache audio, téléchargement et reprise persistante | src/services/verseAudioCache.ts; PassageAudioPlayer.tsx | Local | Cache Media3 borné à 250 Mo ; téléchargement explicite et reprise persistante à compléter | En développement | Testé (cache Android ; reprise persistante Non commencé) |
+| Cache audio et préchargement des versets | src/services/verseAudioCache.ts; PassageAudioPlayer.tsx | Local | Cache Media3 borné à 250 Mo ; fichiers publics uniquement ; préchargement des trois versets suivants borné au passage. La source ne propose pas de téléchargement audio explicite ni de reprise du lecteur après arrêt du processus | Implémenté | Testé (cache Android et relecture complète sans source réseau) |
 | Objectifs et rythmes ; ordre depuis An Nâs | src/core/program.ts; ui/GoalScreen.tsx | user_state.data.goal / pace | domain/Program.kt + GoalScreen | En développement (sourates/hizb/juz/plages disponibles ; parcours complet à valider) | Testé (ordre et jours JVM) |
 | Connaissances initiales et validation par verset | src/App.tsx; core/program.ts | user_state.data.knowledge | GoalScreen + Program.markKnowledge | Implémenté (sourates/hizb/juz/plages et niveaux acquis/révision/apprentissage) | Testé (mutations JVM) |
 | Création, report et régénération du programme | src/core/program.ts | user_state.data.sessions | Program.generate + ProgramScreen | En développement (extension legacy à porter) | Testé (JVM) |
@@ -87,16 +87,16 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/coranTest/resources.ts:1214 | titleFont | Local / via services | ui/titleFont | Non commencé | Non commencé |
 | src/coranTest/resources.ts:1215 | arabicFont | Local / via services | ui/arabicFont | Non commencé | Non commencé |
 | src/coranTest/resources.ts:1216 | basmalaFont | Local / via services | ui/basmalaFont | Non commencé | Non commencé |
-| src/core/audio.ts:4 | reciters | Local / via services | audio/reciters | Non commencé | Non commencé |
-| src/core/audio.ts:13 | defaultReciter | Local / via services | audio/defaultReciter | Non commencé | Non commencé |
-| src/core/audio.ts:14 | DEFAULT_AYAH_GAP_MS | Local / via services | audio/DEFAULT_AYAH_GAP_MS | Non commencé | Non commencé |
-| src/core/audio.ts:20 | parseChapterAudio | Local / via services | audio/parseChapterAudio | Non commencé | Non commencé |
-| src/core/audio.ts:32 | continuousAudioPosition | Local / via services | audio/continuousAudioPosition | Non commencé | Non commencé |
-| src/core/audio.ts:38 | verseAudioUrl | Local / via services | audio/verseAudioUrl | Non commencé | Non commencé |
-| src/core/audio.ts:45 | resolveAudioSegment | Local / via services | audio/resolveAudioSegment | Non commencé | Non commencé |
-| src/core/audio.ts:50 | audioRange | Local / via services | audio/audioRange | Non commencé | Non commencé |
-| src/core/audio.ts:55 | nextAudioPosition | Local / via services | audio/nextAudioPosition | Non commencé | Non commencé |
-| src/core/audio.ts:71 | verseAudioLabel | Local / via services | audio/verseAudioLabel | Non commencé | Non commencé |
+| src/core/audio.ts:4 | reciters | Local / via services | domain/AudioRules.kt : reciters | Implémenté | Non commencé (tous les récitateurs) |
+| src/core/audio.ts:13 | defaultReciter | Local / via services | domain/AudioRules.kt : reciters[3] | Implémenté | Testé (préférences JVM) |
+| src/core/audio.ts:14 | DEFAULT_AYAH_GAP_MS | Local / via services | domain/RepeatPreferences.kt : TECHNICAL_AYAH_GAP_MS | Implémenté | Testé (JVM) |
+| src/core/audio.ts:20 | parseChapterAudio | Local / via services | audio/ChapterAudio.kt : parse | Implémenté | Non commencé (timestamps distants) |
+| src/core/audio.ts:32 | continuousAudioPosition | Local / via services | audio/RecitationService.kt : follow | Implémenté | Non commencé (lecture de sourate) |
+| src/core/audio.ts:38 | verseAudioUrl | Local / via services | domain/AudioRules.kt : verseAudioUrl | Implémenté | Testé (Alafasy Android) |
+| src/core/audio.ts:45 | resolveAudioSegment | Local / via services | audio/RecitationService.kt : playVerse | Implémenté | Testé (Alafasy Android) |
+| src/core/audio.ts:50 | audioRange | Local / via services | domain/VerseRange + ReaderAudioDialog.selectedRange | Implémenté | Testé (JVM et Compose) |
+| src/core/audio.ts:55 | nextAudioPosition | Local / via services | domain/AudioRules.kt : nextAudioPosition | Implémenté | Testé (JVM et répétitions Android) |
+| src/core/audio.ts:71 | verseAudioLabel | Local / via services | ui/ReaderScreen : sourate/verset | Implémenté | Non commencé (libellé dédié) |
 | src/core/ayahMarker.ts:2 | easternArabicNumber | Local / via services | ui/easternArabicNumber | Non commencé | Non commencé |
 | src/core/ayahMarker.ts:7 | ayahMarkerHtml | Local / via services | ui/ayahMarkerHtml | Non commencé | Non commencé |
 | src/core/bookmarks.ts:5 | saveBookmark | Local / via services | domain/Bookmarks.kt | Implémenté | Testé (JVM) |
@@ -398,7 +398,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/services/sync.ts:44 | changePassword | from:user_state | data/changePassword | Non commencé | Non commencé |
 | src/services/sync.ts:49 | pullState | from:user_state | data/pullState | Non commencé | Non commencé |
 | src/services/sync.ts:57 | pushState | from:user_state | data/pushState | Non commencé | Non commencé |
-| src/services/verseAudioCache.ts:5 | cachedVerseAudio | Local / via services | audio/cachedVerseAudio | Non commencé | Non commencé |
+| src/services/verseAudioCache.ts:5 | cachedVerseAudio | Local / via services | QuranAudioCache | Implémenté | Testé (Android, lecture après disparition de la source) |
 | src/SocialScreens.tsx:36 | FriendsScreen | Local / via services | ui/FriendsScreen | Non commencé | Non commencé |
 | src/SocialScreens.tsx:212 | AdminScreen | Local / via services | ui/AdminScreen | Non commencé | Non commencé |
 | src/SurahPicker.tsx:8 | SurahPicker | Local / via services | ui/SurahPicker | Non commencé | Non commencé |
