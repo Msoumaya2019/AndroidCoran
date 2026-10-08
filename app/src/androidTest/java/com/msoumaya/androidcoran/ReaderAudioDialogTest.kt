@@ -22,7 +22,12 @@ class ReaderAudioDialogTest {
       rule.setContent { MaterialTheme { if(visible.value) ReaderAudioDialog(vm,VerseRange(1,7),VerseRange(1,7),"ar.alafasy",{}, {}) } }
       rule.waitUntil(5000) { rule.onAllNodes(isEnabled() and hasText("Lire")).fetchSemanticsNodes().isNotEmpty() }
       rule.onNodeWithText("Nombre personnalisé").performScrollTo().performClick()
-      rule.onNodeWithText("Nombre personnalisé (1 à 999)").performScrollTo().performTextReplacement("23")
+      rule.onNodeWithText("Nombre personnalisé (1 à 999)").performScrollTo().performTextReplacement("0")
+      rule.onNodeWithText("Lire").assertIsNotEnabled()
+      rule.onNodeWithText("Nombre personnalisé (1 à 999)").performTextReplacement("1000")
+      rule.onNodeWithText("Lire").assertIsNotEnabled()
+      rule.onNodeWithText("Nombre personnalisé (1 à 999)").performTextReplacement("23")
+      rule.onNodeWithText("Lire").assertIsEnabled()
       rule.onNodeWithText("1.25×").performScrollTo().performClick().assertIsSelected()
       rule.onNodeWithText("5s").performScrollTo().performClick().assertIsSelected()
       rule.onNodeWithText("Arrêter à la fin des écoutes").performScrollTo()

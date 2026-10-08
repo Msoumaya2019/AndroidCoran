@@ -26,14 +26,14 @@ import kotlinx.serialization.json.JsonPrimitive
     var launching by remember { mutableStateOf(false) }
     fun preferences()=RepeatPreferences(choice,custom,if(each) RepeatMode.EACH_VERSE else RepeatMode.PASSAGE,gap,speed,autoStop)
     LaunchedEffect(saved) { val prefs=saved;if(prefs!=null&&!loaded) { choice=prefs.countChoice;custom=prefs.customCount;each=prefs.mode==RepeatMode.EACH_VERSE;gap=prefs.gap;speed=prefs.speed;autoStop=prefs.autoStop;loaded=true } }
-    LaunchedEffect(choice,custom,each,gap,speed,autoStop,loaded) { if(loaded) store.save(preferences()) }
+    LaunchedEffect(choice,custom,each,gap,speed,autoStop,loaded) { if(loaded) { val prefs=preferences();store.save(prefs);if(RecitationService.current.value!=null) context.startService(Intent(context,RecitationService::class.java).setAction("UPDATE_SETTINGS").putExtra("settings",prefs.json().toString())) } }
     fun selectedRange(): VerseRange?=when(selection) {
         "session"->initialRange;"page"->pageRange
         else->{ val chapter=q.surahs.getOrNull((surah.toIntOrNull()?:0)-1);if(chapter==null) null else if(selection=="surah") chapter.range else { val start=first.toIntOrNull();val end=if(selection=="verse") start else last.toIntOrNull();if(start==null||end==null||start !in 1..chapter.range.ids.size||end !in start..chapter.range.ids.size) null else VerseRange(q.id(chapter.number,start),q.id(chapter.number,end)) } }
     }
     AlertDialog(onDismissRequest=onDismiss,title={Text("Récitation et répétitions")},text={ Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(5.dp)) {
         Text("Récitateur",style=MaterialTheme.typography.titleMedium)
-        reciters.forEach { r->FilterChip(selected=reciterId==r.id,onClick={onReciter(r.id);vm.action { vm.repo.mutate { touch(it.with("audioPreferences" to it.obj("audioPreferences").with("reciterId" to JsonPrimitive(r.id)))) } };if(RecitationService.current.value!=null) context.startService(Intent(context,RecitationService::class.java).setAction("STOP"))},label={Text(r.name)}) }
+        reciters.forEach { r->FilterChip(selected=reciterId==r.id,onClick={if(reciterId!=r.id) { onReciter(r.id);vm.action { vm.repo.mutate { touch(it.with("audioPreferences" to it.obj("audioPreferences").with("reciterId" to JsonPrimitive(r.id)))) } };if(RecitationService.current.value!=null) context.startService(Intent(context,RecitationService::class.java).setAction("STOP")) }},label={Text(r.name)}) }
         Text("Passage",style=MaterialTheme.typography.titleMedium)
         listOf("session" to "Passage en cours","page" to "Page","surah" to "Sourate","verse" to "Un verset","custom" to "Versets personnalisés").forEach { (key,label)->FilterChip(selected=selection==key,onClick={selection=key},label={Text(label)}) }
         if(selection !in listOf("session","page")) {
@@ -50,7 +50,7 @@ import kotlinx.serialization.json.JsonPrimitive
         Text("Vitesse",style=MaterialTheme.typography.titleMedium);Row { audioSpeeds.forEach { n->FilterChip(selected=speed==n,onClick={speed=n},label={Text("$n×")}) } }
         Text("Pause entre les répétitions",style=MaterialTheme.typography.titleMedium);Row { repeatGaps.forEach { n->FilterChip(selected=gap==n,onClick={gap=n},label={Text("${n}s")}) } }
         Row { Checkbox(autoStop&&choice!="continuous",{autoStop=it},enabled=choice!="continuous");Text("Arrêter à la fin des écoutes",Modifier.padding(top=12.dp)) }
-    } },confirmButton={TextButton(enabled=loaded&&!launching&&selectedRange()!=null,onClick={
+    } },confirmButton={TextButton(enabled=loaded&&!launching&&selectedRange()!=null&&(choice!="custom"||custom.toIntOrNull() in 1..999),onClick={
         val range=selectedRange()?:return@TextButton;val prefs=preferences();launching=true
         scope.launch { try { store.save(prefs);vm.repo.mutate { touch(it.with("audioPreferences" to it.obj("audioPreferences").with("reciterId" to JsonPrimitive(reciterId)))) };context.startService(Intent(context,RecitationService::class.java).setAction("PLAY_RANGE").putExtra("start",range.start).putExtra("end",range.end).putExtra("reciter",reciterId).putExtra("count",prefs.count?:0).putExtra("each",each).putExtra("gap",gap).putExtra("speed",speed).putExtra("autoStop",autoStop));onDismiss() } catch(e: Exception) { if(e is kotlinx.coroutines.CancellationException) throw e;vm.repo.feedback("Impossible de lancer la récitation") } finally { launching=false } }
     }) { Text("Lire") }},dismissButton={TextButton(onClick=onDismiss) { Text("Fermer") }})

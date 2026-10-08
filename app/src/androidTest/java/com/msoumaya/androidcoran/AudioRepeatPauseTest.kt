@@ -46,4 +46,27 @@ class AudioRepeatPauseTest {
     }
  }
 
+ @Test fun liveSettingsPreservePausedPositionAndApplyAtNextBoundary() {
+    ActivityScenario.launch(MainActivity::class.java).use { scenario->
+      fun command(action:String,prefs:RepeatPreferences?=null) { scenario.onActivity { activity->val intent=Intent(activity,RecitationService::class.java).setAction(action).putExtra("start",6236).putExtra("end",6236).putExtra("reciter","ar.alafasy").putExtra("count",2).putExtra("each",true).putExtra("gap",2);if(prefs!=null) intent.putExtra("settings",prefs.json().toString());activity.startService(intent) } }
+      try {
+        command("PLAY_RANGE")
+        runBlocking { withTimeout(60000) { RecitationService.waiting.first { it } } }
+        command("TOGGLE")
+        runBlocking { withTimeout(5000) { RecitationService.playing.first { !it } } }
+        val before=RecitationService.current.value
+        val prefs=RepeatPreferences("custom","3",RepeatMode.EACH_VERSE,5,0.75f,true)
+        command("UPDATE_SETTINGS",prefs)
+        runBlocking { withTimeout(5000) { RecitationService.activePreferences.first { it==prefs } };delay(2300) }
+        assertEquals(before,RecitationService.current.value);assertFalse(RecitationService.playing.value)
+        lateinit var future: com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.MediaController>
+        scenario.onActivity { activity->future=androidx.media3.session.MediaController.Builder(activity,androidx.media3.session.SessionToken(activity,android.content.ComponentName(activity,RecitationService::class.java))).buildAsync() }
+        val controller=future.get(5,java.util.concurrent.TimeUnit.SECONDS)
+        try { scenario.onActivity { assertEquals(0.75f,controller.playbackParameters.speed,0.0001f) } } finally { scenario.onActivity { controller.release() } }
+        command("TOGGLE")
+        runBlocking { withTimeout(40000) { RecitationService.current.first { it?.repetition==3 } } }
+      } finally { command("STOP") }
+    }
+ }
+
 }
