@@ -15,7 +15,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Navigation sourates, juz, hizb et recherche | src/ui/MainScreens.tsx; src/SurahPicker.tsx | Local | ui/CoranApp.kt:QuranScreen | Implémenté | Non commencé |
 | Mushaf traditionnel en images, sélection, proportions | src/MushafPage.tsx; assets/mushaf | Local | ui/MushafView.kt | En développement | Testé (assets uniquement) |
 | Mushaf Tajwid en images | src/MushafPage.tsx; assets/mushaf-tajweed | Local | ui/MushafView.kt | En développement | Non commencé |
-| Mushaf QPC en glyphes, mots et lignes originaux | src/coranTest/CoranTestScreen.tsx; html.ts | Local / qcf-v4-page | ui/MushafView.kt + fonts TTF | En développement | Testé (pages 1–2 ; fidélité non validée) |
+| Mushaf QPC en glyphes, mots et lignes originaux | src/coranTest/CoranTestScreen.tsx; html.ts | Local / qcf-v4-page | ui/MushafView.kt + fonts TTF | En développement | Testé (marges avec les polices natives sur pages 1, 2, 100, 582, 604 ; fidélité exhaustive non validée) |
 | Tajwid simplifié et couleurs des règles | src/core/readerData.ts; src/MushafPage.tsx | Local | ui/TajwidReader.kt | Implémenté | Non commencé |
 | Traduction Rachid Maach | src/core/readerData.ts; src/data/translation-fr-rashid.json | Local | Quran.french + ReaderScreen | Implémenté (texte et notes originales ; sélection native) | Testé (texte et notes JVM ; parcours appareil à valider) |
 | Coran 1441 : téléchargement reprenable et 15 lignes/page | src/services/quranDownload.ts; quranSources.ts | Archive externe originale | data/QuranDownloadWorker.kt + ui/ReaderAssets.kt | En développement | Non commencé (archive réseau non téléchargée) |
@@ -524,6 +524,6 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 
 - La clé Supabase publique est maintenant injectée depuis la variable de compilation existante, sans secret committé ; authentification de comptes existants et RLS non testées.
 - Le backend push utilise Expo. Ne jamais inscrire un jeton FCM dans la table Expo. Un canal FCM additif nécessite une proposition puis une autorisation avant toute modification serveur.
-- Les polices Mushaf WOFF2 seront converties sans modifier les originaux ; fidélité visuelle à valider sur appareil.
+- Les polices Mushaf sont converties en TTF dans le projet Android, sans modifier les originaux. Les tailles décimales de chaque page sont conservées ; fidélité visuelle exhaustive à valider sur appareil.
 - Les deux éditions en images conservent leurs pixels et rapports de dimensions.
 - Le téléchargement Coran 1441 contient 9060 images de lignes : conserver les 15 lignes par page.

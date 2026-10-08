@@ -63,3 +63,6 @@ class Quran(private val asset: (String)->JsonElement) {
     }
     fun qcfData(context: Context,page: Int) = context.assets.open("qcf/$page.json").bufferedReader().use { Json.parseToJsonElement(it.readText()).jsonObject }
 }
+
+/** QCF pages contain fractional font sizes; integer parsing truncates or discards their layout. */
+fun JsonObject.qcfFontSize() = (this["fontSize"] as? JsonPrimitive)?.floatOrNull?.takeIf { it.isFinite() && it>0 } ?: 70f
