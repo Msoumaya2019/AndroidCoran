@@ -19,3 +19,5 @@ Limites connues : outils administrateur, avatar, téléchargements audio, fusion
 Contrôle de la référence : 3279 empreintes SHA-256 identiques au relevé initial ; checkout d'audit propre ; HEAD/main et toutes les branches/refs distantes Expo identiques avant et après les opérations. Aucun outil d'écriture n'a ciblé Expo, Supabase ni Swift. Le dépôt Swift n'a pas été consulté : absence d'intervention, et non audit de son état.
 
 APK avec toutes les ressources embarquées : environ 377 Mo. Il s'agit d'un build de développement ; ni signature production ni publication Google Play n'ont été effectuées.
+
+GitHub Actions : **Bloqué**. Le run `37758520117` a échoué avant toute étape et sans runner : GitHub indique des paiements récents du compte en échec ou un plafond de dépenses à augmenter. Aucun changement de facturation n'a été effectué. Le workflow devra être relancé après résolution côté compte. Un APK compilé localement peut être distribué en préversion privée dans le nouveau dépôt.
