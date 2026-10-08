@@ -37,4 +37,19 @@ class ReaderAudioDialogTest {
       assertEquals(23,runBlocking { store.load().count })
     } finally { rule.runOnIdle { visible.value=false };rule.waitForIdle();runBlocking { store.save(before) } }
  }
+ @Test fun changingSurahResetsBothAyahsToTheFirstVerse() {
+    val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as CoranApplication
+    val store=AudioPreferences(app);val before=runBlocking { store.load() };val visible=mutableStateOf(true)
+    try {
+      val vm=CoranViewModel(app)
+      rule.setContent { MaterialTheme { if(visible.value) ReaderAudioDialog(vm,VerseRange(6236,6236),VerseRange(6231,6236),"ar.alafasy",{}, {}) } }
+      rule.waitUntil(5000) { rule.onAllNodes(isEnabled() and hasText("Lire")).fetchSemanticsNodes().isNotEmpty() }
+      rule.onNodeWithText("Versets personnalisés").performScrollTo().performClick()
+      rule.onNodeWithText("Numéro de sourate (1–114)").performScrollTo().performTextReplacement("1")
+      rule.onNodeWithText("Premier verset").assertTextContains("1")
+      rule.onNodeWithText("Dernier verset").assertTextContains("1")
+      rule.onNodeWithText(app.repository.quran.reference(VerseRange(1,1))).assertExists()
+    } finally { rule.runOnIdle { visible.value=false };rule.waitForIdle();runBlocking { store.save(before) } }
+ }
+
 }

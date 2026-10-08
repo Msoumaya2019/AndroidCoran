@@ -24,6 +24,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Reprise et suivi audio du verset | src/App.tsx; coranTest/model.ts | user_state.data.lastRead / reader | ReaderScreen + RecitationService + AudioProgress ; temps, fraction et index du passage | En développement | Testé (calcul JVM et index Media3) ; suivi de sourate à valider |
 | Sept récitateurs et résolution URL | src/core/audio.ts | CDN Islamic Network / EveryAyah | domain/AudioRules.kt | Implémenté | Non commencé (tous les récitateurs) |
 | Répétitions, pauses, vitesse, nombre personnalisé et arrêt automatique | src/core/audio.ts; PassageAudioPlayer.tsx | Local / fichiers audio | AudioRules + RepeatPreferences + RepeatPause + ReaderAudioDialog + RecitationService ; paramètres locaux DataStore | En développement | Testé (JVM, formulaire Compose, réglages pendant la pause, vitesse Media3 et reprise des répétitions) |
+| Lecteur développé, réduit et masqué | src/PassageAudioPlayer.tsx; src/App.tsx | Local | ReaderAudioControls ; pied de page Compose ; déplacement libre à porter | En développement | Testé (Compose, commandes et restauration SavedState) |
 | Lecture continue par timestamps de sourate | src/services/quranAudioTimeline.ts | API Quran.com identique à la source | audio/ChapterAudio.kt | En développement | Non commencé |
 | Arrière-plan, audio focus et commandes système | src/services/audioFocus.ts; PassageAudioPlayer.tsx | Local | Media3 MediaSessionService | En développement | Non commencé (interruptions) |
 | Cache audio et préchargement des versets | src/services/verseAudioCache.ts; PassageAudioPlayer.tsx | Local | Cache Media3 borné à 250 Mo ; fichiers publics uniquement ; préchargement des trois versets suivants borné au passage. La source ne propose pas de téléchargement audio explicite ni de reprise du lecteur après arrêt du processus | Implémenté | Testé (cache Android et relecture complète sans source réseau) |
@@ -223,7 +224,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/DailyContentsScreen.tsx:47 | TodayContents | Local / via services | ui/TodayContents | Non commencé | Non commencé |
 | src/DailyContentsScreen.tsx:53 | DailyContentsScreen | Local / via services | ui/DailyContentsScreen | Non commencé | Non commencé |
 | src/MushafPage.tsx:21 | MushafPage | Local / via services | ui/MushafPage | Non commencé | Non commencé |
-| src/PassageAudioPlayer.tsx:22 | PassageAudioPlayer | Local / via services | audio/PassageAudioPlayer | Non commencé | Non commencé |
+| src/PassageAudioPlayer.tsx:22 | PassageAudioPlayer | Local / via services | ReaderAudioDialog + ReaderAudioControls + RecitationService | En développement | Testé (Compose et Media3 ; déplacement libre restant) |
 | src/RecitationRecorder.tsx:18 | RecitationRecorder | Local / via services | ui/RecitationRecorder | Non commencé | Non commencé |
 | src/RecitationsScreen.tsx:14 | RecitationsScreen | Local / via services | ui/RecitationsScreen | Non commencé | Non commencé |
 | src/ReviewDashboard.tsx:11 | ReviewDashboard | Local / via services | ui/ReviewDashboard | Non commencé | Non commencé |

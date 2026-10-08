@@ -37,7 +37,7 @@ import kotlinx.serialization.json.JsonPrimitive
         Text("Passage",style=MaterialTheme.typography.titleMedium)
         listOf("session" to "Passage en cours","page" to "Page","surah" to "Sourate","verse" to "Un verset","custom" to "Versets personnalisés").forEach { (key,label)->FilterChip(selected=selection==key,onClick={selection=key},label={Text(label)}) }
         if(selection !in listOf("session","page")) {
-            OutlinedTextField(surah,{surah=it},label={Text("Numéro de sourate (1–114)")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))
+            OutlinedTextField(surah,{surah=it;first="1";last="1";selection="custom"},label={Text("Numéro de sourate (1–114)")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))
             q.surahs.getOrNull((surah.toIntOrNull()?:0)-1)?.let { Text(it.name) }
             if(selection!="surah") { OutlinedTextField(first,{first=it},label={Text("Premier verset")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number));if(selection=="custom") OutlinedTextField(last,{last=it},label={Text("Dernier verset")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number)) }
         }
