@@ -45,6 +45,9 @@ L'historique est créé de zéro. L'unique remote de push doit être `https://gi
 
 Les écrans natifs présentent désormais les statistiques par jour/semaine/mois, la reprise des séances partielles et leur historique. Le quiz propose les défis de 5/10 questions, les séries thématiques, les scores et corrections confirmés par le serveur. Les réponses quotidiennes hors connexion et les signalements avec capture sont sauvegardés dans une file SQLite par compte, reprise par WorkManager avec connexion réseau.
 
-Les récitations distinguent le Coran des invocations ; les enregistrements locaux et les retours vocaux sont accessibles via Media3. L'administration permet la recherche paginée des comptes et l'historique des notifications sous le rôle Supabase existant. L'édition administrative et plusieurs parcours restent à porter : consulter FUNCTIONAL_PARITY.md. La parité complète n'est pas atteinte.
+Les récitations distinguent le Coran des invocations ; les enregistrements locaux et les retours vocaux sont accessibles via Media3. L'administration permet la recherche paginée des comptes et l'historique des notifications sous le rôle Supabase existant. Plusieurs parcours restent à compléter et valider : consulter FUNCTIONAL_PARITY.md. La parité complète n'est pas atteinte.
 
-Validation locale : 32 tests JVM réussis et huit tests Android réussis sur Android 15. Les accès aux comptes existants et aux RPC nécessitent encore la clé publique Supabase ; ils ne sont pas annoncés comme validés.
+Validation locale : 43 tests JVM réussis et neuf tests Android réussis sur Android 15. Les accès aux comptes existants et aux RPC nécessitent encore la clé publique Supabase ; ils ne sont pas annoncés comme validés.
+mme validés.
+
+Le portage administratif comprend maintenant les questions et séries thématiques, les notifications personnalisées (confirmation et identifiant de nouvelle tentative), les signalements avec captures privées, les corrections textuelles/vocales des récitations, ainsi que les contenus, catégories, programmation et pièces jointes. Les médias de daily-content-media passent par une URL signée, comme dans la version source. Aucun envoi réel ni compte administrateur validé : la clé publique et une session sont nécessaires pour les tests serveur.

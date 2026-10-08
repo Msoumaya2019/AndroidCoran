@@ -24,7 +24,6 @@ import java.util.Locale
     var page by rememberSaveable { mutableStateOf("Comptes") }
     var search by rememberSaveable { mutableStateOf("") }
     var accounts by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) }
-    var history by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
     var total by remember(owner) { mutableIntStateOf(0) }
     fun load(offset: Int) {
@@ -42,11 +41,15 @@ import java.util.Locale
     PageList {
         Text("Administration")
         if(!allowed) Text("Connexion avec un compte administrateur nécessaire.") else {
+            TextButton(onClick={page="Contenus"}) { Text("Administrer les contenus") }
+            TextButton(onClick={page="Récitations"}) { Text("Corriger les récitations") }
+            TextButton(onClick={page="Signalements"}) { Text("Traiter les signalements") }
+            TextButton(onClick={page="Quiz"}) { Text("Administrer les quiz") }
             Row {
                 FilterChip(selected=page=="Comptes",onClick={page="Comptes"},label={Text("Comptes")})
-                FilterChip(selected=page=="Notifications",onClick={page="Notifications";vm.action { history=service.notificationHistory() }},label={Text("Historique notifications")})
+                FilterChip(selected=page=="Notifications",onClick={page="Notifications"},label={Text("Historique notifications")})
             }
-            if(page=="Comptes") {
+            if(page=="Contenus") AdminContentsPanel(vm) else if(page=="Récitations") AdminRecitationsPanel(vm) else if(page=="Signalements") AdminReportsPanel(vm) else if(page=="Quiz") AdminQuizPanel(vm) else if(page=="Comptes") {
                 Text("$total comptes inscrits")
                 OutlinedTextField(search,{search=it},label={Text("Prénom ou adresse e-mail")},singleLine=true)
                 Button(onClick={load(0)},enabled=!busy) { Text("Rechercher / actualiser") }
@@ -69,14 +72,7 @@ import java.util.Locale
                 }
                 if(busy) CircularProgressIndicator() else if(accounts.size<total) Button(onClick={load(accounts.size)}) { Text("Afficher les comptes suivants") }
                 if(!busy&&accounts.isEmpty()) Text("Aucun compte correspondant.")
-            } else {
-                Text("Notifications envoyées par le service existant")
-                history.forEach { row -> Panel(row.str("title"),row.str("body")) {
-                    Text("${row.num("recipient_count")} destinataires · ${row.num("device_count")} appareils")
-                    Text(row.str("created_at"))
-                } }
-                if(history.isEmpty()) Text("Aucune notification chargée")
-            }
+            } else AdminNotificationsPanel(vm)
         }
     }
 }

@@ -18,15 +18,16 @@ class RecitationService: MediaSessionService() {
     private lateinit var player: ExoPlayer;private var session: MediaSession?=null
     private val handler=Handler(Looper.getMainLooper());private var generation=0
     private var standalone=false
+    private val progress=object: Runnable { override fun run() { if(player.isPlaying) { _elapsed.value=player.currentPosition.coerceAtLeast(0);handler.postDelayed(this,500) } } }
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
     private var timeline: ChapterAudio?=null;private var chapterEnd=0;private var clipStart=0L
     private val follow=object: Runnable { override fun run() { val times=timeline;if(times!=null) { var id=position.verseId;while(id<chapterEnd&&(times.timings[id+1]?.first?:Long.MAX_VALUE)<=player.currentPosition+clipStart) id++;if(id!=position.verseId) { position=position.copy(verseId=id);_current.value=position };handler.postDelayed(this,80) } } }
     private var range=VerseRange(1,7);private var position=AudioPosition(1);private var mode=RepeatMode.PASSAGE;private var count: Int?=1;private var reciter=reciters[3]
-    companion object { private val _current=MutableStateFlow<AudioPosition?>(null);val current=_current.asStateFlow();private val _playing=MutableStateFlow(false);val playing=_playing.asStateFlow() }
+    companion object { private val _elapsed=MutableStateFlow(0L);val elapsed=_elapsed.asStateFlow();private val _current=MutableStateFlow<AudioPosition?>(null);val current=_current.asStateFlow();private val _playing=MutableStateFlow(false);val playing=_playing.asStateFlow() }
     override fun onCreate() {
         super.onCreate();player=ExoPlayer.Builder(this).setMediaSourceFactory(QuranAudioCache.factory(this)).build();player.setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(),true);player.setHandleAudioBecomingNoisy(true)
         player.addListener(object: Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) { _playing.value=isPlaying }
+            override fun onIsPlayingChanged(isPlaying: Boolean) { _playing.value=isPlaying;handler.removeCallbacks(progress);_elapsed.value=player.currentPosition.coerceAtLeast(0);if(isPlaying) handler.post(progress) }
             override fun onPlaybackStateChanged(state: Int) { if(state==Player.STATE_ENDED) { if(timeline!=null&&!standalone) { position=position.copy(verseId=chapterEnd);_current.value=position };val next=if(standalone) null else nextAudioPosition(range,position,mode,count);if(next==null) { player.pause();_playing.value=false;handler.removeCallbacks(follow) } else { val expected=generation;handler.postDelayed({ if(expected==generation&&player.playWhenReady) { position=next;startAudio() } },200) } } }
             override fun onPlayerError(error: PlaybackException) { (application as CoranApplication).repository.feedback("Lecture audio interrompue : ${error.errorCodeName}");_playing.value=false }
         });session=MediaSession.Builder(this,player).build()
@@ -34,7 +35,9 @@ class RecitationService: MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
     override fun onStartCommand(intent: Intent?,flags: Int,startId: Int): Int {
         when(intent?.action) {
-            "PLAY_URL" -> { val url=intent.getStringExtra("url")?:return super.onStartCommand(intent,flags,startId);if(!url.startsWith("https://")) return super.onStartCommand(intent,flags,startId);generation++;handler.removeCallbacksAndMessages(null);standalone=true;timeline=null;_current.value=null;player.setMediaSource(DefaultMediaSourceFactory(this).createMediaSource(MediaItem.fromUri(url)));player.prepare();player.play() }
+            "PLAY_LOCAL" -> { val owner=(application as CoranApplication).repository.user.value?:return super.onStartCommand(intent,flags,startId);val uri=intent.getStringExtra("url")?:return super.onStartCommand(intent,flags,startId);val file=localRecordingFile(java.io.File(filesDir,"recordings/$owner"),uri)?:return super.onStartCommand(intent,flags,startId);generation++;handler.removeCallbacksAndMessages(null);standalone=true;timeline=null;_current.value=null;_elapsed.value=0;player.setMediaSource(DefaultMediaSourceFactory(this).createMediaSource(MediaItem.fromUri(android.net.Uri.fromFile(file))));player.prepare();player.play() }
+            "SEEK" -> if(standalone) { val upper=player.duration.takeIf { it>0 }?:Long.MAX_VALUE;player.seekTo((player.currentPosition+intent.getLongExtra("delta",0L)).coerceIn(0L,upper));_elapsed.value=player.currentPosition.coerceAtLeast(0) }
+            "PLAY_URL" -> { val url=intent.getStringExtra("url")?:return super.onStartCommand(intent,flags,startId);if(!url.startsWith("https://")) return super.onStartCommand(intent,flags,startId);generation++;handler.removeCallbacksAndMessages(null);standalone=true;timeline=null;_current.value=null;_elapsed.value=0;player.setMediaSource(DefaultMediaSourceFactory(this).createMediaSource(MediaItem.fromUri(url)));player.prepare();player.play() }
             "PLAY_RANGE" -> { val start=intent.getIntExtra("start",1);val end=intent.getIntExtra("end",7);if(start !in 1..6236||end !in start..6236) return super.onStartCommand(intent,flags,startId);generation++;handler.removeCallbacksAndMessages(null);player.stop();range=VerseRange(start,end);position=AudioPosition(range.start);reciter=reciters.firstOrNull { it.id==intent.getStringExtra("reciter") }?:reciters[3];count=intent.getIntExtra("count",1).let { if(it==0) null else it };mode=if(intent.getBooleanExtra("each",false)) RepeatMode.EACH_VERSE else RepeatMode.PASSAGE;startAudio() }
             "TOGGLE" -> { generation++;handler.removeCallbacksAndMessages(null);if(player.isPlaying) player.pause() else if(player.playbackState==Player.STATE_ENDED) { if(standalone) { player.seekTo(0);player.play() } else { position=position.copy(repetition=1);startAudio() } } else { player.play();if(timeline!=null) handler.post(follow) } }
             "STOP" -> { generation++;handler.removeCallbacksAndMessages(null);player.stop();_current.value=null;stopSelf() }
@@ -42,7 +45,7 @@ class RecitationService: MediaSessionService() {
         return super.onStartCommand(intent,flags,startId)
     }
     private fun playVerse() { timeline=null;handler.removeCallbacks(follow);standalone=false;val q=(application as CoranApplication).repository.quran;val verse=q.verse(position.verseId);_current.value=position;player.setMediaItem(MediaItem.Builder().setMediaId(verse.id.toString()).setUri(verseAudioUrl(verse,reciter)).setMediaMetadata(MediaMetadata.Builder().setTitle("${q.surah(verse.id).name} · ${verse.ayah}").setArtist(reciter.name).build()).build());player.prepare();player.play() }
-    override fun onDestroy() { scope.cancel();generation++;handler.removeCallbacksAndMessages(null);session?.release();player.release();_current.value=null;_playing.value=false;super.onDestroy() }
+    override fun onDestroy() { scope.cancel();generation++;handler.removeCallbacksAndMessages(null);session?.release();player.release();_current.value=null;_playing.value=false;_elapsed.value=0;super.onDestroy() }
     private fun startAudio() {
         timeline=null;handler.removeCallbacks(follow)
         if(mode==RepeatMode.EACH_VERSE||range.start==range.end) { playVerse();return }

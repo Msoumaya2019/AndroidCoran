@@ -48,10 +48,10 @@ import kotlinx.serialization.json.*
                     if(content.str("phonetic_text").isNotBlank()) Text(content.str("phonetic_text"))
                     if(content.str("explanation").isNotBlank()) Text(content.str("explanation"))
                     Text("${content.str("source")} ${content.str("reference")}",fontSize=12.sp)
-                    if(content.str("image_url").isNotBlank()) RemoteImage(content.str("image_url"),content.str("title"),Modifier.fillMaxWidth().heightIn(max=280.dp))
+                    if(content.str("image_url").isNotBlank()) ContentImage(vm,content.str("image_url"),content.str("title"),Modifier.fillMaxWidth().heightIn(max=280.dp))
                     Row {
                         TextButton(onClick={vm.action { val enabled=content.str("id") !in favorites;service.favorite(content.str("id"),enabled);favorites=if(enabled) (favorites+content.str("id")).distinct() else favorites-content.str("id");if(favoriteOnly&&!enabled) contents=contents.filter { it.str("id")!=content.str("id") } }}) { Text(if(content.str("id") in favorites) "Retirer des favoris" else "Favori") }
-                        if(content.str("audio_url").startsWith("https://")) TextButton(onClick={context.startService(Intent(context,RecitationService::class.java).setAction("PLAY_URL").putExtra("url",content.str("audio_url")))}) { Text("Écouter") }
+                        if(content.str("audio_url").startsWith("https://")) TextButton(onClick={vm.action { val url=com.msoumaya.androidcoran.data.ContentMedia(vm.repo).resolve(content.str("audio_url"));context.startService(Intent(context,RecitationService::class.java).setAction("PLAY_URL").putExtra("url",url)) }}) { Text("Écouter") }
                         if(content.str("type")=="invocation") TextButton(onClick={recording=content}) { Text("Enregistrer") }
                     }
                 }

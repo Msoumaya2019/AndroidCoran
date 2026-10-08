@@ -27,7 +27,7 @@ import kotlinx.serialization.json.*
     } }
     fun play(path: String,local: Boolean=false) { vm.action {
         val url=if(local) java.io.File(path).toURI().toString() else vm.repo.signedRecitation(path)
-        context.startService(Intent(context,RecitationService::class.java).setAction("PLAY_URL").putExtra("url",url))
+        context.startService(Intent(context,RecitationService::class.java).setAction(if(local) "PLAY_LOCAL" else "PLAY_URL").putExtra("url",url))
     } }
     LaunchedEffect(owner) { if(owner!=null) load() }
     PageList {

@@ -45,7 +45,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Objectifs partagés et rendez-vous de révision | src/services/social.ts | friend_shared_goals / friend_review_appointments | SocialService + ConversationDetails ; calendrier et heure natifs | Implémenté | Bloqué — backend non connecté |
 | Enregistrement natif Coran et sauvegarde offline | src/RecitationRecorder.tsx; services/recitations.ts | Local ; bucket recitations ; table recitations | RecorderPanel + recordingPayload ; Coran et invocations avec snapshot original | En développement | Testé (payloads JVM) ; microphone Non commencé |
 | Liste, lecture et consultation de corrections | src/RecitationsScreen.tsx; services/recitations.ts | recitations / recitation_corrections | RecitationsScreen + Media3 ; invocations, retours généraux et voix, écoute locale | En développement | Bloqué — serveur ; interface compilée |
-| Partage de récitations et retours vocaux | src/services/recitations.ts; social.ts | recitation_feedback / friend_messages / bucket | À porter | Non commencé | Non commencé |
+| Partage de récitations et retours vocaux | src/services/recitations.ts; social.ts | recitation_feedback / friend_messages / bucket | ConversationScreen + RecitationsScreen + AdminVoicePanel ; partage à compléter | En développement | Bloqué — serveur |
 | Quiz quotidien, réponses et défis 5/10 questions | src/ui/QuizScreen.tsx; services/quiz.ts | quiz_snapshot / quiz_answer_daily / quiz_create_challenge / quiz_answer_challenge | QuizScreens.kt + QuizService + Quiz.kt ; réponses offline et défis | En développement | Testé (règles JVM) ; serveur Bloqué |
 | Quiz thématiques, historique, statistiques et notifications | src/core/quiz.ts; services/quiz.ts | quiz_sets + RPC | QuizScreens.kt ; choix thématique, historique, scores et préférences | En développement | Testé (scores JVM) ; serveur Bloqué |
 | Contenus quotidiens, rappels et invocations | src/DailyContentsScreen.tsx; services/dailyContents.ts | daily_contents / daily_content_for_date | ContentService + ContentScreens ; catégories, favoris, pagination, image, audio et enregistrement invocation | En développement | Bloqué — backend ; médias sur appareil Non commencé |
@@ -54,19 +54,19 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Push messages, amis, corrections, admin et quiz | src/services/notifications.ts; supabase/*notifications* | Jetons Expo et RPC existants | Canal FCM additif proposé dans docs/FCM_PROPOSAL.md | Bloqué | Bloqué |
 | Signalement bug | src/ui/ProblemReport.tsx; services/problemReports.ts | app_problem_reports / screenshot bucket | ProblemReportScreen + ProblemReportService + OutboxWorker ; pièce jointe et reprise réseau | En développement | Testé (persistance Android) ; serveur Bloqué |
 | Contact administrateur | src/SocialScreens.tsx; supabase/admin-contact.sql | groupes administrateur et messages | FriendsScreen → open_admin_contact → conversation de groupe native | Implémenté | Bloqué — backend non connecté |
-| Administration comptes, quiz et quiz sets | src/AdminAccounts.tsx; ui/AdminQuiz*.tsx | admin_learning_accounts / quiz_admin_* | AdminService + AdminScreen : comptes/recherche/progression ; édition des quiz à porter | En développement | Bloqué — serveur non connecté |
-| Administration récitations, corrections et rapports | src/AdminRecitations.tsx; ui/AdminProblemReports.tsx | recitations / app_problem_reports / RPC | À porter | Non commencé | Non commencé |
-| Administration contenus, catégories et calendrier | src/AdminDailyContents.tsx | daily_contents / content_categories / daily_content_schedule | À porter | Non commencé | Non commencé |
-| Administration notifications et historique | src/AdminNotifications.tsx | send_admin_notification / admin_notifications | AdminScreen : historique ; rédaction/envoi à porter | En développement | Bloqué — serveur non connecté |
+| Administration comptes, quiz et quiz sets | src/AdminAccounts.tsx; ui/AdminQuiz*.tsx | admin_learning_accounts / quiz_admin_* | AdminService + AdminScreen + AdminQuizPanel : comptes, questions et séries de dix questions | En développement | Bloqué — serveur non connecté |
+| Administration récitations, corrections et rapports | src/AdminRecitations.tsx; ui/AdminProblemReports.tsx | recitations / app_problem_reports / RPC | AdminRecitationsPanel + AdminVoicePanel + AdminReportsPanel : voix, finalisation, captures et résolution | En développement | Testé (contrats JVM) ; serveur et microphone Bloqué/Non commencé |
+| Administration contenus, catégories et calendrier | src/AdminDailyContents.tsx | daily_contents / content_categories / daily_content_schedule | AdminContentsPanel + ContentMedia : édition, catégories, programmation, médias et nettoyage des fichiers inutilisés | En développement | Testé (contrats JVM) ; serveur Bloqué |
+| Administration notifications et historique | src/AdminNotifications.tsx | send_admin_notification / admin_notifications | AdminNotificationsPanel : rédaction, destinataires, confirmation, idempotence et historique | En développement | Bloqué — serveur non connecté |
 | CI : Gradle, tests, lint et APK debug | Nouveau dépôt seulement | Aucune |  .github/workflows/android.yml | Implémenté | Testé — run public 37761443828 réussi, APK et rapports publiés |
 
 | Source | Fonction / rôle à vérifier | Supabase | Équivalent natif prévu | Développement | Test |
 |---|---|---|---|---|---|
 | src/AdminAccounts.tsx:7 | AdminAccounts | Local / via services | ui/AdminScreen | Implémenté | Bloqué — serveur |
-| src/AdminDailyContents.tsx:9 | AdminDailyContents | Local / via services | ui/AdminDailyContents | Non commencé | Non commencé |
-| src/AdminNotifications.tsx:8 | AdminNotifications | Local / via services | ui/AdminNotifications | Non commencé | Non commencé |
-| src/AdminRecitations.tsx:11 | AdminRecitations | Local / via services | ui/AdminRecitations | Non commencé | Non commencé |
-| src/AdminVoiceRecorder.tsx:8 | AdminVoiceRecorder | from:recitations | ui/AdminVoiceRecorder | Non commencé | Non commencé |
+| src/AdminDailyContents.tsx:9 | AdminDailyContents | Local / via services | ui/AdminContentsPanel | En développement | Bloqué — serveur ; tests contrats JVM |
+| src/AdminNotifications.tsx:8 | AdminNotifications | Local / via services | ui/AdminNotificationsPanel | En développement | Bloqué — serveur ; tests contrats JVM |
+| src/AdminRecitations.tsx:11 | AdminRecitations | Local / via services | ui/AdminRecitationsPanel | En développement | Bloqué — serveur ; tests contrats JVM |
+| src/AdminVoiceRecorder.tsx:8 | AdminVoiceRecorder | from:recitations | ui/AdminVoicePanel | En développement | Bloqué — serveur ; tests contrats JVM |
 | src/BookmarksScreen.tsx:9 | BookmarksScreen | Local / via services | ui/BookmarksScreen | Non commencé | Non commencé |
 | src/coranTest/CoranTestScreen.tsx:8 | CoranTestScreen | Local / via services | ui/CoranTestScreen | Non commencé | Non commencé |
 | src/coranTest/html.ts:7 | testPageHtml | Local / via services | ui/testPageHtml | Non commencé | Non commencé |
@@ -227,10 +227,10 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/RecitationRecorder.tsx:18 | RecitationRecorder | Local / via services | ui/RecitationRecorder | Non commencé | Non commencé |
 | src/RecitationsScreen.tsx:14 | RecitationsScreen | Local / via services | ui/RecitationsScreen | Non commencé | Non commencé |
 | src/ReviewDashboard.tsx:11 | ReviewDashboard | Local / via services | ui/ReviewDashboard | Non commencé | Non commencé |
-| src/services/adminAccounts.ts:5 | listLearningAccounts | rpc:admin_learning_accounts | data/listLearningAccounts | Non commencé | Non commencé |
-| src/services/adminNotifications.ts:8 | listAdminNotificationRecipients | rpc:admin_notification_recipients, from:admin_notifications, rpc:send_admin_notification | data/listAdminNotificationRecipients | Non commencé | Non commencé |
-| src/services/adminNotifications.ts:14 | listAdminNotificationHistory | rpc:admin_notification_recipients, from:admin_notifications, rpc:send_admin_notification | data/listAdminNotificationHistory | Non commencé | Non commencé |
-| src/services/adminNotifications.ts:20 | sendAdminNotification | rpc:admin_notification_recipients, from:admin_notifications, rpc:send_admin_notification | data/sendAdminNotification | Non commencé | Non commencé |
+| src/services/adminAccounts.ts:5 | listLearningAccounts | rpc:admin_learning_accounts | data/AdminService.accounts | En développement | Bloqué — serveur |
+| src/services/adminNotifications.ts:8 | listAdminNotificationRecipients | rpc:admin_notification_recipients, from:admin_notifications, rpc:send_admin_notification | ui/AdminNotificationsPanel | En développement | Bloqué — serveur |
+| src/services/adminNotifications.ts:14 | listAdminNotificationHistory | rpc:admin_notification_recipients, from:admin_notifications, rpc:send_admin_notification | data/AdminService.notificationHistory | En développement | Bloqué — serveur |
+| src/services/adminNotifications.ts:20 | sendAdminNotification | rpc:admin_notification_recipients, from:admin_notifications, rpc:send_admin_notification | ui/AdminNotificationsPanel + domain/adminNotificationPayload | En développement | Bloqué — serveur |
 | src/services/audioFocus.ts:3 | stopActiveAudio | Local / via services | audio/stopActiveAudio | Non commencé | Non commencé |
 | src/services/authStorage.ts:7 | authStorage | Local / via services | data/authStorage | Non commencé | Non commencé |
 | src/services/avatars.ts:11 | chooseAvatar | rpc:ensure_social_profile, from:friend_profiles | data/chooseAvatar | Non commencé | Non commencé |
@@ -240,29 +240,29 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/services/avatars.ts:52 | removeAvatar | rpc:ensure_social_profile, from:friend_profiles | data/removeAvatar | Non commencé | Non commencé |
 | src/services/avatars.ts:61 | avatarUrl | rpc:ensure_social_profile, from:friend_profiles | data/avatarUrl | Non commencé | Non commencé |
 | src/services/connectivity.ts:4 | useConnectivity | Local / via services | data/useConnectivity | Non commencé | Non commencé |
-| src/services/dailyContentMedia.ts:9 | resolveContentMedia | from:daily_contents | data/resolveContentMedia | Non commencé | Non commencé |
-| src/services/dailyContentMedia.ts:15 | chooseAndUploadContentMedia | from:daily_contents | data/chooseAndUploadContentMedia | Non commencé | Non commencé |
+| src/services/dailyContentMedia.ts:9 | resolveContentMedia | from:daily_contents | data/ContentMedia.resolve | En développement | Bloqué — serveur ; tests contrats JVM |
+| src/services/dailyContentMedia.ts:15 | chooseAndUploadContentMedia | from:daily_contents | data/ContentMedia.upload | En développement | Bloqué — serveur ; tests contrats JVM |
 | src/services/dailyContentMedia.ts:34 | removeContentMedia | from:daily_contents | data/removeContentMedia | Non commencé | Non commencé |
-| src/services/dailyContentMedia.ts:35 | cleanUnusedContentMedia | from:daily_contents | data/cleanUnusedContentMedia | Non commencé | Non commencé |
+| src/services/dailyContentMedia.ts:35 | cleanUnusedContentMedia | from:daily_contents | data/ContentMedia.cleanUnused | En développement | Bloqué — serveur ; tests contrats JVM |
 | src/services/dailyContents.ts:8 | localDate | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/localDate | Non commencé | Non commencé |
 | src/services/dailyContents.ts:12 | contentChanged | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/contentChanged | Non commencé | Non commencé |
 | src/services/dailyContents.ts:13 | observeContents | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/observeContents | Non commencé | Non commencé |
 | src/services/dailyContents.ts:14 | dayContents | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/dayContents | Non commencé | Non commencé |
 | src/services/dailyContents.ts:15 | cachedDayContents | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/cachedDayContents | Non commencé | Non commencé |
-| src/services/dailyContents.ts:16 | categories | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/categories | Non commencé | Non commencé |
+| src/services/dailyContents.ts:16 | categories | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/ContentService + ui/AdminContentsPanel | En développement | Bloqué — serveur |
 | src/services/dailyContents.ts:17 | contents | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/contents | Non commencé | Non commencé |
-| src/services/dailyContents.ts:18 | saveContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/saveContent | Non commencé | Non commencé |
-| src/services/dailyContents.ts:19 | deleteContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/deleteContent | Non commencé | Non commencé |
-| src/services/dailyContents.ts:20 | saveCategory | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/saveCategory | Non commencé | Non commencé |
-| src/services/dailyContents.ts:21 | deleteCategory | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/deleteCategory | Non commencé | Non commencé |
-| src/services/dailyContents.ts:22 | schedules | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/schedules | Non commencé | Non commencé |
-| src/services/dailyContents.ts:23 | scheduleContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/scheduleContent | Non commencé | Non commencé |
-| src/services/dailyContents.ts:24 | removeSchedule | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/removeSchedule | Non commencé | Non commencé |
+| src/services/dailyContents.ts:18 | saveContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
+| src/services/dailyContents.ts:19 | deleteContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel + data/ContentMedia.cleanUnused | En développement | Bloqué — serveur |
+| src/services/dailyContents.ts:20 | saveCategory | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
+| src/services/dailyContents.ts:21 | deleteCategory | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
+| src/services/dailyContents.ts:22 | schedules | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
+| src/services/dailyContents.ts:23 | scheduleContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
+| src/services/dailyContents.ts:24 | removeSchedule | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
 | src/services/dailyContents.ts:26 | favorites | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/favorites | Non commencé | Non commencé |
 | src/services/dailyContents.ts:32 | setFavorite | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/setFavorite | Non commencé | Non commencé |
 | src/services/dailyContents.ts:33 | getContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/getContent | Non commencé | Non commencé |
 | src/services/dailyContents.ts:35 | favoriteContents | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/favoriteContents | Non commencé | Non commencé |
-| src/services/dailyContents.ts:37 | saveContentAndSchedule | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/saveContentAndSchedule | Non commencé | Non commencé |
+| src/services/dailyContents.ts:37 | saveContentAndSchedule | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
 | src/services/notifications.ts:41 | setActiveConversation | rpc:register_push_device, from:push_devices, rpc:my_push_delivery_status, from:notification_preferences | data/setActiveConversation | Non commencé | Non commencé |
 | src/services/notifications.ts:42 | setMessagePresentationEnabled | rpc:register_push_device, from:push_devices, rpc:my_push_delivery_status, from:notification_preferences | data/setMessagePresentationEnabled | Non commencé | Non commencé |
 | src/services/notifications.ts:43 | setProgressPresentationEnabled | rpc:register_push_device, from:push_devices, rpc:my_push_delivery_status, from:notification_preferences | data/setProgressPresentationEnabled | Non commencé | Non commencé |
@@ -288,8 +288,8 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/services/problemReports.ts:27 | flushProblemReports | from:app_problem_reports | data/flushProblemReports | Non commencé | Non commencé |
 | src/services/problemReports.ts:37 | sendProblemReport | from:app_problem_reports | data/sendProblemReport | Non commencé | Non commencé |
 | src/services/problemReports.ts:47 | observeProblemReportSync | from:app_problem_reports | data/observeProblemReportSync | Non commencé | Non commencé |
-| src/services/problemReports.ts:48 | adminProblemReports | from:app_problem_reports | data/adminProblemReports | Non commencé | Non commencé |
-| src/services/problemReports.ts:49 | resolveProblemReport | from:app_problem_reports | data/resolveProblemReport | Non commencé | Non commencé |
+| src/services/problemReports.ts:48 | adminProblemReports | from:app_problem_reports | ui/AdminReportsPanel | En développement | Bloqué — serveur ; tests contrats JVM |
+| src/services/problemReports.ts:49 | resolveProblemReport | from:app_problem_reports | ui/AdminReportsPanel | En développement | Bloqué — serveur ; tests contrats JVM |
 | src/services/problemReports.ts:50 | problemScreenshotUrl | from:app_problem_reports | data/problemScreenshotUrl | Non commencé | Non commencé |
 | src/services/quiz.ts:12 | cachedQuiz | Local / via services | data/cachedQuiz | Non commencé | Non commencé |
 | src/services/quiz.ts:14 | quizRpc | Local / via services | data/quizRpc | Non commencé | Non commencé |
@@ -312,17 +312,17 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/services/recitations.ts:24 | saveLocalRecitation | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/saveLocalRecitation | Non commencé | Non commencé |
 | src/services/recitations.ts:35 | deleteLocalRecitation | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/deleteLocalRecitation | Non commencé | Non commencé |
 | src/services/recitations.ts:41 | syncPendingRecitations | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/syncPendingRecitations | Non commencé | Non commencé |
-| src/services/recitations.ts:68 | listRemoteRecitations | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/listRemoteRecitations | Non commencé | Non commencé |
-| src/services/recitations.ts:79 | markRecitationListened | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/markRecitationListened | Non commencé | Non commencé |
-| src/services/recitations.ts:85 | listCorrections | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/listCorrections | Non commencé | Non commencé |
-| src/services/recitations.ts:92 | listGeneralFeedback | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/listGeneralFeedback | Non commencé | Non commencé |
+| src/services/recitations.ts:68 | listRemoteRecitations | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | ui/RecitationsScreen + ui/AdminRecitationsPanel | En développement | Bloqué — serveur |
+| src/services/recitations.ts:79 | markRecitationListened | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | ui/AdminRecitationsPanel | En développement | Bloqué — serveur |
+| src/services/recitations.ts:85 | listCorrections | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | ui/RecitationsScreen + ui/AdminRecitationsPanel | En développement | Bloqué — serveur |
+| src/services/recitations.ts:92 | listGeneralFeedback | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | ui/RecitationsScreen + ui/AdminRecitationsPanel | En développement | Bloqué — serveur |
 | src/services/recitations.ts:99 | publishGeneralFeedback | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/publishGeneralFeedback | Non commencé | Non commencé |
 | src/services/recitations.ts:108 | myCorrectionMarkers | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/myCorrectionMarkers | Non commencé | Non commencé |
-| src/services/recitations.ts:120 | adminCorrectionIds | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/adminCorrectionIds | Non commencé | Non commencé |
-| src/services/recitations.ts:127 | signedAudioUrl | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/signedAudioUrl | Non commencé | Non commencé |
+| src/services/recitations.ts:120 | adminCorrectionIds | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | ui/AdminRecitationsPanel | En développement | Bloqué — serveur |
+| src/services/recitations.ts:127 | signedAudioUrl | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/Repository.signedRecitation | En développement | Bloqué — serveur |
 | src/services/recitations.ts:133 | deleteMyRecitation | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/deleteMyRecitation | Non commencé | Non commencé |
 | src/services/recitations.ts:145 | publishCorrections | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/publishCorrections | Non commencé | Non commencé |
-| src/services/recitations.ts:160 | finalizeRecitationCorrection | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | data/finalizeRecitationCorrection | Non commencé | Non commencé |
+| src/services/recitations.ts:160 | finalizeRecitationCorrection | from:recitations, from:recitation_corrections, from:recitation_feedback, rpc:finalize_recitation_correction | ui/AdminRecitationsPanel + domain/recitationCorrectionPayload | En développement | Bloqué — serveur |
 | src/services/social.ts:19 | ensureSocialProfile | from:friend_profiles, from:friend_links, rpc:friend_inbox, from:friend_groups, from:friend_group_members, from:friend_messages, from:friend_message_hidden, from:recitations, from:friend_message_reads, from:friend_message_reports, from:friend_shared_goals, from:friend_review_appointments, from:app_admins, from:social_suspensions | data/SocialService.kt + ui/SocialScreens.kt | Implémenté | Bloqué — serveur non connecté |
 | src/services/social.ts:20 | mySocialProfile | from:friend_profiles, from:friend_links, rpc:friend_inbox, from:friend_groups, from:friend_group_members, from:friend_messages, from:friend_message_hidden, from:recitations, from:friend_message_reads, from:friend_message_reports, from:friend_shared_goals, from:friend_review_appointments, from:app_admins, from:social_suspensions | data/mySocialProfile | Non commencé | Non commencé |
 | src/services/social.ts:24 | updateSocialProfile | from:friend_profiles, from:friend_links, rpc:friend_inbox, from:friend_groups, from:friend_group_members, from:friend_messages, from:friend_message_hidden, from:recitations, from:friend_message_reads, from:friend_message_reports, from:friend_shared_goals, from:friend_review_appointments, from:app_admins, from:social_suspensions | data/SocialService.kt + ui/SocialScreens.kt | Implémenté | Bloqué — serveur non connecté |
@@ -413,9 +413,9 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/theme/tokens.ts:3 | typography | Local / via services | ui/typography | Non commencé | Non commencé |
 | src/theme/tokens.ts:4 | shadows | Local / via services | ui/shadows | Non commencé | Non commencé |
 | src/theme/tokens.ts:5 | accents | Local / via services | ui/accents | Non commencé | Non commencé |
-| src/ui/AdminProblemReports.tsx:6 | AdminProblemReports | Local / via services | ui/AdminProblemReports | Non commencé | Non commencé |
-| src/ui/AdminQuiz.tsx:9 | AdminQuiz | Local / via services | ui/AdminQuiz | Non commencé | Non commencé |
-| src/ui/AdminQuizSets.tsx:8 | AdminQuizSets | Local / via services | ui/AdminQuizSets | Non commencé | Non commencé |
+| src/ui/AdminProblemReports.tsx:6 | AdminProblemReports | Local / via services | ui/AdminReportsPanel | En développement | Bloqué — serveur ; tests contrats JVM |
+| src/ui/AdminQuiz.tsx:9 | AdminQuiz | Local / via services | ui/AdminQuizPanel | En développement | Bloqué — serveur ; tests contrats JVM |
+| src/ui/AdminQuizSets.tsx:8 | AdminQuizSets | Local / via services | ui/AdminQuizPanel | En développement | Bloqué — serveur ; tests contrats JVM |
 | src/ui/AppearanceScreen.tsx:6 | AppearanceScreen | Local / via services | ui/AppearanceScreen | Non commencé | Non commencé |
 | src/ui/DesignSystem.tsx:8 | readingArt | Local / via services | ui/readingArt | Non commencé | Non commencé |
 | src/ui/DesignSystem.tsx:9 | Heading | Local / via services | ui/Heading | Non commencé | Non commencé |
@@ -480,10 +480,10 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 ## Écrans et parcours
 
 - src/AdminAccounts.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/AdminDailyContents.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/AdminNotifications.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/AdminRecitations.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/AdminVoiceRecorder.tsx : Non commencé ; UI Compose ; tests Non commencé.
+- src/AdminDailyContents.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
+- src/AdminNotifications.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
+- src/AdminRecitations.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
+- src/AdminVoiceRecorder.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
 - src/App.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/BookmarksScreen.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/coranTest/CoranTestScreen.tsx : Non commencé ; UI Compose ; tests Non commencé.
@@ -497,9 +497,9 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 - src/ReviewDashboard.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/SocialScreens.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/SurahPicker.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/ui/AdminProblemReports.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/ui/AdminQuiz.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/ui/AdminQuizSets.tsx : Non commencé ; UI Compose ; tests Non commencé.
+- src/ui/AdminProblemReports.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
+- src/ui/AdminQuiz.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
+- src/ui/AdminQuizSets.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
 - src/ui/AppearanceScreen.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/ui/DesignSystem.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/ui/FriendAvatar.tsx : Non commencé ; UI Compose ; tests Non commencé.
