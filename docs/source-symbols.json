@@ -1,0 +1,2072 @@
+[
+  {
+    "path": "src/AdminAccounts.tsx",
+    "name": "AdminAccounts",
+    "line": 7
+  },
+  {
+    "path": "src/AdminDailyContents.tsx",
+    "name": "AdminDailyContents",
+    "line": 9
+  },
+  {
+    "path": "src/AdminNotifications.tsx",
+    "name": "AdminNotifications",
+    "line": 8
+  },
+  {
+    "path": "src/AdminRecitations.tsx",
+    "name": "AdminRecitations",
+    "line": 11
+  },
+  {
+    "path": "src/AdminVoiceRecorder.tsx",
+    "name": "AdminVoiceRecorder",
+    "line": 8
+  },
+  {
+    "path": "src/BookmarksScreen.tsx",
+    "name": "BookmarksScreen",
+    "line": 9
+  },
+  {
+    "path": "src/coranTest/CoranTestScreen.tsx",
+    "name": "CoranTestScreen",
+    "line": 8
+  },
+  {
+    "path": "src/coranTest/html.ts",
+    "name": "testPageHtml",
+    "line": 7
+  },
+  {
+    "path": "src/coranTest/loadPage.ts",
+    "name": "loadTestPage",
+    "line": 14
+  },
+  {
+    "path": "src/coranTest/loadPage.web.ts",
+    "name": "loadTestPage",
+    "line": 12
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "originalPageWidth",
+    "line": 12
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "verseIndex",
+    "line": 13
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "testPageRange",
+    "line": 16
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "validTestPage",
+    "line": 17
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "adjacentTestPages",
+    "line": 18
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "readerOverlayState",
+    "line": 22
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "testVersePage",
+    "line": 25
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "verseRegions",
+    "line": 29
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "emptyPlaybackState",
+    "line": 43
+  },
+  {
+    "path": "src/coranTest/model.ts",
+    "name": "testAudioAdapter",
+    "line": 46
+  },
+  {
+    "path": "src/coranTest/PageSurface.tsx",
+    "name": "PageSurface",
+    "line": 5
+  },
+  {
+    "path": "src/coranTest/PageSurface.web.tsx",
+    "name": "PageSurface",
+    "line": 3
+  },
+  {
+    "path": "src/coranTest/resources.ts",
+    "name": "titleFont",
+    "line": 1214
+  },
+  {
+    "path": "src/coranTest/resources.ts",
+    "name": "arabicFont",
+    "line": 1215
+  },
+  {
+    "path": "src/coranTest/resources.ts",
+    "name": "basmalaFont",
+    "line": 1216
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "reciters",
+    "line": 4
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "defaultReciter",
+    "line": 13
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "DEFAULT_AYAH_GAP_MS",
+    "line": 14
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "parseChapterAudio",
+    "line": 20
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "continuousAudioPosition",
+    "line": 32
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "verseAudioUrl",
+    "line": 38
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "resolveAudioSegment",
+    "line": 45
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "audioRange",
+    "line": 50
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "nextAudioPosition",
+    "line": 55
+  },
+  {
+    "path": "src/core/audio.ts",
+    "name": "verseAudioLabel",
+    "line": 71
+  },
+  {
+    "path": "src/core/ayahMarker.ts",
+    "name": "easternArabicNumber",
+    "line": 2
+  },
+  {
+    "path": "src/core/ayahMarker.ts",
+    "name": "ayahMarkerHtml",
+    "line": 7
+  },
+  {
+    "path": "src/core/bookmarks.ts",
+    "name": "saveBookmark",
+    "line": 5
+  },
+  {
+    "path": "src/core/bookmarks.ts",
+    "name": "deleteBookmark",
+    "line": 10
+  },
+  {
+    "path": "src/core/bookmarks.ts",
+    "name": "useBookmark",
+    "line": 14
+  },
+  {
+    "path": "src/core/bookmarks.ts",
+    "name": "visibleBookmarks",
+    "line": 18
+  },
+  {
+    "path": "src/core/bookmarks.ts",
+    "name": "mergeBookmarks",
+    "line": 20
+  },
+  {
+    "path": "src/core/marginAnnotations.ts",
+    "name": "marginAnnotations",
+    "line": 4
+  },
+  {
+    "path": "src/core/offlineAccess.ts",
+    "name": "initialAccountAccess",
+    "line": 2
+  },
+  {
+    "path": "src/core/offlineMerge.ts",
+    "name": "mergeOfflineState",
+    "line": 30
+  },
+  {
+    "path": "src/core/offlineQueue.ts",
+    "name": "createSyncWorker",
+    "line": 1
+  },
+  {
+    "path": "src/core/pageNavigation.ts",
+    "name": "pageAfterSwipe",
+    "line": 1
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "availablePaces",
+    "line": 41
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "weekdays",
+    "line": 42
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "goalFromPreset",
+    "line": 46
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "defaultState",
+    "line": 57
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "migrateReaderState",
+    "line": 59
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "reconcileState",
+    "line": 65
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "accountState",
+    "line": 82
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "resetAllProgress",
+    "line": 90
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "todayLocal",
+    "line": 95
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "dateKey",
+    "line": 96
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "addDays",
+    "line": 97
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "dayOf",
+    "line": 98
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "touch",
+    "line": 99
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "markKnowledge",
+    "line": 101
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "isRangeKnown",
+    "line": 110
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "goalIsAlreadyKnown",
+    "line": 114
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "toggleKnownRange",
+    "line": 115
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "partialKnownRanges",
+    "line": 118
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "goalIds",
+    "line": 131
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "learningOrderIds",
+    "line": 132
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "memorizedIds",
+    "line": 138
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "progress",
+    "line": 139
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "validGoal",
+    "line": 147
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "generateProgram",
+    "line": 190
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "seedInitialRevisions",
+    "line": 208
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "postponeSession",
+    "line": 215
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "completeSession",
+    "line": 220
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "extendLearningProgram",
+    "line": 234
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "gradeRevision",
+    "line": 243
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "completedHizbs",
+    "line": 257
+  },
+  {
+    "path": "src/core/program.ts",
+    "name": "stats",
+    "line": 258
+  },
+  {
+    "path": "src/core/quiz.ts",
+    "name": "quizCategories",
+    "line": 1
+  },
+  {
+    "path": "src/core/quiz.ts",
+    "name": "emptyQuiz",
+    "line": 7
+  },
+  {
+    "path": "src/core/quiz.ts",
+    "name": "quizDay",
+    "line": 8
+  },
+  {
+    "path": "src/core/quiz.ts",
+    "name": "challengeStatus",
+    "line": 9
+  },
+  {
+    "path": "src/core/quiz.ts",
+    "name": "quizStatistics",
+    "line": 14
+  },
+  {
+    "path": "src/core/quiz.ts",
+    "name": "mergeQuizSnapshot",
+    "line": 15
+  },
+  {
+    "path": "src/core/quiz.ts",
+    "name": "recordDailyAnswer",
+    "line": 16
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "verses",
+    "line": 9
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "surahs",
+    "line": 10
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "juzs",
+    "line": 11
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "quarters",
+    "line": 12
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "pages",
+    "line": 13
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "verseId",
+    "line": 17
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "verseAt",
+    "line": 21
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "surahAt",
+    "line": 22
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "pageOf",
+    "line": 23
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "pageRange",
+    "line": 37
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "intersect",
+    "line": 42
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "normalizeRanges",
+    "line": 46
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "expand",
+    "line": 56
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "weights",
+    "line": 61
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "volume",
+    "line": 62
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "totalVolume",
+    "line": 63
+  },
+  {
+    "path": "src/core/quran.ts",
+    "name": "reference",
+    "line": 64
+  },
+  {
+    "path": "src/core/quranSources.ts",
+    "name": "zipSources",
+    "line": 5
+  },
+  {
+    "path": "src/core/quranSources.ts",
+    "name": "isZipSource",
+    "line": 6
+  },
+  {
+    "path": "src/core/quranSources.ts",
+    "name": "zipPageData",
+    "line": 7
+  },
+  {
+    "path": "src/core/quranSources.ts",
+    "name": "zipVersePages",
+    "line": 13
+  },
+  {
+    "path": "src/core/quranSources.ts",
+    "name": "zipVersePage",
+    "line": 17
+  },
+  {
+    "path": "src/core/quranSources.ts",
+    "name": "zipPageRange",
+    "line": 18
+  },
+  {
+    "path": "src/core/quranSources.ts",
+    "name": "zipVerseRegions",
+    "line": 20
+  },
+  {
+    "path": "src/core/readerAppearance.ts",
+    "name": "quranPaperOptions",
+    "line": 1
+  },
+  {
+    "path": "src/core/readerAppearance.ts",
+    "name": "quranPaperColor",
+    "line": 8
+  },
+  {
+    "path": "src/core/readerData.ts",
+    "name": "frenchVerse",
+    "line": 14
+  },
+  {
+    "path": "src/core/readerData.ts",
+    "name": "tajweedVerse",
+    "line": 15
+  },
+  {
+    "path": "src/core/readerData.ts",
+    "name": "tajweedColor",
+    "line": 20
+  },
+  {
+    "path": "src/core/readerData.ts",
+    "name": "tajweedSpans",
+    "line": 29
+  },
+  {
+    "path": "src/core/readerData.ts",
+    "name": "verseAtImagePoint",
+    "line": 42
+  },
+  {
+    "path": "src/core/readerLayout.ts",
+    "name": "fitMushafPage",
+    "line": 6
+  },
+  {
+    "path": "src/core/readerZoom.ts",
+    "name": "constrainReaderZoom",
+    "line": 3
+  },
+  {
+    "path": "src/core/readerZoom.ts",
+    "name": "zoomReaderAt",
+    "line": 7
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "consolidationOffsets",
+    "line": 6
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "reviewsEnabled",
+    "line": 9
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "reviewCycleDays",
+    "line": 10
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "reviewWeight",
+    "line": 18
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "partitionReviewCorpus",
+    "line": 23
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "setReviewsEnabled",
+    "line": 53
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "setReviewCycle",
+    "line": 57
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "toggleDifficulty",
+    "line": 62
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "prepareReviewSchedule",
+    "line": 79
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "reviewQuantity",
+    "line": 106
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "reviewPlan",
+    "line": 116
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "gradeReviewTask",
+    "line": 138
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "reviewRhythm",
+    "line": 160
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "partitionDailyQuantity",
+    "line": 171
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "setReviewQuantity",
+    "line": 176
+  },
+  {
+    "path": "src/core/review.ts",
+    "name": "completeConsolidation",
+    "line": 181
+  },
+  {
+    "path": "src/core/sourceNavigation.ts",
+    "name": "sourceVersePage",
+    "line": 4
+  },
+  {
+    "path": "src/core/sourceNavigation.ts",
+    "name": "sourcePageRange",
+    "line": 5
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studyKey",
+    "line": 7
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studyPage",
+    "line": 8
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studyPageRange",
+    "line": 9
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studyLastPage",
+    "line": 10
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studyEndpointForPage",
+    "line": 11
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studyMetrics",
+    "line": 12
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studyRangeLabel",
+    "line": 20
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studySurahs",
+    "line": 21
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "studyVerses",
+    "line": 22
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "remainingStudyRange",
+    "line": 23
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "validateStudyProgress",
+    "line": 24
+  },
+  {
+    "path": "src/core/studyProgress.ts",
+    "name": "resumeStudyTask",
+    "line": 38
+  },
+  {
+    "path": "src/core/toumoun.ts",
+    "name": "toumounRecords",
+    "line": 16
+  },
+  {
+    "path": "src/core/toumoun.ts",
+    "name": "verifiedToumounRanges",
+    "line": 19
+  },
+  {
+    "path": "src/core/toumoun.ts",
+    "name": "verifiedToumouns",
+    "line": 39
+  },
+  {
+    "path": "src/core/weeklyProgress.ts",
+    "name": "scheduledDate",
+    "line": 2
+  },
+  {
+    "path": "src/core/weeklyProgress.ts",
+    "name": "upcomingSessions",
+    "line": 3
+  },
+  {
+    "path": "src/core/weeklyProgress.ts",
+    "name": "weeklyProgress",
+    "line": 7
+  },
+  {
+    "path": "src/core/weeklyProgress.ts",
+    "name": "sessionStatus",
+    "line": 14
+  },
+  {
+    "path": "src/DailyContentsScreen.tsx",
+    "name": "ContentCard",
+    "line": 15
+  },
+  {
+    "path": "src/DailyContentsScreen.tsx",
+    "name": "ContentTabs",
+    "line": 41
+  },
+  {
+    "path": "src/DailyContentsScreen.tsx",
+    "name": "TodayContents",
+    "line": 47
+  },
+  {
+    "path": "src/DailyContentsScreen.tsx",
+    "name": "DailyContentsScreen",
+    "line": 53
+  },
+  {
+    "path": "src/MushafPage.tsx",
+    "name": "MushafPage",
+    "line": 21
+  },
+  {
+    "path": "src/PassageAudioPlayer.tsx",
+    "name": "PassageAudioPlayer",
+    "line": 22
+  },
+  {
+    "path": "src/RecitationRecorder.tsx",
+    "name": "RecitationRecorder",
+    "line": 18
+  },
+  {
+    "path": "src/RecitationsScreen.tsx",
+    "name": "RecitationsScreen",
+    "line": 14
+  },
+  {
+    "path": "src/ReviewDashboard.tsx",
+    "name": "ReviewDashboard",
+    "line": 11
+  },
+  {
+    "path": "src/services/adminAccounts.ts",
+    "name": "listLearningAccounts",
+    "line": 5
+  },
+  {
+    "path": "src/services/adminNotifications.ts",
+    "name": "listAdminNotificationRecipients",
+    "line": 8
+  },
+  {
+    "path": "src/services/adminNotifications.ts",
+    "name": "listAdminNotificationHistory",
+    "line": 14
+  },
+  {
+    "path": "src/services/adminNotifications.ts",
+    "name": "sendAdminNotification",
+    "line": 20
+  },
+  {
+    "path": "src/services/audioFocus.ts",
+    "name": "stopActiveAudio",
+    "line": 3
+  },
+  {
+    "path": "src/services/authStorage.ts",
+    "name": "authStorage",
+    "line": 7
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "name": "chooseAvatar",
+    "line": 11
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "name": "stageAvatar",
+    "line": 23
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "name": "uploadAvatar",
+    "line": 30
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "name": "syncStagedAvatar",
+    "line": 44
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "name": "removeAvatar",
+    "line": 52
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "name": "avatarUrl",
+    "line": 61
+  },
+  {
+    "path": "src/services/connectivity.ts",
+    "name": "useConnectivity",
+    "line": 4
+  },
+  {
+    "path": "src/services/dailyContentMedia.ts",
+    "name": "resolveContentMedia",
+    "line": 9
+  },
+  {
+    "path": "src/services/dailyContentMedia.ts",
+    "name": "chooseAndUploadContentMedia",
+    "line": 15
+  },
+  {
+    "path": "src/services/dailyContentMedia.ts",
+    "name": "removeContentMedia",
+    "line": 34
+  },
+  {
+    "path": "src/services/dailyContentMedia.ts",
+    "name": "cleanUnusedContentMedia",
+    "line": 35
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "localDate",
+    "line": 8
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "contentChanged",
+    "line": 12
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "observeContents",
+    "line": 13
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "dayContents",
+    "line": 14
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "cachedDayContents",
+    "line": 15
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "categories",
+    "line": 16
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "contents",
+    "line": 17
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "saveContent",
+    "line": 18
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "deleteContent",
+    "line": 19
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "saveCategory",
+    "line": 20
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "deleteCategory",
+    "line": 21
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "schedules",
+    "line": 22
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "scheduleContent",
+    "line": 23
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "removeSchedule",
+    "line": 24
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "favorites",
+    "line": 26
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "setFavorite",
+    "line": 32
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "getContent",
+    "line": 33
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "favoriteContents",
+    "line": 35
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "name": "saveContentAndSchedule",
+    "line": 37
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "setActiveConversation",
+    "line": 41
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "setMessagePresentationEnabled",
+    "line": 42
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "setProgressPresentationEnabled",
+    "line": 43
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "setCorrectionPresentationEnabled",
+    "line": 44
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "setAdminMessagePresentationEnabled",
+    "line": 45
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "setRecitationsVisible",
+    "line": 46
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "configureNotificationChannels",
+    "line": 48
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "ensureNotificationPermission",
+    "line": 56
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "cancelAutomaticReminders",
+    "line": 64
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "registerPushDevice",
+    "line": 95
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "pushDiagnostic",
+    "line": 101
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "updatePushPresence",
+    "line": 111
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "unregisterPushDevice",
+    "line": 118
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "saveNotificationPreferences",
+    "line": 128
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "syncLearningReminder",
+    "line": 135
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "testLocalNotification",
+    "line": 145
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "scheduledReminderCounts",
+    "line": 150
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "name": "notificationDestination",
+    "line": 159
+  },
+  {
+    "path": "src/services/offlineSync.ts",
+    "name": "observeOfflineSync",
+    "line": 6
+  },
+  {
+    "path": "src/services/offlineSync.ts",
+    "name": "flushPendingSync",
+    "line": 7
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "name": "problemTypes",
+    "line": 10
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "name": "chooseProblemScreenshot",
+    "line": 18
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "name": "flushProblemReports",
+    "line": 27
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "name": "sendProblemReport",
+    "line": 37
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "name": "observeProblemReportSync",
+    "line": 47
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "name": "adminProblemReports",
+    "line": 48
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "name": "resolveProblemReport",
+    "line": 49
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "name": "problemScreenshotUrl",
+    "line": 50
+  },
+  {
+    "path": "src/services/quiz.ts",
+    "name": "cachedQuiz",
+    "line": 12
+  },
+  {
+    "path": "src/services/quiz.ts",
+    "name": "quizRpc",
+    "line": 14
+  },
+  {
+    "path": "src/services/quiz.ts",
+    "name": "refreshQuiz",
+    "line": 16
+  },
+  {
+    "path": "src/services/quiz.ts",
+    "name": "answerDaily",
+    "line": 24
+  },
+  {
+    "path": "src/services/quiz.ts",
+    "name": "createQuizChallenge",
+    "line": 26
+  },
+  {
+    "path": "src/services/quiz.ts",
+    "name": "answerChallenge",
+    "line": 27
+  },
+  {
+    "path": "src/services/quiz.ts",
+    "name": "useQuiz",
+    "line": 28
+  },
+  {
+    "path": "src/services/quiz.ts",
+    "name": "observeQuizSync",
+    "line": 29
+  },
+  {
+    "path": "src/services/quranAudioTimeline.ts",
+    "name": "chapterAudio",
+    "line": 8
+  },
+  {
+    "path": "src/services/quranDownload.ts",
+    "name": "quranDownloaded",
+    "line": 17
+  },
+  {
+    "path": "src/services/quranDownload.ts",
+    "name": "quranDownloadState",
+    "line": 18
+  },
+  {
+    "path": "src/services/quranDownload.ts",
+    "name": "subscribeQuranDownload",
+    "line": 19
+  },
+  {
+    "path": "src/services/quranDownload.ts",
+    "name": "quranLineUri",
+    "line": 20
+  },
+  {
+    "path": "src/services/quranDownload.ts",
+    "name": "pauseQuranDownload",
+    "line": 21
+  },
+  {
+    "path": "src/services/quranDownload.ts",
+    "name": "quranDownloadError",
+    "line": 33
+  },
+  {
+    "path": "src/services/quranDownload.ts",
+    "name": "ensureQuranDownloaded",
+    "line": 40
+  },
+  {
+    "path": "src/services/quranSourceReady.ts",
+    "name": "ensureQuranSourcePage",
+    "line": 9
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "localRecitations",
+    "line": 20
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "saveLocalRecitation",
+    "line": 24
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "deleteLocalRecitation",
+    "line": 35
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "syncPendingRecitations",
+    "line": 41
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "listRemoteRecitations",
+    "line": 68
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "markRecitationListened",
+    "line": 79
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "listCorrections",
+    "line": 85
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "listGeneralFeedback",
+    "line": 92
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "publishGeneralFeedback",
+    "line": 99
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "myCorrectionMarkers",
+    "line": 108
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "adminCorrectionIds",
+    "line": 120
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "signedAudioUrl",
+    "line": 127
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "deleteMyRecitation",
+    "line": 133
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "publishCorrections",
+    "line": 145
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "name": "finalizeRecitationCorrection",
+    "line": 160
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "ensureSocialProfile",
+    "line": 19
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "mySocialProfile",
+    "line": 20
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "updateSocialProfile",
+    "line": 24
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listFriendLinks",
+    "line": 28
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "cachedFriendsSnapshot",
+    "line": 44
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "cachedFriendInbox",
+    "line": 45
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "clearFriendsSnapshot",
+    "line": 46
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "loadFriendsSnapshot",
+    "line": 47
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "loadFriendExtras",
+    "line": 56
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "prefetchFriendsSnapshot",
+    "line": 61
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "loadFriendInbox",
+    "line": 68
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "sendFriendRequest",
+    "line": 90
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "openAdminContact",
+    "line": 92
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "acceptFriend",
+    "line": 93
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "declineFriend",
+    "line": 94
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "removeFriend",
+    "line": 95
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "blockFriend",
+    "line": 96
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "unblockFriend",
+    "line": 97
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "friendOverview",
+    "line": 98
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "publishSocialProgress",
+    "line": 103
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "setSocialOnline",
+    "line": 112
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listGroups",
+    "line": 114
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listGroupMembers",
+    "line": 115
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "createGroup",
+    "line": 122
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "inviteGroupMember",
+    "line": 123
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "acceptGroupInvite",
+    "line": 124
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "declineGroupInvite",
+    "line": 125
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "setGroupModerator",
+    "line": 126
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "removeGroupMember",
+    "line": 127
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "deleteGroup",
+    "line": 128
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listMessages",
+    "line": 130
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "hideMessageForMe",
+    "line": 144
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "markConversationRead",
+    "line": 148
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "otherReadAt",
+    "line": 152
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "unreadMessageCount",
+    "line": 156
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "sendMessage",
+    "line": 157
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "shareRecitation",
+    "line": 161
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "conversationSummaries",
+    "line": 166
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "deleteMessage",
+    "line": 185
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "reportMessage",
+    "line": 186
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listGroupReports",
+    "line": 187
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listSharedGoals",
+    "line": 193
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "proposeSharedGoal",
+    "line": 194
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "acceptSharedGoal",
+    "line": 198
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listAppointments",
+    "line": 199
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "proposeAppointment",
+    "line": 200
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "acceptAppointment",
+    "line": 204
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "cancelAppointment",
+    "line": 205
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "isSocialAdmin",
+    "line": 207
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "mySocialSuspension",
+    "line": 211
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listAdminReports",
+    "line": 215
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listAdminMessages",
+    "line": 218
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "adminProfiles",
+    "line": 221
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "listSocialSuspensions",
+    "line": 225
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "resolveReport",
+    "line": 228
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "suspendMember",
+    "line": 229
+  },
+  {
+    "path": "src/services/social.ts",
+    "name": "unsuspendMember",
+    "line": 232
+  },
+  {
+    "path": "src/services/storage.ts",
+    "name": "loadState",
+    "line": 12
+  },
+  {
+    "path": "src/services/storage.ts",
+    "name": "saveState",
+    "line": 20
+  },
+  {
+    "path": "src/services/storage.ts",
+    "name": "loadAccountState",
+    "line": 25
+  },
+  {
+    "path": "src/services/storage.ts",
+    "name": "enqueueState",
+    "line": 33
+  },
+  {
+    "path": "src/services/storage.ts",
+    "name": "pendingOperations",
+    "line": 38
+  },
+  {
+    "path": "src/services/storage.ts",
+    "name": "acknowledgeOperation",
+    "line": 43
+  },
+  {
+    "path": "src/services/storage.ts",
+    "name": "saveMutation",
+    "line": 45
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "syncConfigured",
+    "line": 8
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "supabase",
+    "line": 9
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "currentUser",
+    "line": 15
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "signIn",
+    "line": 16
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "signOut",
+    "line": 22
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "requestPasswordLink",
+    "line": 23
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "resendSignupConfirmation",
+    "line": 28
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "consumeAuthLink",
+    "line": 33
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "changePassword",
+    "line": 44
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "pullState",
+    "line": 49
+  },
+  {
+    "path": "src/services/sync.ts",
+    "name": "pushState",
+    "line": 57
+  },
+  {
+    "path": "src/services/verseAudioCache.ts",
+    "name": "cachedVerseAudio",
+    "line": 5
+  },
+  {
+    "path": "src/SocialScreens.tsx",
+    "name": "FriendsScreen",
+    "line": 36
+  },
+  {
+    "path": "src/SocialScreens.tsx",
+    "name": "AdminScreen",
+    "line": 212
+  },
+  {
+    "path": "src/SurahPicker.tsx",
+    "name": "SurahPicker",
+    "line": 8
+  },
+  {
+    "path": "src/theme/fonts.ts",
+    "name": "applyUiFont",
+    "line": 5
+  },
+  {
+    "path": "src/theme/fonts.ts",
+    "name": "interfaceFont",
+    "line": 6
+  },
+  {
+    "path": "src/theme/fonts.ts",
+    "name": "fontAssets",
+    "line": 7
+  },
+  {
+    "path": "src/theme/fonts.ts",
+    "name": "useUiFonts",
+    "line": 12
+  },
+  {
+    "path": "src/theme/fonts.ts",
+    "name": "titleFont",
+    "line": 13
+  },
+  {
+    "path": "src/theme/fonts.ts",
+    "name": "arabicFont",
+    "line": 14
+  },
+  {
+    "path": "src/theme/tokens.ts",
+    "name": "spacing",
+    "line": 1
+  },
+  {
+    "path": "src/theme/tokens.ts",
+    "name": "radius",
+    "line": 2
+  },
+  {
+    "path": "src/theme/tokens.ts",
+    "name": "typography",
+    "line": 3
+  },
+  {
+    "path": "src/theme/tokens.ts",
+    "name": "shadows",
+    "line": 4
+  },
+  {
+    "path": "src/theme/tokens.ts",
+    "name": "accents",
+    "line": 5
+  },
+  {
+    "path": "src/ui/AdminProblemReports.tsx",
+    "name": "AdminProblemReports",
+    "line": 6
+  },
+  {
+    "path": "src/ui/AdminQuiz.tsx",
+    "name": "AdminQuiz",
+    "line": 9
+  },
+  {
+    "path": "src/ui/AdminQuizSets.tsx",
+    "name": "AdminQuizSets",
+    "line": 8
+  },
+  {
+    "path": "src/ui/AppearanceScreen.tsx",
+    "name": "AppearanceScreen",
+    "line": 6
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "readingArt",
+    "line": 8
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "Heading",
+    "line": 9
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "ArabicLabel",
+    "line": 10
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "IconButton",
+    "line": 11
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "SectionHeader",
+    "line": 12
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "SegmentedControl",
+    "line": 13
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "QuranNumberMedallion",
+    "line": 14
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "DailyTaskCard",
+    "line": 15
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "StatCard",
+    "line": 16
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "ThemeSelector",
+    "line": 17
+  },
+  {
+    "path": "src/ui/DesignSystem.tsx",
+    "name": "AccentSelector",
+    "line": 18
+  },
+  {
+    "path": "src/ui/FriendAvatar.tsx",
+    "name": "FriendAvatar",
+    "line": 6
+  },
+  {
+    "path": "src/ui/GoalScreen.tsx",
+    "name": "GoalScreen",
+    "line": 9
+  },
+  {
+    "path": "src/ui/HomeIcon.tsx",
+    "name": "iconBackgrounds",
+    "line": 4
+  },
+  {
+    "path": "src/ui/HomeIcon.tsx",
+    "name": "HomeIcon",
+    "line": 5
+  },
+  {
+    "path": "src/ui/ImmersiveReaderChrome.tsx",
+    "name": "ReaderFloatingActions",
+    "line": 6
+  },
+  {
+    "path": "src/ui/MainScreens.tsx",
+    "name": "Home",
+    "line": 20
+  },
+  {
+    "path": "src/ui/MainScreens.tsx",
+    "name": "QuranScreen",
+    "line": 28
+  },
+  {
+    "path": "src/ui/MainScreens.tsx",
+    "name": "ProgramScreen",
+    "line": 35
+  },
+  {
+    "path": "src/ui/MainScreens.tsx",
+    "name": "ProgressScreen",
+    "line": 46
+  },
+  {
+    "path": "src/ui/MessagingButton.tsx",
+    "name": "MessagingButton",
+    "line": 7
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "themeArt",
+    "line": 9
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "Icon",
+    "line": 11
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "premiumShadow",
+    "line": 12
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "IslamicHero",
+    "line": 13
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "ProgressTrack",
+    "line": 14
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "ProgressRing",
+    "line": 15
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "GoldIcon",
+    "line": 16
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "SessionToolbar",
+    "line": 17
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "mainTabs",
+    "line": 22
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "AppTopNavigation",
+    "line": 23
+  },
+  {
+    "path": "src/ui/Premium.tsx",
+    "name": "BottomNavigation",
+    "line": 25
+  },
+  {
+    "path": "src/ui/ProblemReport.tsx",
+    "name": "ProblemReportCard",
+    "line": 9
+  },
+  {
+    "path": "src/ui/ProblemReport.tsx",
+    "name": "ProblemReportSheet",
+    "line": 13
+  },
+  {
+    "path": "src/ui/ProfileHeaderButton.tsx",
+    "name": "ProfileHeaderButton",
+    "line": 5
+  },
+  {
+    "path": "src/ui/QuizScreen.tsx",
+    "name": "QuizHomeCards",
+    "line": 11
+  },
+  {
+    "path": "src/ui/QuizScreen.tsx",
+    "name": "QuizStats",
+    "line": 15
+  },
+  {
+    "path": "src/ui/QuizScreen.tsx",
+    "name": "QuizScreen",
+    "line": 19
+  },
+  {
+    "path": "src/ui/QuranDownload.tsx",
+    "name": "DownloadSourceChoice",
+    "line": 6
+  },
+  {
+    "path": "src/ui/QuranDownload.tsx",
+    "name": "QuranDownload",
+    "line": 11
+  },
+  {
+    "path": "src/ui/QuranSessionHeader.tsx",
+    "name": "QuranSessionHeader",
+    "line": 7
+  },
+  {
+    "path": "src/ui/ReaderMoreSheet.tsx",
+    "name": "ReaderMoreSheet",
+    "line": 5
+  },
+  {
+    "path": "src/ui/RevisionBottomActionBar.tsx",
+    "name": "RevisionBottomActionBar",
+    "line": 6
+  },
+  {
+    "path": "src/ui/StudySession.tsx",
+    "name": "StudyBanner",
+    "line": 10
+  },
+  {
+    "path": "src/ui/StudySession.tsx",
+    "name": "SelectField",
+    "line": 14
+  },
+  {
+    "path": "src/ui/StudySession.tsx",
+    "name": "StudyCompletionSheet",
+    "line": 18
+  },
+  {
+    "path": "src/ui/StudySession.tsx",
+    "name": "StudyResumeCard",
+    "line": 29
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "colors",
+    "line": 15
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "applyTheme",
+    "line": 17
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "useTheme",
+    "line": 18
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "themeOptions",
+    "line": 19
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "Label",
+    "line": 26
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "Title",
+    "line": 27
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "Card",
+    "line": 28
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "Button",
+    "line": 29
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "Choice",
+    "line": 30
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "CheckChoice",
+    "line": 31
+  },
+  {
+    "path": "src/ui/theme.tsx",
+    "name": "Field",
+    "line": 32
+  },
+  {
+    "path": "src/ui/ZoomableReader.tsx",
+    "name": "ZoomableReader",
+    "line": 5
+  }
+]

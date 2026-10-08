@@ -1,0 +1,417 @@
+[
+  {
+    "path": "src/AdminVoiceRecorder.tsx",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/adminAccounts.ts",
+    "type": "rpc",
+    "name": "admin_learning_accounts"
+  },
+  {
+    "path": "src/services/adminNotifications.ts",
+    "type": "rpc",
+    "name": "admin_notification_recipients"
+  },
+  {
+    "path": "src/services/adminNotifications.ts",
+    "type": "from",
+    "name": "admin_notifications"
+  },
+  {
+    "path": "src/services/adminNotifications.ts",
+    "type": "rpc",
+    "name": "send_admin_notification"
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "type": "rpc",
+    "name": "ensure_social_profile"
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "type": "from",
+    "name": "friend_profiles"
+  },
+  {
+    "path": "src/services/avatars.ts",
+    "type": "from",
+    "name": "friend_profiles"
+  },
+  {
+    "path": "src/services/dailyContentMedia.ts",
+    "type": "from",
+    "name": "daily_contents"
+  },
+  {
+    "path": "src/services/dailyContentMedia.ts",
+    "type": "from",
+    "name": "daily_contents"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "rpc",
+    "name": "daily_content_for_date"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "content_categories"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "daily_contents"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "daily_contents"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "daily_contents"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "content_categories"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "content_categories"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "daily_content_schedule"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "daily_content_schedule"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "daily_content_schedule"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "content_favorites"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "content_favorites"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "content_favorites"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "daily_contents"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "from",
+    "name": "daily_contents"
+  },
+  {
+    "path": "src/services/dailyContents.ts",
+    "type": "rpc",
+    "name": "save_daily_content"
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "type": "rpc",
+    "name": "register_push_device"
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "type": "from",
+    "name": "push_devices"
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "type": "rpc",
+    "name": "my_push_delivery_status"
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "type": "from",
+    "name": "push_devices"
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "type": "from",
+    "name": "push_devices"
+  },
+  {
+    "path": "src/services/notifications.ts",
+    "type": "from",
+    "name": "notification_preferences"
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "type": "from",
+    "name": "app_problem_reports"
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "type": "from",
+    "name": "app_problem_reports"
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "type": "from",
+    "name": "app_problem_reports"
+  },
+  {
+    "path": "src/services/problemReports.ts",
+    "type": "from",
+    "name": "app_problem_reports"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitation_corrections"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitation_feedback"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitation_feedback"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitation_corrections"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitation_corrections"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "from",
+    "name": "recitation_corrections"
+  },
+  {
+    "path": "src/services/recitations.ts",
+    "type": "rpc",
+    "name": "finalize_recitation_correction"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_profiles"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_profiles"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_links"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_profiles"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "rpc",
+    "name": "friend_inbox"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_groups"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_group_members"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_profiles"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_messages"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_message_hidden"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "recitations"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_message_hidden"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_message_reads"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_message_reads"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_messages"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_messages"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_messages"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_message_reads"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_messages"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_message_reports"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_shared_goals"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_shared_goals"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_review_appointments"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_review_appointments"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "app_admins"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "social_suspensions"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_message_reports"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_messages"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "friend_profiles"
+  },
+  {
+    "path": "src/services/social.ts",
+    "type": "from",
+    "name": "social_suspensions"
+  },
+  {
+    "path": "src/services/sync.ts",
+    "type": "from",
+    "name": "user_state"
+  },
+  {
+    "path": "src/services/sync.ts",
+    "type": "from",
+    "name": "user_state"
+  }
+]
