@@ -38,7 +38,7 @@ class Repository(private val context: Context) {
         context.config.edit { it[stringPreferencesKey("publicKey")]=key }
         client!!.auth.awaitInitialization();client!!.auth.currentUserOrNull()?.let { activate(it.id) }
     }
-    private fun db() = client ?: error("Renseigne la clé publique du projet Supabase dans les réglages")
+    internal fun db() = client ?: error("Renseigne la clé publique du projet Supabase dans les réglages")
     suspend fun login(email: String,password: String,register: Boolean=false) {
         if(register) db().auth.signUpWith(Email) { this.email=email.trim();this.password=password } else db().auth.signInWith(Email) { this.email=email.trim();this.password=password }
         val user=db().auth.currentUserOrNull();if(user!=null) activate(user.id) else _notice.value="Consulte ton e-mail pour confirmer l’inscription"
@@ -82,14 +82,14 @@ class Repository(private val context: Context) {
         } else { val fresh=stored?.data?:defaultState().with("userId" to JsonPrimitive(id));local.save(id,StoredState(fresh,null,null,false));_state.value=fresh }
         _notice.value="Synchronisation terminée"
     }
-    suspend fun rpc(name: String,args: JsonObject=json()): JsonElement { check(user.value!=null);return Json.parseToJsonElement(db().postgrest.rpc(name,args).data) }
+    suspend fun rpc(name: String,args: JsonObject=json(),authenticated: Boolean=true): JsonElement { if(authenticated) check(user.value!=null);val owner=user.value;val result=Json.parseToJsonElement(db().postgrest.rpc(name,args).data);check(owner==user.value) { "Le compte a changé" };return result }
     suspend fun rows(table: String,filters: Map<String,String> = emptyMap()): List<JsonObject> { check(user.value!=null);return db().from(table).select { filter { filters.forEach { (k,v) -> eq(k,v) } };limit(100) }.decodeList<JsonObject>() }
     suspend fun insert(table: String,data: JsonObject) { check(user.value!=null);db().from(table).insert(data) }
     suspend fun signedRecitation(path: String) = db().storage.from("recitations").createSignedUrl(path,kotlin.time.Duration.parse("10m"))
     fun recordings(): List<JsonObject> = (local.cached("$account:recordings") as? JsonArray)?.map { it.jsonObject }?:emptyList()
-    suspend fun saveRecording(file: java.io.File,range: VerseRange,duration: Long,owner: String) = lock.withLock {
+    suspend fun saveRecording(file: java.io.File,range: VerseRange,duration: Long,owner: String,invocation: JsonObject?=null) = lock.withLock {
         require(duration>0&&file.isFile);val existing=(local.cached("$owner:recordings") as? JsonArray)?.map { it.jsonObject }?:emptyList()
-        val row=json("id" to file.nameWithoutExtension,"user_id" to owner,"start_verse_id" to range.start,"end_verse_id" to range.end,"duration_ms" to duration,"local_path" to file.path,"created_at" to java.time.Instant.now().toString(),"synced" to false)
+        val row=json("id" to file.nameWithoutExtension,"user_id" to owner,"start_verse_id" to range.start,"end_verse_id" to range.end,"duration_ms" to duration,"local_path" to file.path,"created_at" to java.time.Instant.now().toString(),"synced" to false,"recording_type" to if(invocation==null) "quran" else "invocation","invocation_id" to invocation?.str("id"),"invocation_snapshot" to invocation)
         local.cache("$owner:recordings",element(existing+row))
     }
     suspend fun uploadRecordings() = lock.withLock {
@@ -100,12 +100,14 @@ class Repository(private val context: Context) {
             if(remote==null) {
                 val alreadyUploaded=runCatching { signedRecitation(path) }.isSuccess
                 if(!alreadyUploaded) db().storage.from("recitations").upload(path,file.readBytes())
-                db().from("recitations").insert(json("id" to row.str("id"),"user_id" to id,"start_verse_id" to row.num("start_verse_id"),"end_verse_id" to row.num("end_verse_id"),"duration_ms" to row.num("duration_ms"),"storage_path" to path,"created_at" to row.str("created_at"),"recording_type" to "quran"))
+                db().from("recitations").insert(recordingPayload(row,id,path))
             }
             recordings[i]=row.with("synced" to JsonPrimitive(true));local.cache("$id:recordings",element(recordings))
         }
         _notice.value="Récitations synchronisées"
     }
-    suspend fun cachedRpc(name: String,args: JsonObject=json()): JsonElement { val key="$account:$name:$args";return try { rpc(name,args).also { local.cache(key,it) } } catch(e: Exception) { local.cached(key) ?: throw e } }
+    internal fun cached(key: String)=local.cached(key)
+    internal fun cache(key: String,value: JsonElement)=local.cache(key,value)
+    suspend fun cachedRpc(name: String,args: JsonObject=json(),authenticated: Boolean=true): JsonElement { val owner=user.value;val key="${owner?:"guest"}:$name:$args";return try { rpc(name,args,authenticated).also { check(owner==user.value);local.cache(key,it) } } catch(e: Exception) { if(e is CancellationException||owner!=user.value) throw e;local.cached(key) ?: throw e } }
     fun feedback(message: String) { _notice.value=message }
 }
