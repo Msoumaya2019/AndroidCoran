@@ -31,7 +31,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Objectifs et rythmes ; ordre depuis An Nâs | src/core/program.ts; ui/GoalScreen.tsx | user_state.data.goal / pace | domain/Program.kt + GoalScreen | En développement (sourates/hizb/juz/plages disponibles ; parcours complet à valider) | Testé (ordre et jours JVM) |
 | Connaissances initiales et validation par verset | src/App.tsx; core/program.ts | user_state.data.knowledge | GoalScreen + Program.markKnowledge | Implémenté (sourates/hizb/juz/plages et niveaux acquis/révision/apprentissage) | Testé (mutations JVM) |
 | Création, report et régénération du programme | src/core/program.ts | user_state.data.sessions | Program.generate + ProgramScreen | En développement (extension legacy implémentée et testée) | Testé (JVM) |
-| Validation partielle et reprise exacte des séances | src/core/studyProgress.ts | user_state.data.studyProgress / memorizedAt | Program.complete + ReaderScreen | En développement | Testé (JVM, persistance à compléter) |
+| Validation partielle et reprise exacte des séances | src/core/studyProgress.ts | user_state.data.studyProgress / memorizedAt | StudyProgress.validate + StudyCompletionSheet + ReaderScreen | En développement (choix verset/page/tout et reprise implémentés ; détail complet des cartes et serveur à valider) | Testé (JVM et reprise persistée sur Android 15) |
 | Révisions pondérées ; cycles et unités réelles | src/core/review.ts | user_state.data.reviewCycle | domain/Review.kt + ReviewRhythmPicker | En développement (cycles et quantités implémentés ; compte réel non validé) | Testé (partition, changement de mode, historique et reprise JVM) |
 | Consolidations J+1/J+3/J+7 et priorités | src/core/review.ts | reviewConsolidations / difficultyMarkers | Review.prepare / grade / tasks / completeConsolidation + lecteur natif | En développement (validation anticipée et calendrier implémentés ; synchronisation authentifiée non validée) | Testé (JVM : dates ancrées, étapes, idempotence, conservation des champs ; deux parcours Compose Android 15) |
 | Révisions partielles, historique et notes | src/core/review.ts; ReviewDashboard.tsx | reviewHistory / studyProgress | Review.grade + RevisionScreen + ReviewValidationActions ; parfait/hésitant/à retravailler | En développement | Testé (notes et validation partielle JVM, commandes Compose) ; parcours authentifié non validé |
@@ -201,16 +201,16 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/sourceNavigation.ts:4 | sourceVersePage | Local / via services | ui/sourceVersePage | Non commencé | Non commencé |
 | src/core/sourceNavigation.ts:5 | sourcePageRange | Local / via services | ui/sourcePageRange | Non commencé | Non commencé |
 | src/core/studyProgress.ts:7 | studyKey | Local / via services | domain/studyKey | Non commencé | Non commencé |
-| src/core/studyProgress.ts:8 | studyPage | Local / via services | domain/studyPage | Non commencé | Non commencé |
-| src/core/studyProgress.ts:9 | studyPageRange | Local / via services | domain/studyPageRange | Non commencé | Non commencé |
-| src/core/studyProgress.ts:10 | studyLastPage | Local / via services | domain/studyLastPage | Non commencé | Non commencé |
-| src/core/studyProgress.ts:11 | studyEndpointForPage | Local / via services | domain/studyEndpointForPage | Non commencé | Non commencé |
-| src/core/studyProgress.ts:12 | studyMetrics | Local / via services | domain/studyMetrics | Non commencé | Non commencé |
+| src/core/studyProgress.ts:8 | studyPage | Local / via services | domain/Quran.sourcePage | Implémenté | Testé (JVM et Android : verset/page/sourate) |
+| src/core/studyProgress.ts:9 | studyPageRange | Local / via services | domain/Quran.sourceRange | Implémenté | Testé (JVM et Android : verset/page/sourate) |
+| src/core/studyProgress.ts:10 | studyLastPage | Local / via services | domain/Quran.sourceLastPage | Implémenté | Testé (JVM et Android : verset/page/sourate) |
+| src/core/studyProgress.ts:11 | studyEndpointForPage | Local / via services | domain/Quran.studyEndpoint | Implémenté | Testé (JVM et Android : verset/page/sourate) |
+| src/core/studyProgress.ts:12 | studyMetrics | Local / via services | domain/StudyProgress.metrics | Implémenté | Testé (JVM et Android : verset/page/sourate) |
 | src/core/studyProgress.ts:20 | studyRangeLabel | Local / via services | domain/studyRangeLabel | Non commencé | Non commencé |
-| src/core/studyProgress.ts:21 | studySurahs | Local / via services | domain/studySurahs | Non commencé | Non commencé |
-| src/core/studyProgress.ts:22 | studyVerses | Local / via services | domain/studyVerses | Non commencé | Non commencé |
-| src/core/studyProgress.ts:23 | remainingStudyRange | Local / via services | domain/remainingStudyRange | Non commencé | Non commencé |
-| src/core/studyProgress.ts:24 | validateStudyProgress | Local / via services | domain/validateStudyProgress | Non commencé | Non commencé |
+| src/core/studyProgress.ts:21 | studySurahs | Local / via services | ui/StudyCompletionSheet.kt (sourates du passage restant) | Implémenté | Testé (JVM et Android : verset/page/sourate) |
+| src/core/studyProgress.ts:22 | studyVerses | Local / via services | ui/StudyCompletionSheet.kt (versets du passage restant) | Implémenté | Testé (JVM et Android : verset/page/sourate) |
+| src/core/studyProgress.ts:23 | remainingStudyRange | Local / via services | domain/StudyProgress.remaining | Implémenté | Testé (JVM et Android : verset/page/sourate) |
+| src/core/studyProgress.ts:24 | validateStudyProgress | Local / via services | domain/StudyProgress.validate | Implémenté | Testé (JVM et Android : verset/page/sourate) |
 | src/core/studyProgress.ts:38 | resumeStudyTask | Local / via services | domain/resumeStudyTask | Non commencé | Non commencé |
 | src/core/toumoun.ts:16 | toumounRecords | Local / via services | ui/toumounRecords | Non commencé | Non commencé |
 | src/core/toumoun.ts:19 | verifiedToumounRanges | Local / via services | ui/verifiedToumounRanges | Non commencé | Non commencé |
@@ -462,8 +462,8 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/ui/ReaderMoreSheet.tsx:5 | ReaderMoreSheet | Local / via services | ui/ReaderMoreSheet | Non commencé | Non commencé |
 | src/ui/RevisionBottomActionBar.tsx:6 | RevisionBottomActionBar | Local / via services | ui/RevisionBottomActionBar | Non commencé | Non commencé |
 | src/ui/StudySession.tsx:10 | StudyBanner | Local / via services | ui/StudyBanner | Non commencé | Non commencé |
-| src/ui/StudySession.tsx:14 | SelectField | Local / via services | ui/SelectField | Non commencé | Non commencé |
-| src/ui/StudySession.tsx:18 | StudyCompletionSheet | Local / via services | ui/StudyCompletionSheet | Non commencé | Non commencé |
+| src/ui/StudySession.tsx:14 | SelectField | Local / via services | ui/StudyCompletionSheet.kt:StudyChoice | Implémenté | Testé (Compose) |
+| src/ui/StudySession.tsx:18 | StudyCompletionSheet | Local / via services | ui/StudyCompletionSheet.kt | Implémenté | Testé (Compose : endpoint, page, sourate, tout, note et restauration) |
 | src/ui/StudySession.tsx:29 | StudyResumeCard | Local / via services | ui/StudyResumeCard | Non commencé | Non commencé |
 | src/ui/theme.tsx:15 | colors | Local / via services | ui/colors | Non commencé | Non commencé |
 | src/ui/theme.tsx:17 | applyTheme | Local / via services | ui/applyTheme | Non commencé | Non commencé |
@@ -546,3 +546,9 @@ Validation finale de ce lot : 68 tests JVM et les 24 tests Android exécutés in
 Le lecteur permet de marquer un verset difficile et de retirer uniquement le marquage utilisateur. Les marqueurs administrateur et leurs métadonnées sont conservés, avec les mêmes événements difficultyHistory et échéances reviewPriorityDue que la source. Le marquage n’invente aucune connaissance ni tâche de révision pour un verset non mémorisé. Le résultat « Quelques hésitations » est maintenant accessible dans le lecteur et utilise le délai source de deux jours ; la validation partielle conserve son point de reprise. Les validations d’apprentissage et de révision arrêtent l’audio avant la mutation, comme dans Expo. Aucun changement de schéma/backend.
 
 Validation de ce lot : 72 tests JVM et huit tests Android ciblés réussis sur Android 15 (trois nouveaux tests Android, plus cinq tests de régression). Le parcours réel apprentissage → retour → révision confirme que le contexte d’apprentissage est effacé. Le profil invité utilisé dans ce test est restauré ensuite ; aucun compte réel ni donnée Supabase privée n’est utilisé. L’APK et Lint compilent.
+
+### Validation précise des séances — 9 octobre 2026
+
+La fenêtre Compose permet de choisir la sourate et le dernier verset restant, une page entièrement terminée ou tout l’apprentissage, et de sélectionner la note de révision. Les métriques suivent les pages/versets de l’édition active, avec leur progression partielle. Les options de page excluent celles qui ne font que commencer un verset continuant sur la page suivante. La validation relit l’état courant et rejette les bornes modifiées, les points déjà validés et les séances inexistantes. Une reprise conserve les bornes initiales et ajoute seulement le nouveau segment à l’historique. La source et sa page spécifique sont enregistrées dans studyProgress ; aucun nouveau champ ou schéma backend n’est requis. Les cartes de reprise détaillées de la source restent à compléter.
+
+Validation du lot : 79 tests JVM et 11 tests Android ciblés réussissent (cinq nouveaux tests et six de régression). Le parcours réel valide jusqu’au verset 3, contrôle la donnée persistée dans SQLite, puis reprend au verset 4. La capture locale android-study-validation.png a été inspectée : formulaire lisible et commandes accessibles par défilement. L’APK et Lint réussissent. Les comptes réels et leur synchronisation restent non validés.

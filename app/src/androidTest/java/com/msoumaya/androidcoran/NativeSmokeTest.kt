@@ -52,7 +52,7 @@ class NativeSmokeTest {
             compose.waitForIdle()
             compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
             compose.onNodeWithText(repo.quran.reference(VerseRange(6236,6236))).performClick()
-            compose.onNodeWithText("Valider jusqu’au verset sélectionné").assertExists()
+            compose.onNodeWithText("Terminer mon apprentissage").assertExists()
             compose.onNodeWithText("Quelques hésitations").assertDoesNotExist()
             compose.onNodeWithContentDescription("Retour").performClick()
             compose.onNodeWithText("Accueil",useUnmergedTree=true).performClick()
@@ -60,6 +60,31 @@ class NativeSmokeTest {
             compose.onNodeWithText(repo.quran.reference(VerseRange(1,3))).performScrollTo().performClick()
             compose.onNodeWithText("Quelques hésitations").assertExists()
             compose.onNodeWithText("À retravailler").assertExists()
+        } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
+    }
+    @Test fun partialLearningPersistsAndResumesAtNextVerse() {
+        val repo=(compose.activity.application as CoranApplication).repository
+        assertNull(repo.user.value)
+        val today=java.time.LocalDate.now();var saved=defaultState()
+        val session=json("id" to "partial-learning","start" to 1,"end" to 7,"date" to today.toString(),"scheduledDate" to today.toString(),"status" to "todo")
+        val initial=defaultState().with("sessions" to element(listOf(session)),"goal" to json("ranges" to listOf(json("start" to 1,"end" to 7))))
+        kotlinx.coroutines.runBlocking { repo.awaitReady();saved=repo.state.value;repo.mutate { initial } }
+        try {
+            compose.waitForIdle()
+            compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
+            compose.onNodeWithText(repo.quran.reference(VerseRange(1,7))).performClick()
+            compose.onNodeWithText("Terminer mon apprentissage").performClick()
+            compose.onNodeWithContentDescription("Dernier verset appris").performScrollTo().performClick()
+            compose.onNodeWithText("Verset 3").performClick()
+            compose.onNodeWithText("Valider jusqu’au verset 3").performScrollTo().performClick()
+            compose.waitUntil(10000) { repo.state.value.obj("studyProgress").obj("learning:partial-learning").num("through")==3 }
+            compose.onNodeWithText("Reprendre ma séance").assertExists().performClick()
+            compose.onNodeWithText("Terminer mon apprentissage").performClick()
+            compose.onNodeWithContentDescription("Dernier verset appris").performScrollTo().performClick()
+            compose.onNodeWithText("Verset 3").assertDoesNotExist()
+            compose.onNodeWithText("Verset 4").assertExists()
+            val store=com.msoumaya.androidcoran.data.LocalStore(compose.activity)
+            try { assertEquals(3,store.load("guest")!!.data.obj("studyProgress").obj("learning:partial-learning").num("through")) } finally { store.close() }
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
     }
 }

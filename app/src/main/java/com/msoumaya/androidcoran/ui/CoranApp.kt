@@ -50,7 +50,7 @@ import java.time.Instant
                 if(notice.isNotEmpty()) Text(notice,Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(10.dp),fontSize=12.sp)
                 val open: (Int)->Unit = { id -> val source=s.obj("reader").str("mushaf","coranTest");page=vm.repo.quran.sourcePage(id,source);route="reader" }
                 when(route) {
-                    "reader" -> ReaderScreen(vm,s,page,{page=it.coerceIn(1,604)},sessionId,reviewTask)
+                    "reader" -> ReaderScreen(vm,s,page,{page=it.coerceIn(1,604)},sessionId,reviewTask) { if(sessionId!=null) { tab="Programme";route=null } else route="Révisions";sessionId=null;reviewTask=null }
                     "Compte" -> AccountScreen(vm,user)
                     "Administration" -> AdminScreen(vm)
                     "Réglages" -> SettingsScreen(vm,s,{route=it})
@@ -173,10 +173,15 @@ import java.time.Instant
     listOf("Objectif","Marques-pages","Téléchargements","Signaler un problème").forEach { Panel(it,onClick={navigate(it)}) }
 } }
 
-@Composable fun ReaderScreen(vm: CoranViewModel,s: JsonObject,page: Int,onPage: (Int)->Unit,sessionId: String?,task: ReviewTask?) {
+@Composable fun ReaderScreen(vm: CoranViewModel,s: JsonObject,page: Int,onPage: (Int)->Unit,sessionId: String?,task: ReviewTask?,onStudyValidated: ()->Unit={}) {
     val context=LocalContext.current;val q=vm.repo.quran;val source=s.obj("reader").str("mushaf","coranTest");val current by RecitationService.current.collectAsStateWithLifecycle();val isPlaying by RecitationService.playing.collectAsStateWithLifecycle();val passageProgress by RecitationService.passageProgress.collectAsStateWithLifecycle();val activePreferences by RecitationService.activePreferences.collectAsStateWithLifecycle()
     var selected by rememberSaveable(page,source) { mutableStateOf<Int?>(null) };var reciterId by rememberSaveable { mutableStateOf(s.obj("audioPreferences").str("reciterId","ar.shaatree")) };var french by rememberSaveable { mutableStateOf(false) };var showAudio by rememberSaveable { mutableStateOf(false) };var startInput by rememberSaveable { mutableStateOf("") };var endInput by rememberSaveable { mutableStateOf("") }
     val session=s.arr("sessions").map { it.jsonObject }.firstOrNull { it.str("id")==sessionId }
+    val mode=if(session!=null) "learning" else "revision";val studyId=session?.str("id")?:task?.id
+    val record=studyId?.let { s.obj("studyProgress").obj("$mode:$it") }?:json()
+    val planned=if(session!=null) range(session) else if(record.isNotEmpty()) range(record) else task?.range
+    val through=record.num("through",(planned?.start?:1)-1)
+    var showCompletion by rememberSaveable(studyId) { mutableStateOf(false) };var completionGrade by rememberSaveable(studyId) { mutableStateOf("perfect") };var submitting by remember(studyId) { mutableStateOf(false) }
     val payload by produceState<Triple<JsonObject?,android.graphics.Bitmap?,JsonArray?>>(Triple(null,null,null),page,source) { value=withContext(Dispatchers.IO) { if(source=="coranTest") Triple(q.qcfData(context,page),null,null) else if(source=="coran_1441") madaniImage(context,page) else { val folder=if(source=="tajweedPages"||source=="tajweed") "mushaf-tajweed" else "mushaf";val bitmap=context.assets.open("$folder/page${page.toString().padStart(3,'0')}.png").use { BitmapFactory.decodeStream(it) };val filename=if(folder=="mushaf") "bounds.json" else "mushaf-tajweed-bounds.json";val regions=context.assets.open(filename).bufferedReader().use { Json.parseToJsonElement(it.readText()).jsonObject[page.toString()]?.jsonArray };Triple(null,bitmap,regions) } } }
     val pageRange=if(source=="coranTest"&&payload.first!=null) { val ids=payload.first!!.arr("lines").flatMap { it.jsonObject.arr("words") }.map { val a=it.jsonArray;q.id(a[1].jsonPrimitive.int,a[2].jsonPrimitive.int) };VerseRange(ids.min(),ids.max()) } else q.sourceRange(page,source)
     LaunchedEffect(page,source,payload.first) { if(source!="coranTest"||payload.first!=null) vm.action { vm.repo.mutate { val now=Instant.now().toString();touch(it.with("lastRead" to json("page" to page,"verseId" to pageRange.start,"readAt" to now),"readPages" to element((it.arr("readPages").map { p->p.jsonPrimitive.int }+page).distinct()))) } } }
@@ -194,9 +199,18 @@ import java.time.Instant
             val pending=vm.repo.review.consolidations(s).any { row -> row.range.ids.any { it in task.range.ids }&&row.steps.firstOrNull { it.completed==null }?.offset==task.consolidationOffset }
             Button(enabled=pending,onClick={vm.action { command("STOP");vm.repo.mutate { vm.repo.review.completeConsolidation(it,task.range,targetOffset=task.consolidationOffset) } }},modifier=Modifier.fillMaxWidth().padding(8.dp)) { Text(if(pending) "Valider la consolidation · J+${task.consolidationOffset}" else "Consolidation validée") }
         } else if(session!=null) {
-            Button(onClick={vm.action { command("STOP");val through=selected?:q.studyEndpoint(page,range(session),source);vm.repo.mutate { vm.repo.program.complete(it,session.str("id"),through) } }},modifier=Modifier.fillMaxWidth().padding(8.dp)) { Text("Valider jusqu’au verset sélectionné") }
+            Button(enabled=through<session.num("end"),onClick={completionGrade="perfect";showCompletion=true},modifier=Modifier.fillMaxWidth().padding(8.dp)) { Text(if(through<session.num("end")) "Terminer mon apprentissage" else "Apprentissage validé") }
         } else if(task!=null) {
-            ReviewValidationActions { grade -> vm.action { command("STOP");val through=selected?:q.studyEndpoint(page,task.range,source);vm.repo.mutate { vm.repo.review.grade(it,task,through,grade) } } }
+            if(planned!=null&&through<planned.end) ReviewValidationActions { grade -> completionGrade=grade;showCompletion=true } else Text("Révision validée",Modifier.padding(8.dp))
+        }
+        if(showCompletion&&studyId!=null&&planned!=null) StudyCompletionSheet(q,vm.repo.study,mode,planned,through,source,page,completionGrade,submitting,{showCompletion=false}) { endpoint,grade ->
+            if(!submitting) { submitting=true;vm.action {
+                var changed=false
+                try { command("STOP");vm.repo.mutate { latest -> val next=vm.repo.study.validate(latest,mode,studyId,planned,endpoint,source,task?.category?:record.str("category","habitual"),grade);changed=next!=latest;next }
+                    withContext(Dispatchers.Main) { showCompletion=false;if(changed) onStudyValidated() }
+                    if(!changed) vm.repo.feedback("Cette séance a été actualisée. Rouvre la validation.")
+                } finally { withContext(Dispatchers.Main) { submitting=false } }
+            } }
         }
 
         ReaderAudioControls(q,current,isPlaying,passageProgress,activePreferences,{showAudio=true},::command)

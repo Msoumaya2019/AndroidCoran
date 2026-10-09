@@ -26,7 +26,7 @@ import kotlinx.serialization.json.*
 private val Context.config by preferencesDataStore("configuration")
 const val SUPABASE_URL="https://npbwnvrqmajwqtnncuyv.supabase.co"
 class Repository(private val context: Context) {
-    val quran=Quran(context);val program=Program(quran);val review=Review(quran,program)
+    val quran=Quran(context);val program=Program(quran);val review=Review(quran,program);val study=StudyProgress(quran,program,review)
     private val local=LocalStore(context);private val lock=Mutex();private val scope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
     private var client: SupabaseClient?=null
     private val _state=MutableStateFlow(defaultState());val state=_state.asStateFlow()
