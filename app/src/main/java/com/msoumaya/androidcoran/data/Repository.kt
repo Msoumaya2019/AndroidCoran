@@ -33,6 +33,7 @@ class Repository(private val context: Context) {
     private val _notice=MutableStateFlow("");val notice=_notice.asStateFlow()
     private val _user=MutableStateFlow<String?>(null);val user=_user.asStateFlow()
     private val _passwordRecovery=MutableStateFlow(false);val passwordRecovery=_passwordRecovery.asStateFlow()
+    private val _recordingVersion=MutableStateFlow(0L);val recordingVersion=_recordingVersion.asStateFlow()
     private var account="guest"
     private val ready=CompletableDeferred<Unit>()
     val quiz by lazy { QuizService(this,local,context) }
@@ -128,7 +129,7 @@ class Repository(private val context: Context) {
     suspend fun saveRecording(file: java.io.File,range: VerseRange,duration: Long,owner: String,invocation: JsonObject?=null) = lock.withLock {
         require(duration>0&&file.isFile);val existing=(local.cached("$owner:recordings") as? JsonArray)?.map { it.jsonObject }?:emptyList()
         val row=json("id" to file.nameWithoutExtension,"user_id" to owner,"start_verse_id" to range.start,"end_verse_id" to range.end,"duration_ms" to duration,"local_path" to file.path,"created_at" to java.time.Instant.now().toString(),"synced" to false,"recording_type" to if(invocation==null) "quran" else "invocation","invocation_id" to invocation?.str("id"),"invocation_snapshot" to invocation)
-        local.cache("$owner:recordings",element(existing+row))
+        local.cache("$owner:recordings",element(existing+row));_recordingVersion.value++
     }
     suspend fun uploadRecordings() = lock.withLock {
         val id=db().auth.currentUserOrNull()?.id?:error("Connexion nécessaire");check(id==account)
@@ -140,7 +141,7 @@ class Repository(private val context: Context) {
                 if(!alreadyUploaded) db().storage.from("recitations").upload(path,file.readBytes())
                 db().from("recitations").insert(recordingPayload(row,id,path))
             }
-            recordings[i]=row.with("synced" to JsonPrimitive(true));local.cache("$id:recordings",element(recordings))
+            recordings[i]=row.with("synced" to JsonPrimitive(true));local.cache("$id:recordings",element(recordings));_recordingVersion.value++
         }
         _notice.value="Récitations synchronisées"
     }

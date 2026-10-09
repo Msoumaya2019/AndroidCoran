@@ -18,7 +18,7 @@ import com.msoumaya.androidcoran.domain.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import java.io.File
-@Composable fun RecorderPanel(vm: CoranViewModel,invocation: JsonObject?=null,fixedRange: VerseRange?=null,compact: Boolean=false,onActiveChanged: (Boolean)->Unit={}) {
+@Composable fun RecorderPanel(vm: CoranViewModel,invocation: JsonObject?=null,fixedRange: VerseRange?=null,compact: Boolean=false,onActiveChanged: (Boolean)->Unit={},onShare: ((String)->Unit)?=null) {
  val context=LocalContext.current;val scope=rememberCoroutineScope()
  var start by rememberSaveable { mutableStateOf("1") };var end by rememberSaveable { mutableStateOf("7") }
  var engine by remember { mutableStateOf<NativeRecorder?>(null) };var phase by remember { mutableStateOf(NativeRecorder.Phase.Idle) }
@@ -69,6 +69,7 @@ import java.io.File
    TextButton(enabled=!busy,onClick={engine?.file?.let { audio("PLAY_LOCAL",it.toURI().toString());previewPlaying=true }}) { Text("Réécouter") }
    TextButton(enabled=!busy,onClick={if(previewPlaying) audio("STOP");previewPlaying=false;engine?.restart();phase=NativeRecorder.Phase.Idle;duration=0;message=""}) { Text("Recommencer") }
    if(phase==NativeRecorder.Phase.Preview) Button(enabled=!busy,onClick=::save) { Text("Enregistrer") }
+   if(phase==NativeRecorder.Phase.Saved&&captureInvocation==null&&onShare!=null) TextButton(enabled=!busy,onClick={engine?.file?.nameWithoutExtension?.let(onShare)}) { Text("Partager avec un ami") }
   }
   if(message.isNotBlank()) Text(message)
  }

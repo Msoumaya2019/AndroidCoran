@@ -40,6 +40,10 @@ import java.time.Instant
 @Composable fun CoranApp(vm: CoranViewModel=viewModel()) {
     val s by vm.repo.state.collectAsStateWithLifecycle();val notice by vm.repo.notice.collectAsStateWithLifecycle();val user by vm.repo.user.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf("Accueil") };var route by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingRecitation by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingRecitationOwner by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(user) { if(pendingRecitationOwner!=user) pendingRecitation=null }
+    LaunchedEffect(route) { if(route!="Récitations") pendingRecitation=null }
     val recovery by vm.repo.passwordRecovery.collectAsStateWithLifecycle()
     LaunchedEffect(recovery,user) { if(recovery&&user!=null) route="Compte" }
     var page by rememberSaveable { mutableIntStateOf(1) };var sessionId by rememberSaveable { mutableStateOf<String?>(null) };var reviewTask by rememberSaveable(stateSaver=listSaver<ReviewTask?,String>(save={ t -> t?.let { listOf(it.id,it.range.start.toString(),it.range.end.toString(),it.category,it.scheduledDate,it.consolidationOffset?.toString().orEmpty()) }?:emptyList() },restore={ if(it.isEmpty()) null else ReviewTask(it[0],VerseRange(it[1].toInt(),it[2].toInt()),it[3],it[4],it[5].toIntOrNull()) })) { mutableStateOf<ReviewTask?>(null) }
@@ -50,7 +54,7 @@ import java.time.Instant
                 if(notice.isNotEmpty()) Text(notice,Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(10.dp),fontSize=12.sp)
                 val open: (Int)->Unit = { id -> val source=s.obj("reader").str("mushaf","coranTest");page=vm.repo.quran.sourcePage(id,source);route="reader" }
                 when(route) {
-                    "reader" -> ReaderScreen(vm,s,page,{page=it.coerceIn(1,604)},sessionId,reviewTask,onChangeSurah={ id -> sessionId=null;reviewTask=null;open(id) }) { tab="Programme";route=if(sessionId!=null) null else "Révisions";sessionId=null;reviewTask=null }
+                    "reader" -> ReaderScreen(vm,s,page,{page=it.coerceIn(1,604)},sessionId,reviewTask,onShareRecitation={ id -> pendingRecitationOwner=user;pendingRecitation=id;route="Récitations";sessionId=null;reviewTask=null },onChangeSurah={ id -> sessionId=null;reviewTask=null;open(id) }) { tab="Programme";route=if(sessionId!=null) null else "Révisions";sessionId=null;reviewTask=null }
                     "Compte" -> AccountScreen(vm,user)
                     "Administration" -> AdminScreen(vm)
                     "Réglages" -> SettingsScreen(vm,s,{route=it})
@@ -60,7 +64,7 @@ import java.time.Instant
                     "Révisions" -> RevisionScreen(vm,s) { task -> sessionId=null;reviewTask=task;open(task.range.start) }
                     "Contenus quotidiens" -> ContentsScreen(vm)
                     "Quiz" -> QuizScreen(vm)
-                    "Récitations" -> RecitationsScreen(vm)
+                    "Récitations" -> RecitationsScreen(vm,pendingRecitation)
                     "Signaler un problème" -> ReportScreen(vm)
                     else -> when(tab) {
                         "Accueil" -> HomeScreen(vm,s,{route=it}, { sessionId=null;reviewTask=null;open(homeReadingVerse(s)) })
@@ -177,7 +181,7 @@ import java.time.Instant
     listOf("Objectif","Marques-pages","Téléchargements","Signaler un problème").forEach { Panel(it,onClick={navigate(it)}) }
 } }
 
-@Composable fun ReaderScreen(vm: CoranViewModel,s: JsonObject,page: Int,onPage: (Int)->Unit,sessionId: String?,task: ReviewTask?,onChangeSurah: (Int)->Unit={},onStudyValidated: ()->Unit={}) {
+@Composable fun ReaderScreen(vm: CoranViewModel,s: JsonObject,page: Int,onPage: (Int)->Unit,sessionId: String?,task: ReviewTask?,onShareRecitation: ((String)->Unit)?=null,onChangeSurah: (Int)->Unit={},onStudyValidated: ()->Unit={}) {
     val context=LocalContext.current;val q=vm.repo.quran;val source=s.obj("reader").str("mushaf","coranTest");val current by RecitationService.current.collectAsStateWithLifecycle();val isPlaying by RecitationService.playing.collectAsStateWithLifecycle();val passageProgress by RecitationService.passageProgress.collectAsStateWithLifecycle();val activePreferences by RecitationService.activePreferences.collectAsStateWithLifecycle()
     var selected by rememberSaveable(page,source) { mutableStateOf<Int?>(null) };var reciterId by rememberSaveable { mutableStateOf(s.obj("audioPreferences").str("reciterId","ar.shaatree")) };var french by rememberSaveable { mutableStateOf(false) };var showAudio by rememberSaveable { mutableStateOf(false) };var startInput by rememberSaveable { mutableStateOf("") };var endInput by rememberSaveable { mutableStateOf("") }
     val session=s.arr("sessions").map { it.jsonObject }.firstOrNull { it.str("id")==sessionId }
@@ -233,7 +237,7 @@ import java.time.Instant
         }
 
         TextButton(onClick={command("STOP");showRecorder=true},modifier=Modifier.fillMaxWidth()) { Text("Enregistrer ma récitation") }
-        if(showRecorder) AlertDialog(onDismissRequest={if(!recordingActive) showRecorder=false},title={Text("Ma récitation")},text={ Column(Modifier.verticalScroll(rememberScrollState())) { RecorderPanel(vm,fixedRange=planned?.let { vm.repo.study.remaining(it,through) }?:pageRange,compact=true,onActiveChanged={recordingActive=it}) } },confirmButton={TextButton(enabled=!recordingActive,onClick={showRecorder=false}) { Text("Fermer") }})
+        if(showRecorder) AlertDialog(onDismissRequest={if(!recordingActive) showRecorder=false},title={Text("Ma récitation")},text={ Column(Modifier.verticalScroll(rememberScrollState())) { RecorderPanel(vm,fixedRange=planned?.let { vm.repo.study.remaining(it,through) }?:pageRange,compact=true,onActiveChanged={recordingActive=it},onShare=onShareRecitation) } },confirmButton={TextButton(enabled=!recordingActive,onClick={showRecorder=false}) { Text("Fermer") }})
         ReaderAudioControls(q,current,isPlaying,passageProgress,activePreferences,{showAudio=true},::command)
         if(showAudio) ReaderAudioDialog(vm,if(startInput.isBlank()&&current!=null) RecitationService.activeRange.value?:pageRange else VerseRange(startInput.toIntOrNull()?:session?.num("start")?:task?.range?.start?:pageRange.start,endInput.toIntOrNull()?:session?.num("end")?:task?.range?.end?:pageRange.end),pageRange,reciterId,{reciterId=it},{showAudio=false;startInput="";endInput=""})
     }
