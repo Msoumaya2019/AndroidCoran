@@ -148,6 +148,24 @@ class NativeSmokeTest {
             assertEquals(3,state.arr("consolidationHistory").size);assertTrue(state.arr("reviewHistory").isEmpty())
             val store=com.msoumaya.androidcoran.data.LocalStore(compose.activity)
             try { assertEquals(state.obj("reviewConsolidations"),store.load("guest")!!.data.obj("reviewConsolidations")) } finally { store.close() }
+            compose.onNodeWithContentDescription("Retour").performClick();compose.onNodeWithText("Mon programme").assertExists()
+        } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
+    }
+
+    @Test fun partialRevisionCardResumesOriginalTaskAtFirstUnvalidatedVerse() {
+        val repo=(compose.activity.application as CoranApplication).repository;assertNull(repo.user.value)
+        var saved=defaultState();val at=java.time.LocalDate.now()
+        val base=markKnowledge(defaultState(),VerseRange(1,7),"perfect",at)
+        val partial=repo.study.validate(base,"revision","partial-revision",VerseRange(1,7),2,"coranTest",at=at)
+        kotlinx.coroutines.runBlocking { repo.awaitReady();saved=repo.state.value;repo.mutate { partial } }
+        try {
+            compose.waitForIdle();compose.onNodeWithText("Révisions").performScrollTo().performClick()
+            compose.onNodeWithText("Révision à continuer").assertExists()
+            compose.onNodeWithText("Reprendre ma révision").performScrollTo().performClick()
+            compose.onNodeWithText("Valider jusqu’au verset sélectionné").performClick()
+            compose.onNodeWithContentDescription("Dernier verset révisé").performScrollTo().performClick()
+            compose.onNodeWithText("Verset 2").assertDoesNotExist();compose.onNodeWithText("Verset 3").assertExists()
+            assertEquals(partial.obj("studyProgress"),repo.state.value.obj("studyProgress"))
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
     }
 }

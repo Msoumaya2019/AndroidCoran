@@ -211,7 +211,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/studyProgress.ts:22 | studyVerses | Local / via services | ui/StudyCompletionSheet.kt (versets du passage restant) | Implémenté | Testé (JVM et Android : verset/page/sourate) |
 | src/core/studyProgress.ts:23 | remainingStudyRange | Local / via services | domain/StudyProgress.remaining | Implémenté | Testé (JVM et Android : verset/page/sourate) |
 | src/core/studyProgress.ts:24 | validateStudyProgress | Local / via services | domain/StudyProgress.validate | Implémenté | Testé (JVM et Android : verset/page/sourate) |
-| src/core/studyProgress.ts:38 | resumeStudyTask | Local / via services | domain/resumeStudyTask | Non commencé | Non commencé |
+| src/core/studyProgress.ts:38 | resumeStudyTask | Local / via services | RevisionScreen + StudyResumeCard + StudyProgress.remaining | Implémenté | Testé (reprise native du premier verset restant) |
 | src/core/toumoun.ts:16 | toumounRecords | Local / via services | ui/toumounRecords | Non commencé | Non commencé |
 | src/core/toumoun.ts:19 | verifiedToumounRanges | Local / via services | ui/verifiedToumounRanges | Non commencé | Non commencé |
 | src/core/toumoun.ts:39 | verifiedToumouns | Local / via services | ui/verifiedToumouns | Non commencé | Non commencé |
@@ -227,7 +227,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/PassageAudioPlayer.tsx:22 | PassageAudioPlayer | Local / via services | ReaderAudioDialog + ReaderAudioControls + RecitationService | En développement | Testé (Compose et Media3 ; déplacement libre restant) |
 | src/RecitationRecorder.tsx:18 | RecitationRecorder | Local / via services | ui/RecitationRecorder | Non commencé | Non commencé |
 | src/RecitationsScreen.tsx:14 | RecitationsScreen | Local / via services | ui/RecitationsScreen | Non commencé | Non commencé |
-| src/ReviewDashboard.tsx:11 | ReviewDashboard | Local / via services | ui/ReviewDashboard | Non commencé | Non commencé |
+| src/ReviewDashboard.tsx:11 | ReviewDashboard | Local / via services | RevisionScreen + ReviewReworkList + StudyResumeCard | En développement (cartes, priorités, consolidation ; présentation complète restante) | Testé (parcours Android ciblés) |
 | src/services/adminAccounts.ts:5 | listLearningAccounts | rpc:admin_learning_accounts | data/AdminService.accounts | En développement | Bloqué — serveur |
 | src/services/adminNotifications.ts:8 | listAdminNotificationRecipients | rpc:admin_notification_recipients, from:admin_notifications, rpc:send_admin_notification | ui/AdminNotificationsPanel | En développement | Bloqué — serveur |
 | src/services/adminNotifications.ts:14 | listAdminNotificationHistory | rpc:admin_notification_recipients, from:admin_notifications, rpc:send_admin_notification | data/AdminService.notificationHistory | En développement | Bloqué — serveur |
@@ -495,7 +495,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 - src/PassageAudioPlayer.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/RecitationRecorder.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/RecitationsScreen.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/ReviewDashboard.tsx : Non commencé ; UI Compose ; tests Non commencé.
+- src/ReviewDashboard.tsx : En développement ; RevisionScreen et cartes natives de reprise/priorités ; tests Android ciblés.
 - src/SocialScreens.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/SurahPicker.tsx : Implémenté ; ReaderSurahPicker Compose ; tests Android ciblés.
 - src/ui/AdminProblemReports.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
@@ -568,3 +568,9 @@ Le sélecteur Compose affiche les 114 sourates, se positionne sur la sourate cou
 ### Retour après consolidation et marqueurs actifs — 9 octobre 2026
 
 La validation de consolidation arrête l’audio, bloque les doubles soumissions pendant la sauvegarde et revient au tableau des révisions, comme validateConsolidation dans App.tsx. Le parcours Android invité valide J+1, vérifie sa persistance puis confirme que J+3/J+7 et reviewHistory restent intacts. La planification prioritaire et la note parfaite ne traitent plus les seuls champs de métadonnées ou les marqueurs null comme des difficultés actives. Une note hésitante remplace un marqueur utilisateur null sans perdre les autres champs. Deux nouveaux tests JVM et trois tests Android ciblés passent ; total JVM : 83. Lint et APK réussissent. Aucun changement backend.
+
+### Reprise de révision et liste à retravailler — 9 octobre 2026
+
+Les cartes StudyResumeCard sont aussi affichées pour les révisions partielles, comme ReviewDashboard.tsx, et ouvrent le premier verset non validé avec l’identifiant original du passage. La liste À retravailler contient tous les passages mémorisés avec marqueur utilisateur/administrateur actif, y compris les échéances futures ; cinq groupes sont visibles initialement, avec expansion sauvegardée. La désactivation des révisions masque les priorités. Le plan quotidien conserve la date d’échéance du groupe prioritaire pour une notation directe ; la validation StudyProgress continue d’utiliser la date du jour comme la source. Après validation, le retour au tableau puis le bouton Retour reviennent au Programme.
+
+Validation : 85 tests JVM ; cinq tests Android ciblés réussis après correction du libellé dans le test de reprise, et deux tests des cartes détaillées réussis avant cette correction. Lint et APK compilent. Les données invitées sont restaurées ; synchronisation authentifiée et présentation complète du tableau restent à valider. Aucun changement backend.

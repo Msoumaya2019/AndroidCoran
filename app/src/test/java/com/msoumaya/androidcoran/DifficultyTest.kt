@@ -60,4 +60,23 @@ class DifficultyTest {
   assertEquals(at.toString(),graded.obj("difficultyMarkers").obj("1").obj("user").str("createdAt"))
   assertEquals("retained",graded.obj("difficultyMarkers").obj("1").str("note"));assertEquals(1,graded.arr("difficultyHistory").size)
  }
+
+ @Test fun reworkIncludesFutureMarkedPassagesGroupsBySurahAndHonorsDisabledReviews() {
+  val base=markKnowledge(defaultState(),VerseRange(1,9),"perfect",at)
+  val ids=listOf(2,3,7,8,9)
+  val marked=ids.fold(base) { state,id -> review.toggleDifficulty(state,id,at) }.with("reviewPriorityDue" to json(*ids.map { it.toString() to at.plusDays(2).toString() }.toTypedArray()))
+  assertTrue(review.tasks(marked,at).none { it.category=="priority" })
+  assertEquals(listOf(VerseRange(2,3),VerseRange(7,7),VerseRange(8,9)),review.rework(marked,at).map { it.range })
+  assertTrue(review.rework(review.setEnabled(marked,false,at),at).isEmpty())
+ }
+
+ @Test fun overduePriorityRetainsOriginalScheduledDateInTaskAndHistory() {
+  val base=markKnowledge(defaultState(),VerseRange(1,1),"perfect",at)
+  val marked=review.toggleDifficulty(base,1,at.minusDays(2))
+  val task=review.tasks(marked,at).single { it.category=="priority" }
+  assertEquals(at.minusDays(2).toString(),task.scheduledDate)
+  val done=review.grade(marked,task,1,"perfect",at)
+  assertEquals(at.minusDays(2).toString(),done.arr("reviewHistory").last().jsonObject.str("scheduledDate"))
+  assertEquals(at.toString(),done.arr("reviewHistory").last().jsonObject.str("date"))
+ }
 }

@@ -19,3 +19,5 @@ Actions de report du lecteur ajoutées : 81 tests JVM et six tests Android cibl�
 Navigation directe du lecteur portée : les 114 sourates et un saut contrôlé vers les pages 1–604. Validation locale de ce second lot : 81 tests JVM et neuf tests Android ciblés, plus Lint et APK. Le test de navigation vérifie explicitement que changer de sourate efface le contexte de séance et que changer de page le conserve. Ces deux lots ne modifient pas significativement l’estimation globale de 55–65 %.
 
 Consolidation : retour natif au tableau après sauvegarde et protection des soumissions. Marqueurs de difficulté : gestion compatible des champs inconnus/null. 83 tests JVM et trois tests Android ciblés réussis ; Lint et APK compilent.
+
+Révisions : cartes de reprise et liste complète des passages à retravailler intégrées, échéances du plan prioritaire conservées et retour vers Programme. Dernière validation : 85 tests JVM, cinq tests Android ciblés et deux tests de cartes détaillées, Lint et APK. La synchronisation authentifiée reste non validée ; estimation globale inchangée (55–65 %).

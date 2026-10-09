@@ -105,6 +105,10 @@ class Review(private val q: Quran,private val program: Program) {
         return if(result==original) original else touch(result)
     }
     private fun hasDifficulty(marker: JsonObject) = listOf("user","admin").any { marker[it]!=null&&marker[it]!=JsonNull }
+    fun rework(s: JsonObject,at: LocalDate=LocalDate.now()): List<ReviewTask> {
+        if(!s.obj("reviewSettings").flag("enabled",true)) return emptyList()
+        return program.split(knownIds(s).filter { hasDifficulty(s.obj("difficultyMarkers").obj(it.toString())) }).map { r -> ReviewTask("priority-${r.start}-${r.end}",r,"priority",at.toString()) }
+    }
     fun tasks(original: JsonObject,at: LocalDate=LocalDate.now()): List<ReviewTask> {
         val s=prepare(original,at)
         if(!s.obj("reviewSettings").flag("enabled",true)) return emptyList()
@@ -112,7 +116,7 @@ class Review(private val q: Quran,private val program: Program) {
         fun add(ids: List<Int>,category: String,date: String=today,id: String?=null) { program.split(ids.distinct().sorted().filter { known(s,it)&&seen.add(it) }).forEach { r -> tasks+=ReviewTask(id?:"$category-${r.start}-${r.end}",r,category,date) } }
         s.obj("studyProgress").values.map { it.jsonObject }.filter { it.str("mode")=="revision"&&it.str("status")=="partial" }.forEach { add((it.num("through")+1..it.num("end")).toList(),it.str("category","habitual"),id=it.str("id")) }
         knownIds(s).groupBy { s.obj("reviewConsolidations").obj(it.toString()) }.forEach { (c,ids) -> val offset=offsets.firstOrNull { c.obj("completed")[it.toString()]==null };if(c.isNotEmpty()&&offset!=null) { val due=c.obj("scheduledDates").str(offset.toString(),LocalDate.parse(c.str("learnedAt")).plusDays(offset.toLong()).toString());if(due<=today) add(ids,"recent",due) } }
-        add(knownIds(s).filter { hasDifficulty(s.obj("difficultyMarkers").obj(it.toString()))&&s.obj("reviewPriorityDue").str(it.toString(),today)<=today },"priority")
+        program.split(knownIds(s).filter { hasDifficulty(s.obj("difficultyMarkers").obj(it.toString()))&&s.obj("reviewPriorityDue").str(it.toString(),today)<=today }).forEach { r -> add(r.ids,"priority",s.obj("reviewPriorityDue").str(r.start.toString(),today)) }
         val cycle=s.obj("reviewCycle");val idx=cycle.obj("assignments").num(today,-1);val completed=cycle.arr("completed").map { it.jsonPrimitive.int }.toSet();if(idx>=0) add(cycle.arr("days").getOrNull(idx)?.jsonArray?.map { it.jsonPrimitive.int }?.filter { it !in completed } ?: emptyList(),"habitual",LocalDate.parse(cycle.str("startDate")).plusDays(idx.toLong()).toString())
         return tasks
     }

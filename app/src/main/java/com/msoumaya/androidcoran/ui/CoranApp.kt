@@ -50,7 +50,7 @@ import java.time.Instant
                 if(notice.isNotEmpty()) Text(notice,Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(10.dp),fontSize=12.sp)
                 val open: (Int)->Unit = { id -> val source=s.obj("reader").str("mushaf","coranTest");page=vm.repo.quran.sourcePage(id,source);route="reader" }
                 when(route) {
-                    "reader" -> ReaderScreen(vm,s,page,{page=it.coerceIn(1,604)},sessionId,reviewTask,onChangeSurah={ id -> sessionId=null;reviewTask=null;open(id) }) { if(sessionId!=null) { tab="Programme";route=null } else route="Révisions";sessionId=null;reviewTask=null }
+                    "reader" -> ReaderScreen(vm,s,page,{page=it.coerceIn(1,604)},sessionId,reviewTask,onChangeSurah={ id -> sessionId=null;reviewTask=null;open(id) }) { tab="Programme";route=if(sessionId!=null) null else "Révisions";sessionId=null;reviewTask=null }
                     "Compte" -> AccountScreen(vm,user)
                     "Administration" -> AdminScreen(vm)
                     "Réglages" -> SettingsScreen(vm,s,{route=it})
@@ -113,6 +113,9 @@ import java.time.Instant
     }
 }
 @Composable fun RevisionScreen(vm: CoranViewModel,s: JsonObject,open: (ReviewTask)->Unit) { LaunchedEffect(Unit) { vm.action { vm.repo.mutate { vm.repo.review.prepare(it) } } };val tasks=vm.repo.review.tasks(s);PageList { Text("Révision quotidienne",style=MaterialTheme.typography.headlineSmall);Row { Text("Révisions activées",Modifier.weight(1f));Switch(s.obj("reviewSettings").flag("enabled",true),{ enabled -> vm.action { vm.repo.mutate { vm.repo.review.prepare(vm.repo.review.setEnabled(it,enabled)) } } }) }
+    s.obj("studyProgress").values.map { it.jsonObject }.filter { it.str("mode")=="revision"&&it.str("status")=="partial" }.forEach { record ->
+        StudyResumeCard(vm.repo.quran,vm.repo.study,record) { vm.repo.study.remaining(range(record),record.num("through"))?.let { remaining -> open(ReviewTask(record.str("id"),remaining,record.str("category","habitual"),LocalDate.now().toString())) } }
+    }
     ReviewRhythmPicker(s.obj("reviewSettings"),{ n -> vm.action { vm.repo.mutate { vm.repo.review.prepare(vm.repo.review.setCycle(it,n)) } } },{ quantity -> vm.action { vm.repo.mutate { vm.repo.review.prepare(vm.repo.review.setQuantity(it,quantity)) } } })
     val cycle=s.obj("reviewCycle");val corpus=cycle.arr("corpus").map { it.jsonPrimitive.int }.toSet();val completed=cycle.arr("completed").map { it.jsonPrimitive.int }.count { it in corpus }
     if(cycle.isNotEmpty()) { Text("Mon cycle de révision");Text("${cycle.num("lengthDays",7)} jours · $completed / ${corpus.size} versets réellement révisés");LinearProgressIndicator(progress={if(corpus.isEmpty()) 0f else completed.toFloat()/corpus.size},modifier=Modifier.fillMaxWidth());Text("Une journée manquée reste à faire et peut décaler la fin du cycle.") }
@@ -120,6 +123,7 @@ import java.time.Instant
     if(rows.isNotEmpty()) { Text("Nouveaux versets à consolider");Text("Consolidations J+1, J+3 et J+7. Les dates restent liées à l’apprentissage.") }
     rows.forEach { row -> val pending=row.steps.first { it.completed==null };Panel(vm.repo.quran.reference(row.range),"Appris le ${row.learnedAt}\n"+row.steps.joinToString(" · ") { "J+${it.offset} : "+(it.completed?.let { date -> "validé le $date" }?:it.due) },{open(ReviewTask("consolidation-${row.range.start}-${row.range.end}",row.range,"recent",pending.due,pending.offset))}) }
     tasks.forEach { t -> Panel(vm.repo.quran.reference(t.range),"${t.category} · ${t.scheduledDate}",{open(t)}) };if(tasks.isEmpty()) Text("Aucune révision à effectuer aujourd’hui")
+    ReviewReworkList(vm.repo.quran,vm.repo.review.rework(s),open)
     Text("Historique");s.arr("reviewHistory").takeLast(40).reversed().forEach { v -> val e=v.jsonObject;Panel(vm.repo.quran.reference(range(e)),"${e.str("date")} · ${e.str("grade")}") }
 } }
 @Composable fun BookmarkScreen(vm: CoranViewModel,s: JsonObject,open: (Int)->Unit) {
