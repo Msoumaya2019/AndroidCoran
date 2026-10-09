@@ -200,6 +200,14 @@ import java.time.Instant
             Button(enabled=pending,onClick={vm.action { command("STOP");vm.repo.mutate { vm.repo.review.completeConsolidation(it,task.range,targetOffset=task.consolidationOffset) } }},modifier=Modifier.fillMaxWidth().padding(8.dp)) { Text(if(pending) "Valider la consolidation · J+${task.consolidationOffset}" else "Consolidation validée") }
         } else if(session!=null) {
             Button(enabled=through<session.num("end"),onClick={completionGrade="perfect";showCompletion=true},modifier=Modifier.fillMaxWidth().padding(8.dp)) { Text(if(through<session.num("end")) "Terminer mon apprentissage" else "Apprentissage validé") }
+            if(through<session.num("end")) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly) {
+                listOf("Je dois encore le travailler","Reporter cette séance").forEach { label ->
+                    TextButton(enabled=!submitting,onClick={if(!submitting) { submitting=true;vm.action {
+                        try { vm.repo.mutate { vm.repo.program.postpone(it,session.str("id")) };withContext(Dispatchers.Main) { onStudyValidated() } }
+                        finally { withContext(Dispatchers.Main) { submitting=false } }
+                    } }},modifier=Modifier.weight(1f)) { Text(label) }
+                }
+            }
         } else if(task!=null) {
             if(planned!=null&&through<planned.end) ReviewValidationActions { grade -> completionGrade=grade;showCompletion=true } else Text("Révision validée",Modifier.padding(8.dp))
         }

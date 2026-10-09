@@ -135,8 +135,8 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/program.ts:147 | validGoal | Local / via services | domain/validGoal | Non commencé | Non commencé |
 | src/core/program.ts:190 | generateProgram | Local / via services | domain/generateProgram | Non commencé | Non commencé |
 | src/core/program.ts:208 | seedInitialRevisions | Local / via services | domain/seedInitialRevisions | Non commencé | Non commencé |
-| src/core/program.ts:215 | postponeSession | Local / via services | domain/postponeSession | Non commencé | Non commencé |
-| src/core/program.ts:220 | completeSession | Local / via services | domain/completeSession | Non commencé | Non commencé |
+| src/core/program.ts:215 | postponeSession | Local / via services | Program.postpone + ReaderScreen | Implémenté (report et travail restant, progression partielle conservée) | Testé (JVM et parcours Android invité) |
+| src/core/program.ts:220 | completeSession | Local / via services | Program.complete + StudyProgress.validate | Implémenté (validation entière/partielle et action travail restant) | Testé (JVM et parcours Android invité) |
 | src/core/program.ts:234 | extendLearningProgram | Local / via services | domain/extendLearningProgram | Non commencé | Non commencé |
 | src/core/program.ts:243 | gradeRevision | Local / via services | domain/gradeRevision | Non commencé | Non commencé |
 | src/core/program.ts:257 | completedHizbs | Local / via services | domain/completedHizbs | Non commencé | Non commencé |
@@ -556,3 +556,7 @@ Validation du lot : 79 tests JVM et 11 tests Android ciblés réussissent (cinq 
 ### Cartes de reprise détaillées — 9 octobre 2026
 
 Le programme affiche les cartes de reprise pour les séances d’apprentissage partielles encore actives, comme MainScreens.tsx. Elles montrent le passage restant, la progression arrondie comme la source, la validation précédente et le détail par page ou verset (terminé, à continuer, à faire). Le détail peut être développé au-delà de douze éléments ; son état est sauvegardé avec Compose. Les deux commandes de reprise ouvrent le Coran à l’endroit restant. Deux nouveaux tests Compose et cinq tests de régression Android réussissent sur le second lot, dont la reprise réelle après une validation partielle persistée. Les 79 tests JVM et Lint réussissent. La synchronisation authentifiée reste non validée.
+
+### Actions de report dans le lecteur — 9 octobre 2026
+
+« Je dois encore le travailler » et « Reporter cette séance » utilisent la même règle source de postponeSession. Une séance non commencée devient reportée ; une séance partielle reste à faire et conserve ses validations, connaissances, dates et échéances de révision. Les autres séances ne sont pas recalculées. Le lecteur revient au programme. Comme le closeReader source, ces deux actions ne commandent pas l’arrêt audio. Deux nouveaux tests JVM couvrent les invariants et un parcours Android invité couvre les deux actions. Aucun changement de backend.

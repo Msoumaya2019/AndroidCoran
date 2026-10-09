@@ -87,4 +87,29 @@ class NativeSmokeTest {
             try { assertEquals(3,store.load("guest")!!.data.obj("studyProgress").obj("learning:partial-learning").num("through")) } finally { store.close() }
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
     }
+
+    @Test fun readerCanDeferUnstartedAndPartialLearningWithoutLosingProgress() {
+        val repo=(compose.activity.application as CoranApplication).repository
+        assertNull(repo.user.value)
+        val today=java.time.LocalDate.now();var saved=defaultState()
+        val session=json("id" to "defer-learning","start" to 1,"end" to 7,"date" to today.toString(),"scheduledDate" to today.toString(),"status" to "todo")
+        val initial=defaultState().with("sessions" to element(listOf(session)),"goal" to json("ranges" to listOf(json("start" to 1,"end" to 7))))
+        kotlinx.coroutines.runBlocking { repo.awaitReady();saved=repo.state.value;repo.mutate { initial } }
+        try {
+            compose.waitForIdle();compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
+            compose.onNodeWithText(repo.quran.reference(VerseRange(1,7))).performClick()
+            compose.onNodeWithText("Je dois encore le travailler").performClick()
+            compose.waitUntil(10000) { repo.state.value.arr("sessions")[0].toString().contains("postponed") }
+            assertFalse(known(repo.state.value,1));assertTrue(repo.state.value.obj("studyProgress").isEmpty())
+            val partial=repo.program.complete(initial,"defer-learning",3,today)
+            kotlinx.coroutines.runBlocking { repo.mutate { partial } }
+            compose.waitForIdle();compose.onNodeWithText("Reprendre mon apprentissage").performScrollTo().performClick()
+            compose.onNodeWithText("Reporter cette séance").performClick()
+            compose.onNodeWithText("Apprentissage à continuer").assertExists()
+            assertEquals(partial.obj("studyProgress"),repo.state.value.obj("studyProgress"))
+            assertEquals(partial.arr("sessions"),repo.state.value.arr("sessions"))
+            compose.onNodeWithText("Reprendre mon apprentissage").performScrollTo().performClick()
+            compose.onNodeWithText("Terminer mon apprentissage").assertExists()
+        } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
+    }
 }
