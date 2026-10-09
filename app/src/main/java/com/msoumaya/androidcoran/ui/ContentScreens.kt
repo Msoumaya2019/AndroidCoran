@@ -64,7 +64,7 @@ import kotlinx.serialization.json.*
         LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)) {
             items(if(initialId==null) contents else listOfNotNull(detail),key={it.str("id")}) { content ->
                 Panel(content.str("title",if(content.str("type")=="invocation") "Invocation" else "Rappel"),content.str("french_text")) {
-                    if(content.str("arabic_text").isNotBlank()) CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) { Text(content.str("arabic_text"),Modifier.fillMaxWidth(),fontSize=24.sp,lineHeight=42.sp,textAlign=androidx.compose.ui.text.style.TextAlign.Center) }
+                    if(content.str("arabic_text").isNotBlank()) CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) { Text(content.str("arabic_text"),Modifier.fillMaxWidth(),fontFamily=arabicInterfaceFont,fontSize=24.sp,lineHeight=42.sp,textAlign=androidx.compose.ui.text.style.TextAlign.Center) }
                     if(content.str("phonetic_text").isNotBlank()) Text(content.str("phonetic_text"))
                     if(content.str("explanation").isNotBlank()) Text(content.str("explanation"))
                     Text("${content.str("source")} ${content.str("reference")}",fontSize=12.sp)

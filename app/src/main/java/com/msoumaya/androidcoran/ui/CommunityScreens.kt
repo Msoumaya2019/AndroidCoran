@@ -3,6 +3,8 @@ package com.msoumaya.androidcoran.ui
 import android.content.Intent
 import androidx.compose.material3.*
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.msoumaya.androidcoran.data.*
 import kotlinx.coroutines.*
@@ -110,5 +112,5 @@ import kotlinx.serialization.json.*
             try { service.share(account,linkId,recording.str("id"),"Récitation vocale · "+title(recording));if(vm.repo.user.value==account) { sharingId=null;vm.repo.feedback("Récitation partagée dans votre conversation.") } }
             catch(e: Exception) { if(e is CancellationException) throw e;shareError=e.message?:"Partage impossible" } finally { sharingBusy=false }
         } }
-    },onDismiss={sharingId=null}) }
+    },onDismiss={sharingId=null},avatar={friend -> AvatarPreview(vm.repo,friend.profile.str("avatar_path"),androidx.compose.ui.Modifier.size(34.dp)) }) }
 }

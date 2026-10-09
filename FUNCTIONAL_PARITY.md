@@ -49,7 +49,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Partage de récitations et retours vocaux | src/services/recitations.ts; social.ts | recitation_feedback / friend_messages / bucket | RecitationSharingDialog + RecitationLibraryService + ConversationScreen + AdminVoicePanel | En développement | Testé (contrat JVM) ; envoi réel non validé |
 | Quiz quotidien, réponses et défis 5/10 questions | src/ui/QuizScreen.tsx; services/quiz.ts | quiz_snapshot / quiz_answer_daily / quiz_create_challenge / quiz_answer_challenge | QuizScreens.kt + QuizService + Quiz.kt ; réponses offline et défis | En développement | Testé (règles JVM) ; serveur Bloqué |
 | Quiz thématiques, historique, statistiques et notifications | src/core/quiz.ts; services/quiz.ts | quiz_sets + RPC | QuizScreens.kt ; choix thématique, historique, scores et préférences | En développement | Testé (scores JVM) ; serveur Bloqué |
-| Contenus quotidiens, rappels et invocations | src/DailyContentsScreen.tsx; services/dailyContents.ts | daily_contents / daily_content_for_date | ContentService + ContentScreens ; catégories, favoris, pagination, image, audio et enregistrement invocation | En développement | Bloqué — backend ; médias sur appareil Non commencé |
+| Contenus quotidiens, rappels et invocations | src/DailyContentsScreen.tsx; services/dailyContents.ts | daily_contents / daily_content_for_date | ContentService + ContentScreens ; catégories, favoris, pagination, image, audio avec pause/reprise, partage Android et fiche directe invocation | En développement | Bloqué — backend ; médias sur appareil Non commencé |
 | Thèmes, accents, polices et papier | src/ui/AppearanceScreen.tsx; theme/* | user_state.data | NativeAppTheme + AppearanceOptions ; palettes originales, quatre accents, trois modes de police et papier QCF | Implémenté | Testé (règles JVM) ; fidélité exhaustive Non commencé |
 | Rappel local à 19 h, redémarrage et préférences | src/services/notifications.ts | user_state.data.notifications | LocalReminders + ReminderSettings | En développement | Non commencé (déclenchement/boot) |
 | Push messages, amis, corrections, admin et quiz | src/services/notifications.ts; supabase/*notifications* | Jetons Expo et RPC existants | Canal FCM additif proposé dans docs/FCM_PROPOSAL.md | Bloqué | Bloqué |
@@ -219,10 +219,10 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/weeklyProgress.ts:3 | upcomingSessions | Local / via services | ui/upcomingSessions | Non commencé | Non commencé |
 | src/core/weeklyProgress.ts:7 | weeklyProgress | Local / via services | ui/weeklyProgress | Non commencé | Non commencé |
 | src/core/weeklyProgress.ts:14 | sessionStatus | Local / via services | ui/sessionStatus | Non commencé | Non commencé |
-| src/DailyContentsScreen.tsx:15 | ContentCard | Local / via services | ui/ContentCard | Non commencé | Non commencé |
+| src/DailyContentsScreen.tsx:15 | ContentCard | daily_contents, content_favorites ; médias existants | ui/ContentScreens + ContentAudioButton + ContentSharing ; texte/RTL, favoris, audio, image, enregistrement et partage | Implémenté | JVM partage écrit ; parcours appareil Non commencé |
 | src/DailyContentsScreen.tsx:41 | ContentTabs | Local / via services | ui/ContentTabs | Non commencé | Non commencé |
 | src/DailyContentsScreen.tsx:47 | TodayContents | Local / via services | ui/TodayContents | Non commencé | Non commencé |
-| src/DailyContentsScreen.tsx:53 | DailyContentsScreen | Local / via services | ui/DailyContentsScreen | Non commencé | Non commencé |
+| src/DailyContentsScreen.tsx:53 | DailyContentsScreen | ContentService : catégories, contenus, favoris | ui/ContentsScreen ; onglets, pagination et fiche par identifiant ; carrousel source restant | En développement | Interface Non commencé |
 | src/MushafPage.tsx:21 | MushafPage | Local / via services | ui/MushafPage | Non commencé | Non commencé |
 | src/PassageAudioPlayer.tsx:22 | PassageAudioPlayer | Local / via services | ReaderAudioDialog + ReaderAudioControls + RecitationService | En développement | Testé (Compose et Media3 ; déplacement libre restant) |
 | src/RecitationRecorder.tsx:18 | RecitationRecorder | Local / via services | RecorderPanel + audio/NativeRecorder.kt | En développement (lecteur, préécoute et partage portés) | En développement (accès invité testé ; capture à revalider) |
@@ -261,7 +261,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/services/dailyContents.ts:24 | removeSchedule | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
 | src/services/dailyContents.ts:26 | favorites | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/favorites | Non commencé | Non commencé |
 | src/services/dailyContents.ts:32 | setFavorite | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/setFavorite | Non commencé | Non commencé |
-| src/services/dailyContents.ts:33 | getContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/getContent | Non commencé | Non commencé |
+| src/services/dailyContents.ts:33 | getContent | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ContentService.getContent : lecture par id et cache | Implémenté | Lecture exacte compte réel Non commencé |
 | src/services/dailyContents.ts:35 | favoriteContents | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | data/favoriteContents | Non commencé | Non commencé |
 | src/services/dailyContents.ts:37 | saveContentAndSchedule | rpc:daily_content_for_date, from:content_categories, from:daily_contents, from:daily_content_schedule, from:content_favorites, rpc:save_daily_content | ui/AdminContentsPanel | En développement | Bloqué — serveur |
 | src/services/notifications.ts:41 | setActiveConversation | rpc:register_push_device, from:push_devices, rpc:my_push_delivery_status, from:notification_preferences | data/setActiveConversation | Non commencé | Non commencé |
@@ -490,7 +490,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 - src/coranTest/CoranTestScreen.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/coranTest/PageSurface.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/coranTest/PageSurface.web.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/DailyContentsScreen.tsx : Non commencé ; UI Compose ; tests Non commencé.
+- src/DailyContentsScreen.tsx : En développement ; ContentScreens/ContentAudioButton natifs, fiche exacte et partage portés ; carrousel/fidélité et tests appareil restent ouverts.
 - src/MushafPage.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/PassageAudioPlayer.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/RecitationRecorder.tsx : En développement ; RecorderPanel natif, pause et préécoute ; tests microphone Android ciblés ; compte/partage non validés.
@@ -615,3 +615,5 @@ Source : src/RecitationsScreen.tsx:54, src/App.tsx:241, src/DailyContentsScreen.
 - Écouter/Pause réutilise Media3 avec une clé par compte/contenu/URL ; reprise du même lecteur, arrêt ciblé à la fermeture et rejet d’un résultat de résolution après fermeture.
 
 Statut développement : Implémenté. Statut test : trois nouveaux tests JVM du texte de partage et deux tests Compose du lien écrits ; compilation/tests CI en cours. Essai local interrompu par allocation mémoire JVM insuffisante, sans résultat complet. Tests Compose non exécutés et lecture/partage/favoris sur compte réel non validés. Aucun changement Supabase.
+
+Complément de ce lot : police Amiri existante pour le texte arabe des contenus/snapshots ; photos de profil des amis ajoutées au sélecteur de partage, via AvatarPreview et Storage existants. Première CI : tests JVM exécutés, compilation AndroidTest bloquée par un import inutile de assertDoesNotExist ; import corrigé, nouvelle CI requise. Aucun test Compose n’a été exécuté.

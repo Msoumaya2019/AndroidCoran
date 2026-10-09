@@ -16,7 +16,7 @@ import kotlinx.serialization.json.JsonObject
 @Composable fun InvocationRecordingLink(recording: JsonObject,onView: ((String)->Unit)?) {
     val arabic=recording.obj("invocation_snapshot").str("arabic_text")
     if(arabic.isNotBlank()) CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        Text(arabic,Modifier.fillMaxWidth(),fontSize=24.sp,lineHeight=42.sp,textAlign=TextAlign.Center)
+        Text(arabic,Modifier.fillMaxWidth(),fontFamily=arabicInterfaceFont,fontSize=24.sp,lineHeight=42.sp,textAlign=TextAlign.Center)
     }
     val id=recording.str("invocation_id")
     if(id.isNotBlank()&&onView!=null) TextButton(onClick={onView(id)}) { Text("Voir l’invocation") }
