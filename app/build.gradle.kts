@@ -7,6 +7,7 @@ android {
  namespace = "com.msoumaya.androidcoran"
  compileSdk = 36
  defaultConfig { applicationId = "com.msoumaya.androidcoran"; minSdk = 26; targetSdk = 36; versionCode = 1; versionName = "0.1.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"; buildConfigField("String", "SUPABASE_PUBLIC_KEY", "\"$publishableKey\"") }
+ installation { timeOutInMs = 60_000 }
  buildFeatures { compose = true; buildConfig = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  buildTypes { release { isMinifyEnabled = false; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") } }

@@ -2,6 +2,8 @@ package com.msoumaya.androidcoran.ui
 
 import android.content.Intent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -19,6 +21,7 @@ import kotlinx.serialization.json.*
 
 @Composable fun ContentsScreen(vm: CoranViewModel) {
     val owner by vm.repo.user.collectAsStateWithLifecycle();val service=remember(vm) { ContentService(vm.repo) }
+    var recordingActive by remember { mutableStateOf(false) }
     var contents by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) };var categories by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) };var favorites by remember(owner) { mutableStateOf<List<String>>(emptyList()) }
     var type by rememberSaveable { mutableStateOf("reminder") };var daily by rememberSaveable { mutableStateOf(true) };var favoriteOnly by rememberSaveable { mutableStateOf(false) };var category by rememberSaveable { mutableStateOf<String?>(null) };var menu by remember { mutableStateOf(false) }
     var more by remember { mutableStateOf(false) };var loading by remember { mutableStateOf(false) };var offset by remember { mutableIntStateOf(0) };var recording by remember { mutableStateOf<JsonObject?>(null) }
@@ -60,5 +63,5 @@ import kotlinx.serialization.json.*
             if(more) item { Button(enabled=!loading,onClick={load(true)}) { Text("Charger la suite") } }
         }
     }
-    recording?.let { content -> AlertDialog(onDismissRequest={recording=null},title={Text(content.str("title","Invocation"))},text={RecorderPanel(vm,content)},confirmButton={TextButton(onClick={recording=null}) { Text("Fermer") }}) }
+    recording?.let { content -> AlertDialog(onDismissRequest={if(!recordingActive) recording=null},title={Text(content.str("title","Invocation"))},text={ Column(Modifier.verticalScroll(rememberScrollState())) { RecorderPanel(vm,content,onActiveChanged={recordingActive=it}) } },confirmButton={TextButton(enabled=!recordingActive,onClick={recording=null}) { Text("Fermer") }}) }
 }

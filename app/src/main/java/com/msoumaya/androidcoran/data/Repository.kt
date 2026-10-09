@@ -122,6 +122,8 @@ class Repository(private val context: Context) {
     suspend fun rows(table: String,filters: Map<String,String> = emptyMap()): List<JsonObject> { check(user.value!=null);return db().from(table).select { filter { filters.forEach { (k,v) -> eq(k,v) } };limit(100) }.decodeList<JsonObject>() }
     suspend fun insert(table: String,data: JsonObject) { check(user.value!=null);db().from(table).insert(data) }
     suspend fun signedRecitation(path: String) = db().storage.from("recitations").createSignedUrl(path,kotlin.time.Duration.parse("10m"))
+    suspend fun recordingInformed(owner: String)=context.config.data.first()[booleanPreferencesKey("recitation-info-$owner")]?:false
+    suspend fun acceptRecordingInformation(owner: String) { context.config.edit { it[booleanPreferencesKey("recitation-info-$owner")]=true } }
     fun recordings(): List<JsonObject> = (local.cached("$account:recordings") as? JsonArray)?.map { it.jsonObject }?:emptyList()
     suspend fun saveRecording(file: java.io.File,range: VerseRange,duration: Long,owner: String,invocation: JsonObject?=null) = lock.withLock {
         require(duration>0&&file.isFile);val existing=(local.cached("$owner:recordings") as? JsonArray)?.map { it.jsonObject }?:emptyList()

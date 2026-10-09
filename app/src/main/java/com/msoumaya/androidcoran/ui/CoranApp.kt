@@ -185,6 +185,7 @@ import java.time.Instant
     val record=studyId?.let { s.obj("studyProgress").obj("$mode:$it") }?:json()
     val planned=if(session!=null) range(session) else if(record.isNotEmpty()) range(record) else task?.range
     val through=record.num("through",(planned?.start?:1)-1)
+    var showRecorder by rememberSaveable { mutableStateOf(false) };var recordingActive by remember { mutableStateOf(false) }
     var showSurahPicker by rememberSaveable { mutableStateOf(false) }
     var showCompletion by rememberSaveable(studyId) { mutableStateOf(false) };var completionGrade by rememberSaveable(studyId) { mutableStateOf("perfect") };var submitting by remember(studyId) { mutableStateOf(false) }
     val payload by produceState<Triple<JsonObject?,android.graphics.Bitmap?,JsonArray?>>(Triple(null,null,null),page,source) { value=withContext(Dispatchers.IO) { if(source=="coranTest") Triple(q.qcfData(context,page),null,null) else if(source=="coran_1441") madaniImage(context,page) else { val folder=if(source=="tajweedPages"||source=="tajweed") "mushaf-tajweed" else "mushaf";val bitmap=context.assets.open("$folder/page${page.toString().padStart(3,'0')}.png").use { BitmapFactory.decodeStream(it) };val filename=if(folder=="mushaf") "bounds.json" else "mushaf-tajweed-bounds.json";val regions=context.assets.open(filename).bufferedReader().use { Json.parseToJsonElement(it.readText()).jsonObject[page.toString()]?.jsonArray };Triple(null,bitmap,regions) } } }
@@ -231,6 +232,8 @@ import java.time.Instant
             } }
         }
 
+        TextButton(onClick={command("STOP");showRecorder=true},modifier=Modifier.fillMaxWidth()) { Text("Enregistrer ma récitation") }
+        if(showRecorder) AlertDialog(onDismissRequest={if(!recordingActive) showRecorder=false},title={Text("Ma récitation")},text={ Column(Modifier.verticalScroll(rememberScrollState())) { RecorderPanel(vm,fixedRange=planned?.let { vm.repo.study.remaining(it,through) }?:pageRange,compact=true,onActiveChanged={recordingActive=it}) } },confirmButton={TextButton(enabled=!recordingActive,onClick={showRecorder=false}) { Text("Fermer") }})
         ReaderAudioControls(q,current,isPlaying,passageProgress,activePreferences,{showAudio=true},::command)
         if(showAudio) ReaderAudioDialog(vm,if(startInput.isBlank()&&current!=null) RecitationService.activeRange.value?:pageRange else VerseRange(startInput.toIntOrNull()?:session?.num("start")?:task?.range?.start?:pageRange.start,endInput.toIntOrNull()?:session?.num("end")?:task?.range?.end?:pageRange.end),pageRange,reciterId,{reciterId=it},{showAudio=false;startInput="";endInput=""})
     }

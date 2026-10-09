@@ -168,4 +168,23 @@ class NativeSmokeTest {
             assertEquals(partial.obj("studyProgress"),repo.state.value.obj("studyProgress"))
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
     }
+
+    @Test fun readerRecorderUsesSelectedPassageAndGuestCannotStartMicrophone() {
+        val repo=(compose.activity.application as CoranApplication).repository;assertNull(repo.user.value)
+        var saved=defaultState();val at=java.time.LocalDate.now()
+        val session=json("id" to "recording-passage","start" to 1,"end" to 7,"date" to at.toString(),"scheduledDate" to at.toString(),"status" to "todo")
+        val initial=repo.program.complete(defaultState().with("sessions" to element(listOf(session))),"recording-passage",3,at)
+        kotlinx.coroutines.runBlocking { repo.awaitReady();saved=repo.state.value;repo.mutate { initial } }
+        try {
+            compose.waitForIdle();compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
+            compose.onNodeWithText("Reprendre mon apprentissage").performScrollTo().performClick()
+            compose.onNodeWithText("Enregistrer ma récitation").performClick()
+            compose.onNodeWithText(repo.quran.reference(VerseRange(4,7))).assertExists()
+            compose.onNodeWithText("Commencer").performClick()
+            compose.onNodeWithText("Connecte-toi dans Profil pour sauvegarder et synchroniser tes récitations.").assertExists()
+            compose.onNodeWithText("Pause").assertDoesNotExist()
+            compose.onNodeWithText("Fermer").performClick();compose.onNodeWithText("Terminer mon apprentissage").assertExists()
+            assertEquals(initial.obj("studyProgress"),repo.state.value.obj("studyProgress"))
+        } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
+    }
 }
