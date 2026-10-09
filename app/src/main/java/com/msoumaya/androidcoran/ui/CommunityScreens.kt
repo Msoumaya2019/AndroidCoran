@@ -22,6 +22,7 @@ import kotlinx.serialization.json.*
     var sharingId by rememberSaveable(owner,initialRecitationId) { mutableStateOf(initialRecitationId) }
     var friends by remember(owner) { mutableStateOf<List<RecitationFriend>>(emptyList()) }
     var sharingBusy by remember { mutableStateOf(false) };var friendsLoading by remember { mutableStateOf(false) };var shareError by remember(owner) { mutableStateOf("") }
+    var removing by remember(owner) { mutableStateOf<JsonObject?>(null) };var removeBusy by remember { mutableStateOf(false) };var removeError by remember(owner) { mutableStateOf("") }
     var refreshing by remember { mutableStateOf(false) }
     var rows by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) }
     var corrections by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) }
@@ -50,7 +51,7 @@ import kotlinx.serialization.json.*
     LaunchedEffect(owner,initialRecitationId) {
         if(owner!=null&&initialRecitationId!=null) { refresh(true);repeat(10) { if(rows.any { it.str("id")==initialRecitationId }) return@LaunchedEffect;delay(3000);refresh() } }
     }
-    val all=remember(owner,recordingVersion,rows) { recitationLibrary(owner,vm.repo.recordings(),rows) }
+    val all=remember(owner,recordingVersion,rows) { recitationLibrary(owner,vm.repo.recordings(),rows,vm.repo.removedRecordingIds()) }
     val sharing=all.firstOrNull { it.str("id")==sharingId&&it.str("storage_path").isNotBlank() }
     LaunchedEffect(owner,sharing?.str("id")) {
         val account=owner
@@ -72,6 +73,7 @@ import kotlinx.serialization.json.*
         }) {
             val playbackKey=recordingPlaybackKey(owner.orEmpty(),row.str("id"))
             LiveRecitationPlaybackControls(playbackKey,row.num("duration_ms").toLong(),onPlay={val local=row.str("local_path");if(local.isNotBlank()&&java.io.File(local).isFile) play(local,true,playbackKey) else play(row.str("storage_path"),key=playbackKey)},onToggle={audio("TOGGLE",key=playbackKey)},onSeek={audio("SEEK",it,playbackKey)})
+            TextButton(onClick={removeError="";removing=row}) { Text("Supprimer") }
             if(row.str("recording_type","quran")=="quran") TextButton(enabled=row.str("storage_path").isNotBlank(),onClick={sharingId=row.str("id")}) { Text("Partager avec un ami") }
         } }
         selected?.takeIf { filter=="all"||it.str("recording_type","quran")==filter }?.let { row ->
@@ -87,6 +89,18 @@ import kotlinx.serialization.json.*
         }
         if(all.isEmpty()) Text("Aucune récitation chargée")
     }
+    removing?.let { recording -> RecitationDeleteDialog(title(recording),removeBusy,removeError,onDelete={
+        val account=owner
+        if(account!=null&&!removeBusy) { removeBusy=true;scope.launch {
+            try {
+                val key=RecitationService.standaloneKey.value
+                val local=recording.str("local_path").takeIf { it.isNotBlank() }?.let { java.io.File(it).toURI().toString() }
+                if(key!=null&&(key==recordingPlaybackKey(account,recording.str("id"))||key==local)) audio("STOP",key=key)
+                withContext(Dispatchers.IO) { vm.repo.removeRecording(account,recording) }
+                if(vm.repo.user.value==account) { rows=rows.filter { it.str("id")!=recording.str("id") };if(selected?.str("id")==recording.str("id")) { selected=null;corrections=emptyList();feedback=emptyList() };if(sharingId==recording.str("id")) sharingId=null;removing=null;vm.repo.feedback("Récitation supprimée.") }
+            } catch(e: Exception) { if(e is CancellationException) throw e;removeError=e.message?:"Suppression impossible" } finally { removeBusy=false }
+        } }
+    },onDismiss={removing=null}) }
     sharing?.let { recording -> RecitationSharingDialog(title(recording),friends,friendsLoading,sharingBusy,shareError,onShare={ linkId ->
         val account=owner
         if(account!=null&&!sharingBusy) { sharingBusy=true;shareError="";scope.launch {

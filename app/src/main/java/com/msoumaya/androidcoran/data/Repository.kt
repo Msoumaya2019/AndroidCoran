@@ -131,6 +131,30 @@ class Repository(private val context: Context) {
         val row=json("id" to file.nameWithoutExtension,"user_id" to owner,"start_verse_id" to range.start,"end_verse_id" to range.end,"duration_ms" to duration,"local_path" to file.path,"created_at" to java.time.Instant.now().toString(),"synced" to false,"recording_type" to if(invocation==null) "quran" else "invocation","invocation_id" to invocation?.str("id"),"invocation_snapshot" to invocation)
         local.cache("$owner:recordings",element(existing+row));_recordingVersion.value++
     }
+    fun removedRecordingIds(): Set<String> = (local.cached("$account:removed-recordings") as? JsonArray)?.map { it.jsonPrimitive.content }?.toSet()?:emptySet()
+    suspend fun removeRecording(owner: String,snapshot: JsonObject) = lock.withLock {
+        check(user.value==owner&&account==owner) { "Le compte a changé." }
+        val plan=recordingRemoval(owner,snapshot)
+        val stored=recordings();val copy=stored.firstOrNull { it.str("id")==plan.id }
+        copy?.let { recordingRemoval(owner,it) }
+        val file=copy?.let { removableRecordingFile(java.io.File(context.filesDir,"recordings/$owner"),it) }
+        if(plan.storagePath!=null||snapshot.flag("synced")||copy?.flag("synced")==true) {
+            val sdk=db();check(sdk.auth.currentUserOrNull()?.id==owner) { "Connexion nécessaire pour supprimer la récitation distante." }
+            val remote=sdk.from("recitations").select { filter { eq("id",plan.id);eq("user_id",owner) } }.decodeList<JsonObject>().singleOrNull()
+            val path=if(remote!=null) recordingRemoval(owner,remote).storagePath?:error("Chemin distant introuvable ; copie locale conservée.") else plan.storagePath
+            check(user.value==owner&&client===sdk&&sdk.auth.currentUserOrNull()?.id==owner) { "Le compte a changé." }
+            if(path!=null) sdk.storage.from("recitations").delete(path)
+            check(user.value==owner&&client===sdk&&sdk.auth.currentUserOrNull()?.id==owner) { "Le compte a changé." }
+            sdk.from("recitations").delete { filter { eq("id",plan.id);eq("user_id",owner) } }
+            val remaining=sdk.from("recitations").select { filter { eq("id",plan.id);eq("user_id",owner) } }.decodeList<JsonObject>()
+            check(user.value==owner&&client===sdk&&sdk.auth.currentUserOrNull()?.id==owner) { "Le compte a changé." }
+            check(remaining.isEmpty()) { "Suppression distante non confirmée ; copie locale conservée." }
+        }
+        if(file!=null) check(!file.exists()||file.delete()) { "Copie locale non supprimée ; réessaie." }
+        val removed=removedRecordingIds()+plan.id
+        local.transaction { local.cache("$owner:recordings",element(stored.filter { it.str("id")!=plan.id }));local.cache("$owner:removed-recordings",element(removed.sorted())) }
+        _recordingVersion.value++
+    }
     suspend fun uploadRecordings() = lock.withLock {
         val id=db().auth.currentUserOrNull()?.id?:error("Connexion nécessaire");check(id==account)
         val recordings=recordings().toMutableList()

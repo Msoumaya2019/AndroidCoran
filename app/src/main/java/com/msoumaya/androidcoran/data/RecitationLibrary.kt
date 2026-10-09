@@ -7,11 +7,11 @@ fun acceptedRecitationFriends(owner: String,links: List<JsonObject>,profiles: Li
  require(owner.isNotBlank());val people=profiles.associateBy { it.str("id") }
  return links.filter { it.str("id").isNotBlank()&&it.str("status")=="accepted"&&owner in listOf(it.str("requester_id"),it.str("recipient_id")) }.map { link -> val other=if(link.str("requester_id")==owner) link.str("recipient_id") else link.str("requester_id");RecitationFriend(link,people[other]?:json("id" to other,"display_name" to "Ami")) }
 }
-fun recitationLibrary(owner: String?,local: List<JsonObject>,remote: List<JsonObject>): List<JsonObject> {
+fun recitationLibrary(owner: String?,local: List<JsonObject>,remote: List<JsonObject>,removed: Set<String> = emptySet()): List<JsonObject> {
  if(owner==null) return emptyList()
- val ownLocal=local.filter { it.str("user_id")==owner&&it.str("id").isNotBlank() }.associateBy { it.str("id") }
+ val ownLocal=local.filter { it.str("user_id")==owner&&it.str("id").isNotBlank()&&it.str("id") !in removed }.associateBy { it.str("id") }
  val combined=ownLocal.toMutableMap()
- remote.filter { it.str("user_id")==owner&&it.str("id").isNotBlank() }.forEach { row -> combined[row.str("id")]=row.with("local_path" to (ownLocal[row.str("id")]?.get("local_path")?:JsonNull),"synced" to JsonPrimitive(true)) }
+ remote.filter { it.str("user_id")==owner&&it.str("id").isNotBlank()&&it.str("id") !in removed }.forEach { row -> combined[row.str("id")]=row.with("local_path" to (ownLocal[row.str("id")]?.get("local_path")?:JsonNull),"synced" to JsonPrimitive(true)) }
  return combined.values.sortedByDescending { it.str("created_at") }
 }
 fun recitationSharePayload(owner: String,link: JsonObject,recording: JsonObject,description: String): JsonObject {

@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msoumaya.androidcoran.audio.NativeRecorder
 import com.msoumaya.androidcoran.audio.RecitationService
 import com.msoumaya.androidcoran.domain.*
@@ -25,7 +26,7 @@ import java.io.File
  var busy by remember { mutableStateOf(false) };var informedOwner by remember { mutableStateOf<String?>(null) }
  var captureOwner by remember { mutableStateOf("") };var captureRange by remember { mutableStateOf(VerseRange(1,7)) };var captureInvocation by remember { mutableStateOf<JsonObject?>(null) }
  var duration by remember { mutableLongStateOf(0) };var message by remember { mutableStateOf("") };var previewPlaying by remember { mutableStateOf(false) }
- fun audio(action: String,url: String?=null) { context.startService(Intent(context,RecitationService::class.java).setAction(action).apply { if(url!=null) putExtra("url",url) }) }
+ fun audio(action: String,url: String?=null,expected: String?=null) { context.startService(Intent(context,RecitationService::class.java).setAction(action).apply { if(url!=null) putExtra("url",url);if(expected!=null) putExtra("expectedRecordingKey",expected) }) }
  fun run(block: suspend ()->Unit) { if(busy) return;busy=true;scope.launch { try { block() } catch(e: Exception) { if(e is CancellationException) throw e;message=e.message?:"Enregistrement impossible" } finally { phase=engine?.phase?:NativeRecorder.Phase.Idle;duration=engine?.duration?:0;busy=false } } }
  fun startRecording() { run {
   val owner=vm.repo.user.value?:error("Connecte-toi dans Profil pour sauvegarder et synchroniser tes récitations.")
@@ -49,9 +50,11 @@ import java.io.File
   vm.action { vm.repo.uploadRecordings() }
  }
  fun save() { run { persist() } }
+ val recordingVersion by vm.repo.recordingVersion.collectAsStateWithLifecycle()
+ LaunchedEffect(recordingVersion,phase) { if(engine?.phase==NativeRecorder.Phase.Saved&&engine?.file?.exists()==false) { if(previewPlaying) engine?.file?.let { audio("STOP",expected=it.toURI().toString()) };previewPlaying=false;engine?.restart();phase=NativeRecorder.Phase.Idle;duration=0;message="Récitation supprimée." } }
  LaunchedEffect(phase,busy) { onActiveChanged(busy||phase==NativeRecorder.Phase.Recording||phase==NativeRecorder.Phase.Paused) }
  LaunchedEffect(phase) { while(phase==NativeRecorder.Phase.Recording) { duration=engine?.duration?:0;delay(250) } }
- DisposableEffect(Unit) { onDispose { engine?.close();if(previewPlaying) audio("STOP");onActiveChanged(false) } }
+ DisposableEffect(Unit) { onDispose { if(previewPlaying) engine?.file?.let { audio("STOP",expected=it.toURI().toString()) };engine?.close();onActiveChanged(false) } }
  informedOwner?.let { owner -> AlertDialog(onDismissRequest={informedOwner=null},title={Text("Tes récitations")},text={Text("Vos récitations et prononciations enregistrées sont automatiquement sauvegardées et accessibles à l’administrateur pour le suivi de votre apprentissage et vos corrections. Elles restent sur ce téléphone après synchronisation. Tu peux demander leur suppression depuis ton compte.")},confirmButton={TextButton(onClick={informedOwner=null;run { vm.repo.acceptRecordingInformation(owner);busy=false;permittedStart() }}) { Text("Compris, enregistrer") }},dismissButton={TextButton(onClick={informedOwner=null}) { Text("Annuler") }}) }
  Panel(if(invocation!=null) "Ma prononciation" else "Enregistrer ma récitation") {
   if(invocation==null&&fixedRange==null) { OutlinedTextField(start,{start=it},label={Text("Premier verset (numéro global)")},enabled=phase==NativeRecorder.Phase.Idle&&!busy);OutlinedTextField(end,{end=it},label={Text("Dernier verset")},enabled=phase==NativeRecorder.Phase.Idle&&!busy) }
@@ -67,7 +70,7 @@ import java.io.File
   }
   if(phase==NativeRecorder.Phase.Preview||phase==NativeRecorder.Phase.Saved) {
    TextButton(enabled=!busy,onClick={engine?.file?.let { audio("PLAY_LOCAL",it.toURI().toString());previewPlaying=true }}) { Text("Réécouter") }
-   TextButton(enabled=!busy,onClick={if(previewPlaying) audio("STOP");previewPlaying=false;engine?.restart();phase=NativeRecorder.Phase.Idle;duration=0;message=""}) { Text("Recommencer") }
+   TextButton(enabled=!busy,onClick={if(previewPlaying) engine?.file?.let { audio("STOP",expected=it.toURI().toString()) };previewPlaying=false;engine?.restart();phase=NativeRecorder.Phase.Idle;duration=0;message=""}) { Text("Recommencer") }
    if(phase==NativeRecorder.Phase.Preview) Button(enabled=!busy,onClick=::save) { Text("Enregistrer") }
    if(phase==NativeRecorder.Phase.Saved&&captureInvocation==null&&onShare!=null) TextButton(enabled=!busy,onClick={engine?.file?.nameWithoutExtension?.let(onShare)}) { Text("Partager avec un ami") }
   }
