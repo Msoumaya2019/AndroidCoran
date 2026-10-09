@@ -14,7 +14,7 @@ import com.msoumaya.androidcoran.data.query
 import com.msoumaya.androidcoran.domain.*
 import kotlinx.serialization.json.*
 
-@Composable fun RecitationsScreen(vm: CoranViewModel,initialRecitationId: String?=null) {
+@Composable fun RecitationsScreen(vm: CoranViewModel,initialRecitationId: String?=null,onViewInvocation: ((String)->Unit)?=null) {
     val owner by vm.repo.user.collectAsStateWithLifecycle()
     val recordingVersion by vm.repo.recordingVersion.collectAsStateWithLifecycle()
     val scope=rememberCoroutineScope();val service=remember(vm) { RecitationLibraryService(vm.repo) }
@@ -73,6 +73,9 @@ import kotlinx.serialization.json.*
         }) {
             val playbackKey=recordingPlaybackKey(owner.orEmpty(),row.str("id"))
             LiveRecitationPlaybackControls(playbackKey,row.num("duration_ms").toLong(),onPlay={val local=row.str("local_path");if(local.isNotBlank()&&java.io.File(local).isFile) play(local,true,playbackKey) else play(row.str("storage_path"),key=playbackKey)},onToggle={audio("TOGGLE",key=playbackKey)},onSeek={audio("SEEK",it,playbackKey)})
+            if(row.str("recording_type")=="invocation") {
+                InvocationRecordingLink(row,onViewInvocation)
+            }
             TextButton(onClick={removeError="";removing=row}) { Text("Supprimer") }
             if(row.str("recording_type","quran")=="quran") TextButton(enabled=row.str("storage_path").isNotBlank(),onClick={sharingId=row.str("id")}) { Text("Partager avec un ami") }
         } }

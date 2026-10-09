@@ -604,3 +604,14 @@ Sources : `src/RecitationsScreen.tsx:58` et `src/services/recitations.ts:35,133`
 Le retrait du cache et le marqueur local de suppression sont enregistrés ensemble dans SQLite. La bibliothèque filtre ce marqueur dans les listes locales et distantes : une réponse ancienne ou un cache hors connexion ne fait pas réapparaître la récitation. L’écoute de ce fichier est arrêtée si elle est active ; les commandes ciblent toujours son identité. Un test a d’abord détecté l’oubli du filtrage distant ; la correction couvre maintenant les deux listes.
 
 Validation : six nouveaux tests JVM (105 au total) de propriété, type Coran/invocation, chemin Storage, identifiant, fichier local, absence de fichier et cache ancien. Deux tests Compose de confirmation/annulation sont écrits mais non exécutés ; leur compilation est vérifiée. Aucune suppression backend ni aucun message réel n’a été exécuté pendant le développement. La suppression avec un compte réel, ses cascades et les erreurs réseau restent non validées. Les limites du microphone et les autres validations authentifiées restent ouvertes. L’ouverture de l’invocation depuis la bibliothèque reste à porter.
+
+### Navigation invocation et partage des contenus — 9 octobre 2026
+
+Source : src/RecitationsScreen.tsx:54, src/App.tsx:241, src/DailyContentsScreen.tsx:ContentCard et initialId ; services/dailyContents.ts:getContent.
+
+- Mes récitations affiche le texte arabe original du snapshot, centré en RTL ; « Voir l’invocation » ouvre daily_contents par son identifiant exact, avec retour à Récitations. Aucun saut vers une invocation différente si l’identifiant manque.
+- ContentService.getContent utilise une lecture du backend existant et le cache natif. La fiche réutilise favoris, image, texte, audio et enregistrement ; chargement, contenu absent et nouvel essai sont explicites.
+- Partager un rappel/une invocation ouvre le sélecteur Android ACTION_SEND avec les mêmes champs textuels que la source. Le sélecteur demande à l’utilisateur la destination ; aucun message automatique.
+- Écouter/Pause réutilise Media3 avec une clé par compte/contenu/URL ; reprise du même lecteur, arrêt ciblé à la fermeture et rejet d’un résultat de résolution après fermeture.
+
+Statut développement : Implémenté. Statut test : trois nouveaux tests JVM du texte de partage et deux tests Compose du lien écrits ; compilation/tests CI en cours. Essai local interrompu par allocation mémoire JVM insuffisante, sans résultat complet. Tests Compose non exécutés et lecture/partage/favoris sur compte réel non validés. Aucun changement Supabase.

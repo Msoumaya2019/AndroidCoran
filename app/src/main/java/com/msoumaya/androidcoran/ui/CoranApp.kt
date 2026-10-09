@@ -44,12 +44,13 @@ import java.time.Instant
     var pendingRecitationOwner by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(user) { if(pendingRecitationOwner!=user) pendingRecitation=null }
     LaunchedEffect(route) { if(route!="Récitations") pendingRecitation=null }
+    var pendingInvocation by rememberSaveable { mutableStateOf<String?>(null) }
     val recovery by vm.repo.passwordRecovery.collectAsStateWithLifecycle()
     LaunchedEffect(recovery,user) { if(recovery&&user!=null) route="Compte" }
     var page by rememberSaveable { mutableIntStateOf(1) };var sessionId by rememberSaveable { mutableStateOf<String?>(null) };var reviewTask by rememberSaveable(stateSaver=listSaver<ReviewTask?,String>(save={ t -> t?.let { listOf(it.id,it.range.start.toString(),it.range.end.toString(),it.category,it.scheduledDate,it.consolidationOffset?.toString().orEmpty()) }?:emptyList() },restore={ if(it.isEmpty()) null else ReviewTask(it[0],VerseRange(it[1].toInt(),it[2].toInt()),it[3],it[4],it[5].toIntOrNull()) })) { mutableStateOf<ReviewTask?>(null) }
     NativeAppTheme(s) {
-        BackHandler(route!=null) { route=null;sessionId=null;reviewTask=null }
-        Scaffold(topBar={ TopAppBar(title={ Text(if(route=="reader") "Coran Mémoire" else route?:tab) },navigationIcon={ if(route!=null) IconButton(onClick={route=null;sessionId=null;reviewTask=null}) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"Retour") } },actions={ IconButton(onClick={route="Réglages"}) { Icon(Icons.Default.Settings,"Réglages") };IconButton(onClick={route="Compte"}) { Icon(Icons.Default.AccountCircle,"Compte") } }) },bottomBar={ if(route==null) NavigationBar { listOf("Accueil" to Icons.Default.Home,"Coran" to Icons.Default.MenuBook,"Programme" to Icons.Default.DateRange,"Progrès" to Icons.Default.Insights,"Amis" to Icons.Default.People).forEach { (label,icon)->NavigationBarItem(colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.primary,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant),selected=tab==label,onClick={tab=label},icon={Icon(icon,label)},label={Text(label,fontSize=10.sp)}) } } }) { padding ->
+        BackHandler(route!=null) { route=if(route=="Invocation") "Récitations" else null;sessionId=null;reviewTask=null }
+        Scaffold(topBar={ TopAppBar(title={ Text(if(route=="reader") "Coran Mémoire" else route?:tab) },navigationIcon={ if(route!=null) IconButton(onClick={route=if(route=="Invocation") "Récitations" else null;sessionId=null;reviewTask=null}) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"Retour") } },actions={ IconButton(onClick={route="Réglages"}) { Icon(Icons.Default.Settings,"Réglages") };IconButton(onClick={route="Compte"}) { Icon(Icons.Default.AccountCircle,"Compte") } }) },bottomBar={ if(route==null) NavigationBar { listOf("Accueil" to Icons.Default.Home,"Coran" to Icons.Default.MenuBook,"Programme" to Icons.Default.DateRange,"Progrès" to Icons.Default.Insights,"Amis" to Icons.Default.People).forEach { (label,icon)->NavigationBarItem(colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.primary,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant),selected=tab==label,onClick={tab=label},icon={Icon(icon,label)},label={Text(label,fontSize=10.sp)}) } } }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding)) {
                 if(notice.isNotEmpty()) Text(notice,Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(10.dp),fontSize=12.sp)
                 val open: (Int)->Unit = { id -> val source=s.obj("reader").str("mushaf","coranTest");page=vm.repo.quran.sourcePage(id,source);route="reader" }
@@ -64,7 +65,8 @@ import java.time.Instant
                     "Révisions" -> RevisionScreen(vm,s) { task -> sessionId=null;reviewTask=task;open(task.range.start) }
                     "Contenus quotidiens" -> ContentsScreen(vm)
                     "Quiz" -> QuizScreen(vm)
-                    "Récitations" -> RecitationsScreen(vm,pendingRecitation)
+                    "Récitations" -> RecitationsScreen(vm,pendingRecitation,onViewInvocation={id -> pendingInvocation=id;route="Invocation"})
+                    "Invocation" -> ContentsScreen(vm,initialId=pendingInvocation)
                     "Signaler un problème" -> ReportScreen(vm)
                     else -> when(tab) {
                         "Accueil" -> HomeScreen(vm,s,{route=it}, { sessionId=null;reviewTask=null;open(homeReadingVerse(s)) })

@@ -5,6 +5,10 @@ import kotlinx.serialization.json.*
 import java.time.LocalDate
 
 class ContentService(private val repo: Repository) {
+    suspend fun getContent(id: String): JsonObject? {
+        require(id.isNotBlank())
+        return repo.query("daily_contents",eq=mapOf("id" to id),size=1,authenticated=false,cacheResult=true).singleOrNull()
+    }
     suspend fun daily()=repo.cachedRpc("daily_content_for_date",json("p_date" to LocalDate.now().toString()),authenticated=false).jsonArray.map { it.jsonObject }
     suspend fun categories()=repo.query("content_categories",eq=mapOf("is_active" to "true"),orderBy="display_order",ascending=true,authenticated=false,cacheResult=true,size=300)
     suspend fun favorites(): List<String> {
