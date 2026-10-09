@@ -28,6 +28,7 @@ import kotlinx.serialization.json.*
     var feedback by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) }
     var selected by remember(owner) { mutableStateOf<JsonObject?>(null) }
     val context=LocalContext.current
+    fun audio(action: String,delta: Long=0L,key: String?=null) { context.startService(Intent(context,RecitationService::class.java).setAction(action).putExtra("delta",delta).apply { if(key!=null) putExtra("expectedRecordingKey",key) }) }
     fun title(row: JsonObject): String = if(row.str("recording_type")=="invocation")
         row.obj("invocation_snapshot").str("title").ifBlank { "Prononciation d’invocation" }
         else vm.repo.quran.reference(VerseRange(row.num("start_verse_id"),row.num("end_verse_id")))
@@ -40,9 +41,9 @@ import kotlinx.serialization.json.*
         } catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback(e.message?:"Récitations indisponibles") } finally { refreshing=false }
     }
     fun load(synchronize: Boolean=false) { scope.launch { refresh(synchronize) } }
-    fun play(path: String,local: Boolean=false) { vm.action {
+    fun play(path: String,local: Boolean=false,key: String?=null) { vm.action {
         val url=if(local) java.io.File(path).toURI().toString() else vm.repo.signedRecitation(path)
-        context.startService(Intent(context,RecitationService::class.java).setAction(if(local) "PLAY_LOCAL" else "PLAY_URL").putExtra("url",url))
+        context.startService(Intent(context,RecitationService::class.java).setAction(if(local) "PLAY_LOCAL" else "PLAY_URL").putExtra("url",url).apply { if(key!=null) putExtra("recordingKey",key) })
     } }
     LaunchedEffect(owner) { if(owner!=null) refresh(true) }
     LaunchedEffect(recordingVersion) { if(owner!=null) refresh() }
@@ -57,7 +58,6 @@ import kotlinx.serialization.json.*
     }
     PageList {
         RecorderPanel(vm,onShare={sharingId=it;load(true)})
-        Button(enabled=!refreshing,onClick={load(true)}) { Text("Envoyer les enregistrements sauvegardés") }
         Text("${all.count { !it.flag("synced") }} enregistrement(s) en attente")
         if(sharingId!=null&&sharing==null) Text("Synchronise cette récitation pour pouvoir la partager.")
         Button(enabled=!refreshing,onClick={load(true)}) { Text("Actualiser et synchroniser") }
@@ -70,7 +70,8 @@ import kotlinx.serialization.json.*
                 if(vm.repo.user.value==account) { selected=row;corrections=c;feedback=f }
             }
         }) {
-            TextButton(onClick={val local=row.str("local_path");if(local.isNotBlank()&&java.io.File(local).isFile) play(local,true) else play(row.str("storage_path"))}) { Text("Écouter l’enregistrement") }
+            val playbackKey=recordingPlaybackKey(owner.orEmpty(),row.str("id"))
+            LiveRecitationPlaybackControls(playbackKey,row.num("duration_ms").toLong(),onPlay={val local=row.str("local_path");if(local.isNotBlank()&&java.io.File(local).isFile) play(local,true,playbackKey) else play(row.str("storage_path"),key=playbackKey)},onToggle={audio("TOGGLE",key=playbackKey)},onSeek={audio("SEEK",it,playbackKey)})
             if(row.str("recording_type","quran")=="quran") TextButton(enabled=row.str("storage_path").isNotBlank(),onClick={sharingId=row.str("id")}) { Text("Partager avec un ami") }
         } }
         selected?.takeIf { filter=="all"||it.str("recording_type","quran")==filter }?.let { row ->
