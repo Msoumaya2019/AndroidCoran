@@ -15,3 +15,5 @@ Lot suivant : validation précise des séances par verset, par page entièrement
 Second lot de cette étape : cartes de reprise détaillées intégrées au programme, avec unités originales, état terminé/partiel/restant, expansion et reprise. Deux tests Compose supplémentaires et cinq tests Android de régression réussissent. La famille validation partielle/reprise est désormais Implémenté et testée localement ; son fonctionnement avec un compte réel reste à valider dans la famille synchronisation.
 
 Actions de report du lecteur ajoutées : 81 tests JVM et six tests Android ciblés réussis. Les séances partielles conservent leur point de reprise et leurs validations. Lint et APK de débogage compilent.
+
+Navigation directe du lecteur portée : les 114 sourates et un saut contrôlé vers les pages 1–604. Validation locale de ce second lot : 81 tests JVM et neuf tests Android ciblés, plus Lint et APK. Le test de navigation vérifie explicitement que changer de sourate efface le contexte de séance et que changer de page le conserve. Ces deux lots ne modifient pas significativement l’estimation globale de 55–65 %.

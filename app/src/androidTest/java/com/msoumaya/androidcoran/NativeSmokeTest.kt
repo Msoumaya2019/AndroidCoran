@@ -112,4 +112,24 @@ class NativeSmokeTest {
             compose.onNodeWithText("Terminer mon apprentissage").assertExists()
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
     }
+
+    @Test fun changingSurahClearsLearningContextAndDirectPageKeepsIt() {
+        val repo=(compose.activity.application as CoranApplication).repository;assertNull(repo.user.value)
+        val today=java.time.LocalDate.now();var saved=defaultState()
+        val session=json("id" to "surah-navigation","start" to 1,"end" to 7,"date" to today.toString(),"scheduledDate" to today.toString(),"status" to "todo")
+        val initial=defaultState().with("sessions" to element(listOf(session)))
+        kotlinx.coroutines.runBlocking { repo.awaitReady();saved=repo.state.value;repo.mutate { initial } }
+        try {
+            compose.waitForIdle();compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
+            compose.onNodeWithText(repo.quran.reference(VerseRange(1,7))).performClick()
+            compose.onNodeWithText("Choisir une sourate ou une page").performClick()
+            compose.onNodeWithText("Page 1 à 604").performTextReplacement("3")
+            compose.onNodeWithText("Aller à la page").performClick()
+            compose.onNodeWithText("3 / 604").assertExists();compose.onNodeWithText("Terminer mon apprentissage").assertExists()
+            compose.onNodeWithText("Choisir une sourate ou une page").performClick()
+            compose.onNodeWithText(repo.quran.surahs[1].name).performClick()
+            compose.onNodeWithText("2 / 604").assertExists();compose.onNodeWithText("Terminer mon apprentissage").assertDoesNotExist()
+            assertEquals(initial.arr("sessions"),repo.state.value.arr("sessions"));assertFalse(known(repo.state.value,1))
+        } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
+    }
 }

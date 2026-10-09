@@ -12,7 +12,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | Fonction / rôle | Source originale | Supabase / ressources | Android natif | Développement | Test |
 |---|---|---|---|---|---|
 | Lecture Hafs : 6236 versets, 114 sourates, pages/juz/hizb | src/core/quran.ts | Local | domain/Quran.kt | Testé | Testé (JVM + assets Android) |
-| Navigation sourates, juz, hizb et recherche | src/ui/MainScreens.tsx; src/SurahPicker.tsx | Local | ui/CoranApp.kt:QuranScreen | Implémenté | Non commencé |
+| Navigation sourates, juz, hizb et recherche | src/ui/MainScreens.tsx; src/SurahPicker.tsx | Local | QuranScreen + ReaderSurahPicker | Implémenté | Testé (sélecteur et changement depuis le lecteur Android) ; juz/hizb non validés sur appareil |
 | Mushaf traditionnel en images, sélection, proportions | src/MushafPage.tsx; assets/mushaf | Local | ui/MushafView.kt | En développement | Testé (assets uniquement) |
 | Mushaf Tajwid en images | src/MushafPage.tsx; assets/mushaf-tajweed | Local | ui/MushafView.kt | En développement | Non commencé |
 | Mushaf QPC en glyphes, mots et lignes originaux | src/coranTest/CoranTestScreen.tsx; html.ts | Local / qcf-v4-page | ui/MushafView.kt + fonts TTF | En développement | Testé (marges avec les polices natives sur pages 1, 2, 100, 582, 604 ; fidélité exhaustive non validée) |
@@ -402,7 +402,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/services/verseAudioCache.ts:5 | cachedVerseAudio | Local / via services | QuranAudioCache | Implémenté | Testé (Android, lecture après disparition de la source) |
 | src/SocialScreens.tsx:36 | FriendsScreen | Local / via services | ui/FriendsScreen | Non commencé | Non commencé |
 | src/SocialScreens.tsx:212 | AdminScreen | Local / via services | ui/AdminScreen | Non commencé | Non commencé |
-| src/SurahPicker.tsx:8 | SurahPicker | Local / via services | ui/SurahPicker | Non commencé | Non commencé |
+| src/SurahPicker.tsx:8 | SurahPicker | Local / via services | ui/ReaderSurahPicker.kt | Implémenté | Testé (Compose et navigation native) |
 | src/theme/fonts.ts:5 | applyUiFont | Local / via services | ui/applyUiFont | Non commencé | Non commencé |
 | src/theme/fonts.ts:6 | interfaceFont | Local / via services | ui/interfaceFont | Non commencé | Non commencé |
 | src/theme/fonts.ts:7 | fontAssets | Local / via services | ui/fontAssets | Non commencé | Non commencé |
@@ -497,7 +497,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 - src/RecitationsScreen.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/ReviewDashboard.tsx : Non commencé ; UI Compose ; tests Non commencé.
 - src/SocialScreens.tsx : Non commencé ; UI Compose ; tests Non commencé.
-- src/SurahPicker.tsx : Non commencé ; UI Compose ; tests Non commencé.
+- src/SurahPicker.tsx : Implémenté ; ReaderSurahPicker Compose ; tests Android ciblés.
 - src/ui/AdminProblemReports.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
 - src/ui/AdminQuiz.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
 - src/ui/AdminQuizSets.tsx : En développement ; UI Compose codée ; contrats JVM Testé, serveur Bloqué.
@@ -560,3 +560,7 @@ Le programme affiche les cartes de reprise pour les séances d’apprentissage p
 ### Actions de report dans le lecteur — 9 octobre 2026
 
 « Je dois encore le travailler » et « Reporter cette séance » utilisent la même règle source de postponeSession. Une séance non commencée devient reportée ; une séance partielle reste à faire et conserve ses validations, connaissances, dates et échéances de révision. Les autres séances ne sont pas recalculées. Le lecteur revient au programme. Comme le closeReader source, ces deux actions ne commandent pas l’arrêt audio. Deux nouveaux tests JVM couvrent les invariants et un parcours Android invité couvre les deux actions. Aucun changement de backend.
+
+### Navigation directe depuis le lecteur — 9 octobre 2026
+
+Le sélecteur Compose affiche les 114 sourates, se positionne sur la sourate courante et accepte une page entière de 1 à 604. La saisie et son erreur sont sauvegardées ; une valeur invalide ne déclenche aucune navigation. Le choix de sourate arrête la récitation et efface la sélection ainsi que le contexte apprentissage/révision, puis utilise la page de l’édition active pour son premier verset. Un saut de page conserve la séance active, comme showPage dans la source. Fermer le sélecteur ne modifie pas le passage. Deux tests Compose et un parcours réel supplémentaires couvrent ces règles. Les versions image/1441 ne sont pas toutes validées sur appareil.
