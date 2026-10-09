@@ -78,7 +78,7 @@ class NativeSmokeTest {
             compose.onNodeWithText("Verset 3").performClick()
             compose.onNodeWithText("Valider jusqu’au verset 3").performScrollTo().performClick()
             compose.waitUntil(10000) { repo.state.value.obj("studyProgress").obj("learning:partial-learning").num("through")==3 }
-            compose.onNodeWithText("Reprendre ma séance").assertExists().performClick()
+            compose.onNodeWithText("Apprentissage à continuer").assertExists();compose.onNodeWithText("Reprendre mon apprentissage").performScrollTo().performClick()
             compose.onNodeWithText("Terminer mon apprentissage").performClick()
             compose.onNodeWithContentDescription("Dernier verset appris").performScrollTo().performClick()
             compose.onNodeWithText("Verset 3").assertDoesNotExist()
