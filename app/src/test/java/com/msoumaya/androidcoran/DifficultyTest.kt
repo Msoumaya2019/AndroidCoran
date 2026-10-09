@@ -46,4 +46,18 @@ class DifficultyTest {
   assertEquals(2,graded.obj("studyProgress").obj("revision:review-1-3").num("through"))
   assertEquals("partial",graded.obj("studyProgress").obj("revision:review-1-3").str("status"))
  }
+
+ @Test fun metadataOnlyAndNullMarkersDoNotCreatePriorityAndPerfectClearsTheirDue() {
+  val base=markKnowledge(defaultState(),VerseRange(1,3),"perfect",at).with("difficultyMarkers" to json("1" to json("note" to "retained"),"2" to json("user" to null,"admin" to null),"3" to json("admin" to json("createdAt" to at.toString()))),"reviewPriorityDue" to json("1" to at.toString(),"2" to at.toString(),"3" to at.toString()))
+  assertEquals(listOf(3),review.tasks(base,at).filter { it.category=="priority" }.flatMap { it.range.ids })
+  val graded=review.grade(base,ReviewTask("priority-test",VerseRange(1,3),"priority",at.toString()),3,"perfect",at)
+  assertNull(graded.obj("reviewPriorityDue")["1"]);assertNull(graded.obj("reviewPriorityDue")["2"])
+  assertEquals("2026-10-16",graded.obj("reviewPriorityDue").str("3"));assertEquals(base.obj("difficultyMarkers"),graded.obj("difficultyMarkers"))
+ }
+ @Test fun hesitantGradeReplacesNullUserMarkerAndPreservesMetadata() {
+  val base=markKnowledge(defaultState(),VerseRange(1,1),"perfect",at).with("difficultyMarkers" to json("1" to json("user" to null,"note" to "retained")))
+  val graded=review.grade(base,ReviewTask("x",VerseRange(1,1),"priority",at.toString()),1,"hesitant",at)
+  assertEquals(at.toString(),graded.obj("difficultyMarkers").obj("1").obj("user").str("createdAt"))
+  assertEquals("retained",graded.obj("difficultyMarkers").obj("1").str("note"));assertEquals(1,graded.arr("difficultyHistory").size)
+ }
 }

@@ -17,3 +17,5 @@ Second lot de cette étape : cartes de reprise détaillées intégrées au progr
 Actions de report du lecteur ajoutées : 81 tests JVM et six tests Android ciblés réussis. Les séances partielles conservent leur point de reprise et leurs validations. Lint et APK de débogage compilent.
 
 Navigation directe du lecteur portée : les 114 sourates et un saut contrôlé vers les pages 1–604. Validation locale de ce second lot : 81 tests JVM et neuf tests Android ciblés, plus Lint et APK. Le test de navigation vérifie explicitement que changer de sourate efface le contexte de séance et que changer de page le conserve. Ces deux lots ne modifient pas significativement l’estimation globale de 55–65 %.
+
+Consolidation : retour natif au tableau après sauvegarde et protection des soumissions. Marqueurs de difficulté : gestion compatible des champs inconnus/null. 83 tests JVM et trois tests Android ciblés réussis ; Lint et APK compilent.

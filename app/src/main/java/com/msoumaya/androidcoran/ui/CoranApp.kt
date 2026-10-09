@@ -200,7 +200,10 @@ import java.time.Instant
 
         if(task?.consolidationOffset!=null) {
             val pending=vm.repo.review.consolidations(s).any { row -> row.range.ids.any { it in task.range.ids }&&row.steps.firstOrNull { it.completed==null }?.offset==task.consolidationOffset }
-            Button(enabled=pending,onClick={vm.action { command("STOP");vm.repo.mutate { vm.repo.review.completeConsolidation(it,task.range,targetOffset=task.consolidationOffset) } }},modifier=Modifier.fillMaxWidth().padding(8.dp)) { Text(if(pending) "Valider la consolidation · J+${task.consolidationOffset}" else "Consolidation validée") }
+            Button(enabled=pending&&!submitting,onClick={if(!submitting) { submitting=true;vm.action {
+                try { command("STOP");vm.repo.mutate { vm.repo.review.completeConsolidation(it,task.range,targetOffset=task.consolidationOffset) };withContext(Dispatchers.Main) { onStudyValidated() } }
+                finally { withContext(Dispatchers.Main) { submitting=false } }
+            } }},modifier=Modifier.fillMaxWidth().padding(8.dp)) { Text(if(pending) "Valider la consolidation · J+${task.consolidationOffset}" else "Consolidation validée") }
         } else if(session!=null) {
             Button(enabled=through<session.num("end"),onClick={completionGrade="perfect";showCompletion=true},modifier=Modifier.fillMaxWidth().padding(8.dp)) { Text(if(through<session.num("end")) "Terminer mon apprentissage" else "Apprentissage validé") }
             if(through<session.num("end")) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly) {

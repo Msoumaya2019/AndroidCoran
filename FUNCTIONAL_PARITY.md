@@ -564,3 +564,7 @@ Le programme affiche les cartes de reprise pour les séances d’apprentissage p
 ### Navigation directe depuis le lecteur — 9 octobre 2026
 
 Le sélecteur Compose affiche les 114 sourates, se positionne sur la sourate courante et accepte une page entière de 1 à 604. La saisie et son erreur sont sauvegardées ; une valeur invalide ne déclenche aucune navigation. Le choix de sourate arrête la récitation et efface la sélection ainsi que le contexte apprentissage/révision, puis utilise la page de l’édition active pour son premier verset. Un saut de page conserve la séance active, comme showPage dans la source. Fermer le sélecteur ne modifie pas le passage. Deux tests Compose et un parcours réel supplémentaires couvrent ces règles. Les versions image/1441 ne sont pas toutes validées sur appareil.
+
+### Retour après consolidation et marqueurs actifs — 9 octobre 2026
+
+La validation de consolidation arrête l’audio, bloque les doubles soumissions pendant la sauvegarde et revient au tableau des révisions, comme validateConsolidation dans App.tsx. Le parcours Android invité valide J+1, vérifie sa persistance puis confirme que J+3/J+7 et reviewHistory restent intacts. La planification prioritaire et la note parfaite ne traitent plus les seuls champs de métadonnées ou les marqueurs null comme des difficultés actives. Une note hésitante remplace un marqueur utilisateur null sans perdre les autres champs. Deux nouveaux tests JVM et trois tests Android ciblés passent ; total JVM : 83. Lint et APK réussissent. Aucun changement backend.

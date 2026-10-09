@@ -132,4 +132,22 @@ class NativeSmokeTest {
             assertEquals(initial.arr("sessions"),repo.state.value.arr("sessions"));assertFalse(known(repo.state.value,1))
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
     }
+
+    @Test fun consolidationValidationReturnsToReviewsAndOnlyCompletesOneStep() {
+        val repo=(compose.activity.application as CoranApplication).repository;assertNull(repo.user.value)
+        var saved=defaultState();val at=java.time.LocalDate.now()
+        val initial=markKnowledge(defaultState().with("onboardingDone" to kotlinx.serialization.json.JsonPrimitive(true)),VerseRange(1,3),"perfect",at)
+        kotlinx.coroutines.runBlocking { repo.awaitReady();saved=repo.state.value;repo.mutate { repo.review.prepare(initial,at) } }
+        try {
+            compose.waitForIdle();compose.onNodeWithText("Révisions").performScrollTo().performClick()
+            compose.onNodeWithText(repo.quran.reference(VerseRange(1,3))).performScrollTo().performClick()
+            compose.onNodeWithText("Valider la consolidation · J+1").performClick()
+            compose.waitUntil(10000) { compose.onAllNodesWithText("Révision quotidienne").fetchSemanticsNodes().isNotEmpty() }
+            val state=repo.state.value
+            for(id in 1..3) { val done=state.obj("reviewConsolidations").obj(id.toString()).obj("completed");assertEquals(at.toString(),done.str("1"));assertNull(done["3"]);assertNull(done["7"]) }
+            assertEquals(3,state.arr("consolidationHistory").size);assertTrue(state.arr("reviewHistory").isEmpty())
+            val store=com.msoumaya.androidcoran.data.LocalStore(compose.activity)
+            try { assertEquals(state.obj("reviewConsolidations"),store.load("guest")!!.data.obj("reviewConsolidations")) } finally { store.close() }
+        } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
+    }
 }
