@@ -219,7 +219,7 @@ Cette matrice est prioritaire pour le niveau de parité ; l’inventaire exhaust
 | src/core/weeklyProgress.ts:3 | upcomingSessions | Local / via services | ui/upcomingSessions | Non commencé | Non commencé |
 | src/core/weeklyProgress.ts:7 | weeklyProgress | Local / via services | ui/weeklyProgress | Non commencé | Non commencé |
 | src/core/weeklyProgress.ts:14 | sessionStatus | Local / via services | ui/sessionStatus | Non commencé | Non commencé |
-| src/DailyContentsScreen.tsx:15 | ContentCard | daily_contents, content_favorites ; médias existants | ui/ContentScreens + ContentAudioButton + ContentSharing ; texte/RTL, favoris, audio, image, enregistrement et partage | Implémenté | JVM partage écrit ; parcours appareil Non commencé |
+| src/DailyContentsScreen.tsx:15 | ContentCard | daily_contents, content_favorites ; médias existants | ui/ContentScreens + ContentAudioButton + ContentSharing ; texte/RTL, favoris, audio, image, enregistrement et partage | Implémenté | JVM partage Testé (CI 37944413370) ; parcours appareil Non commencé |
 | src/DailyContentsScreen.tsx:41 | ContentTabs | Local / via services | ui/ContentTabs | Non commencé | Non commencé |
 | src/DailyContentsScreen.tsx:47 | TodayContents | Local / via services | ui/TodayContents | Non commencé | Non commencé |
 | src/DailyContentsScreen.tsx:53 | DailyContentsScreen | ContentService : catégories, contenus, favoris | ui/ContentsScreen ; onglets, pagination et fiche par identifiant ; carrousel source restant | En développement | Interface Non commencé |
@@ -614,6 +614,6 @@ Source : src/RecitationsScreen.tsx:54, src/App.tsx:241, src/DailyContentsScreen.
 - Partager un rappel/une invocation ouvre le sélecteur Android ACTION_SEND avec les mêmes champs textuels que la source. Le sélecteur demande à l’utilisateur la destination ; aucun message automatique.
 - Écouter/Pause réutilise Media3 avec une clé par compte/contenu/URL ; reprise du même lecteur, arrêt ciblé à la fermeture et rejet d’un résultat de résolution après fermeture.
 
-Statut développement : Implémenté. Statut test : trois nouveaux tests JVM du texte de partage et deux tests Compose du lien écrits ; compilation/tests CI en cours. Essai local interrompu par allocation mémoire JVM insuffisante, sans résultat complet. Tests Compose non exécutés et lecture/partage/favoris sur compte réel non validés. Aucun changement Supabase.
+Statut développement : Implémenté. Statut test : 108 tests JVM réussis (dont trois nouveaux tests du texte de partage), Lint, APK principal et APK AndroidTest compilés dans la CI 37944413370. Deux tests Compose du lien écrits et compilés, non exécutés. Essai local interrompu par allocation mémoire JVM insuffisante, sans résultat complet. Tests Compose non exécutés et lecture/partage/favoris sur compte réel non validés. Aucun changement Supabase.
 
 Complément de ce lot : police Amiri existante pour le texte arabe des contenus/snapshots ; photos de profil des amis ajoutées au sélecteur de partage, via AvatarPreview et Storage existants. Première CI : tests JVM exécutés, compilation AndroidTest bloquée par un import inutile de assertDoesNotExist ; import corrigé, nouvelle CI requise. Aucun test Compose n’a été exécuté.
