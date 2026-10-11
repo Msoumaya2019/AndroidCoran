@@ -37,7 +37,7 @@ import java.time.LocalDate
 import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun CoranApp(vm: CoranViewModel=viewModel()) {
+@Composable fun CoranApp(vm: CoranViewModel=viewModel(),reminderRequest: ReminderNavigation?=null,onReminderHandled: (String)->Unit={}) {
     val s by vm.repo.state.collectAsStateWithLifecycle();val notice by vm.repo.notice.collectAsStateWithLifecycle();val user by vm.repo.user.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf("Accueil") };var route by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingRecitation by rememberSaveable { mutableStateOf<String?>(null) }
@@ -49,6 +49,14 @@ import java.time.Instant
     val recovery by vm.repo.passwordRecovery.collectAsStateWithLifecycle()
     LaunchedEffect(recovery,user) { if(recovery&&user!=null) route="Compte" }
     var page by rememberSaveable { mutableIntStateOf(1) };var sessionId by rememberSaveable { mutableStateOf<String?>(null) };var reviewTask by rememberSaveable(stateSaver=listSaver<ReviewTask?,String>(save={ t -> t?.let { listOf(it.id,it.range.start.toString(),it.range.end.toString(),it.category,it.scheduledDate,it.consolidationOffset?.toString().orEmpty()) }?:emptyList() },restore={ if(it.isEmpty()) null else ReviewTask(it[0],VerseRange(it[1].toInt(),it[2].toInt()),it[3],it[4],it[5].toIntOrNull()) })) { mutableStateOf<ReviewTask?>(null) }
+    LaunchedEffect(vm,user,s.obj("notifications").flag("learning")) { vm.repo.refreshReminders() }
+    LaunchedEffect(reminderRequest) {
+        val request=reminderRequest?:return@LaunchedEffect
+        vm.repo.awaitReady()
+        if(canOpenLearningReminder(request.account,vm.repo.user.value)) { tab="Programme";route=null;sessionId=null;reviewTask=null }
+        else vm.repo.feedback("Ce rappel appartient à un autre compte.")
+        onReminderHandled(request.id)
+    }
     val fullscreen=route=="reader"
     ReaderWindowFullscreen(fullscreen)
     val snackbar=remember { SnackbarHostState() }

@@ -39,6 +39,7 @@ class Repository(private val context: Context) {
     val quiz by lazy { QuizService(this,local,context) }
     val reports by lazy { ProblemReportService(this,local,context) }
     suspend fun awaitReady()=ready.await()
+    suspend fun refreshReminders() { awaitReady();lock.withLock { LocalReminders.schedule(context,_state.value.obj("notifications").flag("learning"),account) } }
     internal fun pendingState(owner: String)=local.load(owner)?.pending==true
     init {
         scope.launch(Dispatchers.Main.immediate) {
