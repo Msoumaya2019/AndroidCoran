@@ -7,6 +7,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.msoumaya.androidcoran.domain.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -80,6 +81,23 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("Terminer mon apprentissage").assertExists()
         compose.onNodeWithContentDescription("Masquer les commandes").performClick()
         assertFullscreen()
+    }
+    @Test fun overdueLearningCanBeOpenedAndCompletedInFullscreen() = fixture {
+        val repo=(compose.activity.application as CoranApplication).repository
+        val yesterday=LocalDate.now().minusDays(1).toString()
+        val id="catchup-learning"
+        val session=json("id" to id,"start" to 6235,"end" to 6236,"date" to yesterday,"scheduledDate" to yesterday,"status" to "todo")
+        runBlocking { repo.mutate { it.with("sessions" to element(listOf(session)),"studyProgress" to json()) } }
+        compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("À rattraper").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("$yesterday · ${repo.quran.reference(VerseRange(6235,6236))}").performScrollTo().performClick()
+        assertFullscreen()
+        compose.onNodeWithContentDescription("Afficher les commandes").performClick()
+        compose.onNodeWithText("Terminer mon apprentissage").assertExists()
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithText("À rattraper").assertExists()
+        assertEquals("todo",repo.state.value.arr("sessions").first().jsonObject.str("status"))
+        assertEquals(yesterday,repo.state.value.arr("sessions").first().jsonObject.str("scheduledDate"))
     }
     @Test fun revisionKeepsGradesAvailableBehindFullscreenControls() = fixture {
         val repo=(compose.activity.application as CoranApplication).repository

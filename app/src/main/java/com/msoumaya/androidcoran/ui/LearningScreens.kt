@@ -19,6 +19,7 @@ import java.time.LocalDate
     var period by rememberSaveable { mutableStateOf("Jour") };var history by rememberSaveable { mutableStateOf(false) }
     val upcoming=sessions.filter { it.str("status")=="todo"&&it.str("scheduledDate",it.str("date")) in today.toString()..today.plusDays(10).toString() }
     val future=when(period) { "Jour" -> upcoming.filter { it.str("scheduledDate",it.str("date"))==upcoming.firstOrNull()?.str("scheduledDate",upcoming.firstOrNull()?.str("date")?:today.toString()) };"Semaine" -> upcoming.filter { it.str("scheduledDate",it.str("date"))<=today.plusDays(7).toString() };else -> upcoming }
+    val overdue=sessions.filter { it.str("status")=="todo"&&it.str("scheduledDate",it.str("date"))<today.toString() }.take(10)
     val partial=sessions.filter { it.str("status")=="todo"&&s.obj("studyProgress").obj("learning:${it.str("id")}").str("status")=="partial" }
     LazyColumn(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
         item {
@@ -29,6 +30,10 @@ import java.time.LocalDate
             Button(onClick={vm.action { vm.repo.mutate { vm.repo.program.generate(it) } }}) { Text("Créer / actualiser") }
         }
         items(partial,key={"resume-${it.str("id")}"}) { session -> StudyResumeCard(vm.repo.quran,vm.repo.study,s.obj("studyProgress").obj("learning:${session.str("id")}")) { open(session) } }
+        if(overdue.isNotEmpty()) item { Text("À rattraper",style=MaterialTheme.typography.titleLarge) }
+        items(overdue,key={"catchup-${it.str("id")}"}) { session ->
+            OutlinedButton(onClick={open(session)},modifier=Modifier.fillMaxWidth()) { Text("${session.str("scheduledDate",session.str("date"))} · ${vm.repo.quran.reference(range(session))}") }
+        }
         item { Row { listOf("Jour","Semaine","Mois").forEach { FilterChip(selected=period==it,onClick={period=it},label={Text(it)}) } } }
         items(future,key={it.str("id")}) { session -> Panel(vm.repo.quran.reference(range(session)),"${session.str("scheduledDate",session.str("date"))} · ${sessionStatus(s,session)}",{open(session)}) { TextButton(onClick={vm.action { vm.repo.mutate { vm.repo.program.postpone(it,session.str("id")) } }}) { Text("Reporter") } } }
         if(future.isEmpty()) item { Text("Aucune séance sur les 10 prochains jours") }
