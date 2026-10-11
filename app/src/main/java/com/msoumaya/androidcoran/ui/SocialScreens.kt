@@ -4,6 +4,8 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -31,6 +33,7 @@ import java.time.*
 @Composable fun FriendsScreen(vm: CoranViewModel) {
     val owner by vm.repo.user.collectAsStateWithLifecycle()
     val service=remember(vm) { SocialService(vm.repo) }
+    val snapshotLock=remember(owner) { Mutex() }
     var snapshot by remember(owner) { mutableStateOf<SocialSnapshot?>(null) }
     var roomId by rememberSaveable(owner) { mutableStateOf<String?>(null) }
     var group by rememberSaveable(owner) { mutableStateOf(false) }
@@ -48,6 +51,19 @@ import java.time.*
         val observer=LifecycleEventObserver { _,event -> if(event==Lifecycle.Event.ON_START) online(true) else if(event==Lifecycle.Event.ON_STOP) online(false) }
         lifecycle.addObserver(observer);if(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) online(true)
         onDispose { lifecycle.removeObserver(observer);online(false) }
+    }
+    LaunchedEffect(owner,lifecycle,roomId,settings) {
+        val account=owner?:return@LaunchedEffect
+        if(roomId!=null||settings) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            suspend fun update(): Unit = snapshotLock.withLock {
+                try { val result=service.snapshot();if(vm.repo.user.value==account) snapshot=result }
+                catch(e: Exception) { if(e is CancellationException) throw e }
+            }
+            launch { while(isActive) { delay(15000);update() } }
+            try { vm.repo.observeTable("friend_messages").collect { update() } }
+            catch(e: Exception) { if(e is CancellationException) throw e;awaitCancellation() }
+        }
     }
     if(owner==null) { PageList { Text("Connecte-toi pour retrouver tes amis et conversations") };return }
     if(roomId!=null) { ConversationScreen(vm,service,ChatRoom(roomId!!,group,other,title),snapshot) { roomId=null;refresh() };return }
@@ -108,8 +124,12 @@ import java.time.*
     var sending by remember(room.id,owner) { mutableStateOf(false) }
     BackHandler { if(details) details=false else back() }
     val context=LocalContext.current
-    suspend fun load(older: Boolean=false) {
+    val loadLock=remember(room.id,owner) { Mutex() }
+    suspend fun load(older: Boolean=false): Unit = loadLock.withLock {
+        val account=owner?:return@withLock
+        if(vm.repo.user.value!=account) return@withLock
         val result=service.messages(room,if(older) cursor else null)
+        if(vm.repo.user.value!=account) return@withLock
         messages=mergeConversationMessages(messages,result.messages)
         if(older||cursor==null) { cursor=result.cursor;hasMore=result.hasMore }
         service.markRead(room)
@@ -120,8 +140,9 @@ import java.time.*
     LaunchedEffect(room.id,owner) { if(owner!=null) runCatching { load() }.onFailure { if(it is CancellationException) throw it;vm.repo.feedback(it.message?:"Messages indisponibles") } }
     LaunchedEffect(room.id,owner,lifecycle) {
         if(owner!=null) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            launch { while(isActive) { delay(15000);try { load() } catch(e: Exception) { if(e is CancellationException) throw e } } }
             try { vm.repo.observeTable("friend_messages").collect { load() } }
-            catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback("Actualisation en direct indisponible. Utilise Actualiser.") }
+            catch(e: Exception) { if(e is CancellationException) throw e;awaitCancellation() }
         }
     }
     LaunchedEffect(room.id,owner,lifecycle) {
