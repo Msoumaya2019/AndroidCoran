@@ -27,13 +27,18 @@ object LocalReminders {
         if(enabled) manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,next,intent)
         prefs.edit().putBoolean("enabled",enabled).putString("account",account).putLong("nextAt",next).commit()
     }
-    fun notify(context: Context,account: String=context.getSharedPreferences("reminders",Context.MODE_PRIVATE).getString("account","guest")?:"guest"): Boolean {
+    fun notify(context: Context,account: String=context.getSharedPreferences("reminders",Context.MODE_PRIVATE).getString("account","guest")?:"guest"): Boolean = post(context,19,"Ton programme du Coran","Retrouve ton passage du jour et prends un moment pour apprendre.",account)
+    fun notifyTest(context: Context): Boolean = post(context,20,"Test des notifications","Les notifications sont autorisées sur ce téléphone.",null)
+    fun permissionGranted(context: Context): Boolean = (Build.VERSION.SDK_INT<33||context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)==PackageManager.PERMISSION_GRANTED)&&context.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+    private fun post(context: Context,id: Int,title: String,text: String,account: String?): Boolean {
         if(Build.VERSION.SDK_INT>=33&&context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) return false
         val manager=context.getSystemService(NotificationManager::class.java)
         if(!manager.areNotificationsEnabled()) return false
         manager.createNotificationChannel(NotificationChannel(CHANNEL,"Apprentissage du Coran",NotificationManager.IMPORTANCE_HIGH))
-        val intent=PendingIntent.getActivity(context,19,Intent(context,MainActivity::class.java).putExtra("destination","Programme").putExtra(ACCOUNT_EXTRA,account).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        manager.notify(19,Notification.Builder(context,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("Ton programme du Coran").setContentText("Retrouve ton passage du jour et prends un moment pour apprendre.").setContentIntent(intent).setAutoCancel(true).build())
+        val open=Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        if(account!=null) open.putExtra("destination","Programme").putExtra(ACCOUNT_EXTRA,account)
+        val intent=PendingIntent.getActivity(context,id,open,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        manager.notify(id,Notification.Builder(context,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(title).setContentText(text).setContentIntent(intent).setAutoCancel(true).build())
         return true
     }
     @Synchronized fun handleBroadcast(context: Context,intent: Intent) {

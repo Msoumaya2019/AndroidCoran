@@ -32,6 +32,8 @@ class LearningReminderTest {
         compose.waitForIdle()
         try { block() } finally {
             compose.activity.getSystemService(NotificationManager::class.java).cancel(19)
+            compose.activity.getSystemService(NotificationManager::class.java).cancel(20)
+            androidx.work.WorkManager.getInstance(compose.activity).cancelUniqueWork(NotificationTestWorker.NAME).result.get()
             runBlocking { repo.mutate { saved };repo.refreshReminders() }
             compose.waitForIdle()
         }
@@ -97,6 +99,28 @@ class LearningReminderTest {
         assertEquals(1,manager.activeNotifications.count { it.id==19 })
         assertEquals("Ton programme du Coran",manager.activeNotifications.single { it.id==19 }.notification.extras.getString("android.title"))
         assertTrue(context.getSharedPreferences("reminders",Context.MODE_PRIVATE).getLong("nextAt",0)>System.currentTimeMillis())
+    }
+
+    @Test fun testNotificationDoesNotReplaceLearningReminderOrNavigateToProgram()=fixture {
+        val context=compose.activity
+        assertTrue(LocalReminders.notify(context,"guest"));assertTrue(LocalReminders.notifyTest(context))
+        val manager=context.getSystemService(NotificationManager::class.java)
+        compose.waitUntil(10000) { manager.activeNotifications.count { it.id==19||it.id==20 }==2 }
+        val test=manager.activeNotifications.single { it.id==20 }
+        assertEquals("Test des notifications",test.notification.extras.getString("android.title"))
+        test.notification.contentIntent.send()
+        compose.waitForIdle()
+        compose.onNodeWithText("Mon programme").assertDoesNotExist()
+        assertTrue(context.getSharedPreferences("reminders",Context.MODE_PRIVATE).getBoolean("enabled",false))
+    }
+    @Test fun workManagerActuallyDeliversTheDelayedTestNotification()=fixture {
+        val context=compose.activity
+        val before=System.currentTimeMillis()
+        assertTrue(NotificationTestWorker.enqueue(context,"guest"))
+        val manager=context.getSystemService(NotificationManager::class.java)
+        compose.waitUntil(30000) { manager.activeNotifications.any { it.id==20 } }
+        assertTrue(System.currentTimeMillis()-before>=5000)
+        assertEquals("Test des notifications",manager.activeNotifications.single { it.id==20 }.notification.extras.getString("android.title"))
     }
 
 }
