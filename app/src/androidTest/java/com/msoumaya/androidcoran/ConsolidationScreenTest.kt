@@ -27,6 +27,7 @@ class ConsolidationScreenTest {
   val vm=CoranViewModel(app);val state=markKnowledge(defaultState().with("onboardingDone" to JsonPrimitive(true)),VerseRange(1,3),"perfect")
   val task=ReviewTask("consolidation-1-3",VerseRange(1,3),"recent",LocalDate.now().plusDays(1).toString(),1)
   rule.setContent { MaterialTheme { ReaderScreen(vm,state,1,{},null,task) } }
+  rule.onNodeWithContentDescription("Afficher les commandes").performClick()
   rule.onNodeWithText("Valider la consolidation · J+1").assertIsEnabled()
   rule.onNodeWithText("Valider jusqu’au verset sélectionné").assertDoesNotExist()
   rule.onNodeWithText("À retravailler").assertDoesNotExist()

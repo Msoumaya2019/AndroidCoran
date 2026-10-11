@@ -17,6 +17,7 @@ class NativeSmokeTest {
         kotlinx.coroutines.runBlocking { repo.awaitReady();repo.mutate { it.with("lastRead" to json("verseId" to 1,"page" to 1)) } }
         compose.waitForIdle()
         compose.onNodeWithText("Lire le Coran").performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
         compose.onNodeWithText("1 / 604").assertExists()
         compose.onNodeWithText("Suivante").performClick()
         compose.onNodeWithText("2 / 604").assertExists()
@@ -52,12 +53,14 @@ class NativeSmokeTest {
             compose.waitForIdle()
             compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
             compose.onNodeWithText(repo.quran.reference(VerseRange(6236,6236))).performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Terminer mon apprentissage").assertExists()
             compose.onNodeWithText("Quelques hésitations").assertDoesNotExist()
             compose.onNodeWithContentDescription("Retour").performClick()
             compose.onNodeWithText("Accueil",useUnmergedTree=true).performClick()
             compose.onNodeWithText("Révisions").performScrollTo().performClick()
             compose.onNodeWithText(repo.quran.reference(VerseRange(1,3))).performScrollTo().performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Quelques hésitations").assertExists()
             compose.onNodeWithText("À retravailler").assertExists()
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
@@ -73,12 +76,14 @@ class NativeSmokeTest {
             compose.waitForIdle()
             compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
             compose.onNodeWithText(repo.quran.reference(VerseRange(1,7))).performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Terminer mon apprentissage").performClick()
             compose.onNodeWithContentDescription("Dernier verset appris").performScrollTo().performClick()
             compose.onNodeWithText("Verset 3").performClick()
             compose.onNodeWithText("Valider jusqu’au verset 3").performScrollTo().performClick()
             compose.waitUntil(10000) { repo.state.value.obj("studyProgress").obj("learning:partial-learning").num("through")==3 }
             compose.onNodeWithText("Apprentissage à continuer").assertExists();compose.onNodeWithText("Reprendre mon apprentissage").performScrollTo().performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Terminer mon apprentissage").performClick()
             compose.onNodeWithContentDescription("Dernier verset appris").performScrollTo().performClick()
             compose.onNodeWithText("Verset 3").assertDoesNotExist()
@@ -98,6 +103,7 @@ class NativeSmokeTest {
         try {
             compose.waitForIdle();compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
             compose.onNodeWithText(repo.quran.reference(VerseRange(1,7))).performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Je dois encore le travailler").performClick()
             compose.waitUntil(10000) { repo.state.value.arr("sessions")[0].toString().contains("postponed") }
             assertFalse(known(repo.state.value,1));assertTrue(repo.state.value.obj("studyProgress").isEmpty())
@@ -109,6 +115,7 @@ class NativeSmokeTest {
             assertEquals(partial.obj("studyProgress"),repo.state.value.obj("studyProgress"))
             assertEquals(partial.arr("sessions"),repo.state.value.arr("sessions"))
             compose.onNodeWithText("Reprendre mon apprentissage").performScrollTo().performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Terminer mon apprentissage").assertExists()
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
     }
@@ -122,6 +129,7 @@ class NativeSmokeTest {
         try {
             compose.waitForIdle();compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
             compose.onNodeWithText(repo.quran.reference(VerseRange(1,7))).performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Choisir une sourate ou une page").performClick()
             compose.onNodeWithText("Page 1 à 604").performTextReplacement("3")
             compose.onNodeWithText("Aller à la page").performClick()
@@ -141,6 +149,7 @@ class NativeSmokeTest {
         try {
             compose.waitForIdle();compose.onNodeWithText("Révisions").performScrollTo().performClick()
             compose.onNodeWithText(repo.quran.reference(VerseRange(1,3))).performScrollTo().performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Valider la consolidation · J+1").performClick()
             compose.waitUntil(10000) { compose.onAllNodesWithText("Révision quotidienne").fetchSemanticsNodes().isNotEmpty() }
             val state=repo.state.value
@@ -162,6 +171,7 @@ class NativeSmokeTest {
             compose.waitForIdle();compose.onNodeWithText("Révisions").performScrollTo().performClick()
             compose.onNodeWithText("Révision à continuer").assertExists()
             compose.onNodeWithText("Reprendre ma révision").performScrollTo().performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Valider jusqu’au verset sélectionné").performClick()
             compose.onNodeWithContentDescription("Dernier verset révisé").performScrollTo().performClick()
             compose.onNodeWithText("Verset 2").assertDoesNotExist();compose.onNodeWithText("Verset 3").assertExists()
@@ -178,6 +188,7 @@ class NativeSmokeTest {
         try {
             compose.waitForIdle();compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
             compose.onNodeWithText("Reprendre mon apprentissage").performScrollTo().performClick()
+            compose.onNodeWithContentDescription("Afficher les commandes").performClick()
             compose.onNodeWithText("Enregistrer ma récitation").performClick()
             compose.onNodeWithText(repo.quran.reference(VerseRange(4,7))).assertExists()
             compose.onNodeWithText("Commencer").performClick()

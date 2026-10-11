@@ -49,14 +49,18 @@ import java.time.Instant
     val recovery by vm.repo.passwordRecovery.collectAsStateWithLifecycle()
     LaunchedEffect(recovery,user) { if(recovery&&user!=null) route="Compte" }
     var page by rememberSaveable { mutableIntStateOf(1) };var sessionId by rememberSaveable { mutableStateOf<String?>(null) };var reviewTask by rememberSaveable(stateSaver=listSaver<ReviewTask?,String>(save={ t -> t?.let { listOf(it.id,it.range.start.toString(),it.range.end.toString(),it.category,it.scheduledDate,it.consolidationOffset?.toString().orEmpty()) }?:emptyList() },restore={ if(it.isEmpty()) null else ReviewTask(it[0],VerseRange(it[1].toInt(),it[2].toInt()),it[3],it[4],it[5].toIntOrNull()) })) { mutableStateOf<ReviewTask?>(null) }
+    val fullscreen=route=="reader"
+    ReaderWindowFullscreen(fullscreen)
+    val snackbar=remember { SnackbarHostState() }
+    LaunchedEffect(notice,fullscreen) { if(fullscreen&&notice.isNotEmpty()) snackbar.showSnackbar(notice) }
     NativeAppTheme(s) {
         BackHandler(route!=null) { route=if(route=="Invocation") "Récitations" else null;sessionId=null;reviewTask=null }
-        Scaffold(topBar={ TopAppBar(title={ Text(if(route=="reader") "Coran Mémoire" else route?:tab) },navigationIcon={ if(route!=null) IconButton(onClick={route=if(route=="Invocation") "Récitations" else null;sessionId=null;reviewTask=null}) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"Retour") } },actions={ IconButton(onClick={route="Réglages"}) { Icon(Icons.Default.Settings,"Réglages") };IconButton(onClick={route="Compte"}) { Icon(Icons.Default.AccountCircle,"Compte") } }) },bottomBar={ if(route==null) NavigationBar { listOf("Accueil" to Icons.Default.Home,"Coran" to Icons.Default.MenuBook,"Programme" to Icons.Default.DateRange,"Progrès" to Icons.Default.Insights,"Amis" to Icons.Default.People).forEach { (label,icon)->NavigationBarItem(colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.primary,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant),selected=tab==label,onClick={tab=label},icon={Icon(icon,label)},label={Text(label,fontSize=10.sp)}) } } }) { padding ->
+        Scaffold(contentWindowInsets=if(fullscreen) WindowInsets(0,0,0,0) else ScaffoldDefaults.contentWindowInsets,snackbarHost={SnackbarHost(snackbar)},topBar={ if(!fullscreen) TopAppBar(title={ Text(if(route=="reader") "Coran Mémoire" else route?:tab) },navigationIcon={ if(route!=null) IconButton(onClick={route=if(route=="Invocation") "Récitations" else null;sessionId=null;reviewTask=null}) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"Retour") } },actions={ IconButton(onClick={route="Réglages"}) { Icon(Icons.Default.Settings,"Réglages") };IconButton(onClick={route="Compte"}) { Icon(Icons.Default.AccountCircle,"Compte") } }) },bottomBar={ if(route==null) NavigationBar { listOf("Accueil" to Icons.Default.Home,"Coran" to Icons.Default.MenuBook,"Programme" to Icons.Default.DateRange,"Progrès" to Icons.Default.Insights,"Amis" to Icons.Default.People).forEach { (label,icon)->NavigationBarItem(colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.primary,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant),selected=tab==label,onClick={tab=label},icon={Icon(icon,label)},label={Text(label,fontSize=10.sp)}) } } }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding)) {
-                if(notice.isNotEmpty()) Text(notice,Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(10.dp),fontSize=12.sp)
+                if(!fullscreen&&notice.isNotEmpty()) Text(notice,Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(10.dp),fontSize=12.sp)
                 val open: (Int)->Unit = { id -> val source=s.obj("reader").str("mushaf","coranTest");page=vm.repo.quran.sourcePage(id,source);route="reader" }
                 when(route) {
-                    "reader" -> ReaderScreen(vm,s,page,{page=it.coerceIn(1,604)},sessionId,reviewTask,onShareRecitation={ id -> pendingRecitationOwner=user;pendingRecitation=id;route="Récitations";sessionId=null;reviewTask=null },onChangeSurah={ id -> sessionId=null;reviewTask=null;open(id) }) { tab="Programme";route=if(sessionId!=null) null else "Révisions";sessionId=null;reviewTask=null }
+                    "reader" -> ReaderScreen(vm,s,page,{page=it.coerceIn(1,604)},sessionId,reviewTask,onShareRecitation={ id -> pendingRecitationOwner=user;pendingRecitation=id;route="Récitations";sessionId=null;reviewTask=null },onChangeSurah={ id -> sessionId=null;reviewTask=null;open(id) },onExit={route=null;sessionId=null;reviewTask=null}) { tab="Programme";route=if(sessionId!=null) null else "Révisions";sessionId=null;reviewTask=null }
                     "Compte" -> AccountScreen(vm,user)
                     "Administration" -> AdminScreen(vm)
                     "Réglages" -> SettingsScreen(vm,s,{route=it})
@@ -186,7 +190,8 @@ import java.time.Instant
     listOf("Objectif","Marques-pages","Téléchargements","Signaler un problème").forEach { Panel(it,onClick={navigate(it)}) }
 } }
 
-@Composable fun ReaderScreen(vm: CoranViewModel,s: JsonObject,page: Int,onPage: (Int)->Unit,sessionId: String?,task: ReviewTask?,onShareRecitation: ((String)->Unit)?=null,onChangeSurah: (Int)->Unit={},onStudyValidated: ()->Unit={}) {
+@Composable fun ReaderScreen(vm: CoranViewModel,s: JsonObject,page: Int,onPage: (Int)->Unit,sessionId: String?,task: ReviewTask?,onShareRecitation: ((String)->Unit)?=null,onChangeSurah: (Int)->Unit={},onExit: ()->Unit={},onStudyValidated: ()->Unit={}) {
+    var controlsVisible by rememberSaveable { mutableStateOf(false) }
     val context=LocalContext.current;val q=vm.repo.quran;val source=s.obj("reader").str("mushaf","coranTest");val current by RecitationService.current.collectAsStateWithLifecycle();val isPlaying by RecitationService.playing.collectAsStateWithLifecycle();val passageProgress by RecitationService.passageProgress.collectAsStateWithLifecycle();val activePreferences by RecitationService.activePreferences.collectAsStateWithLifecycle()
     var selected by rememberSaveable(page,source) { mutableStateOf<Int?>(null) };var reciterId by rememberSaveable { mutableStateOf(s.obj("audioPreferences").str("reciterId","ar.shaatree")) };var french by rememberSaveable { mutableStateOf(false) };var showAudio by rememberSaveable { mutableStateOf(false) };var startInput by rememberSaveable { mutableStateOf("") };var endInput by rememberSaveable { mutableStateOf("") }
     val session=s.arr("sessions").map { it.jsonObject }.firstOrNull { it.str("id")==sessionId }
@@ -201,12 +206,19 @@ import java.time.Instant
     val pageRange=if(source=="coranTest"&&payload.first!=null) { val ids=payload.first!!.arr("lines").flatMap { it.jsonObject.arr("words") }.map { val a=it.jsonArray;q.id(a[1].jsonPrimitive.int,a[2].jsonPrimitive.int) };VerseRange(ids.min(),ids.max()) } else q.sourceRange(page,source)
     LaunchedEffect(page,source,payload.first) { if(source!="coranTest"||payload.first!=null) vm.action { vm.repo.mutate { val now=Instant.now().toString();touch(it.with("lastRead" to json("page" to page,"verseId" to pageRange.start,"readAt" to now),"readPages" to element((it.arr("readPages").map { p->p.jsonPrimitive.int }+page).distinct()))) } } }
     LaunchedEffect(current?.verseId) { if(current!=null&&s.obj("reader").flag("followAudio",true)) { val next=q.sourcePage(current!!.verseId,source);if(next!=page) onPage(next) } }
+    LaunchedEffect(selected) { if(selected!=null) controlsVisible=true }
     fun command(action: String) { context.startService(Intent(context,RecitationService::class.java).setAction(action)) }
     if(showSurahPicker) ReaderSurahPicker(q,page,source,{showSurahPicker=false},{ next -> showSurahPicker=false;onPage(next) },{ id -> command("STOP");selected=null;showSurahPicker=false;onChangeSurah(id) })
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
+        if(controlsVisible) {
+        Row(Modifier.displayCutoutPadding().padding(end=48.dp),verticalAlignment=Alignment.CenterVertically) { IconButton(onClick=onExit) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"Retour") }
         TextButton(onClick={showSurahPicker=true},modifier=Modifier.fillMaxWidth()) { Text("Choisir une sourate ou une page") }
+        }
         Row(Modifier.fillMaxWidth().padding(horizontal=12.dp),verticalAlignment=Alignment.CenterVertically) { TextButton(onClick={onPage(page+1)}) { Text("Suivante") };Text("$page / 604",Modifier.weight(1f),textAlign=TextAlign.Center);TextButton(onClick={onPage(page-1)}) { Text("Précédente") };TextButton(onClick={french=!french}) { Text(if(french) "Arabe" else "Français") } }
+        }
         if(source=="coran_1441"&&payload.second==null) { Column(Modifier.weight(1f).padding(20.dp)) { Text("Télécharge le Coran 1441 depuis Réglages → Téléchargements");Button(onClick={QuranDownloadWorker.enqueue(context)}) { Text("Lancer le téléchargement") } } } else if(source=="tajweed"&&!french) TajwidReader(q,pageRange,selected,{selected=it},Modifier.weight(1f)) else if(french) LazyColumn(Modifier.weight(1f).padding(16.dp)) { items(pageRange.ids) { id -> Column(Modifier.fillMaxWidth().clickable { selected=id }.background(if(selected==id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(10.dp)) { Text("${q.verse(id).surah}:${q.verse(id).ayah} · ${q.french(id)}",lineHeight=25.sp);val notes=q.frenchNotes(id);if(notes.isNotBlank()) Text(notes,Modifier.padding(top=5.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } } } else AndroidView(factory={MushafView(it)},modifier=Modifier.fillMaxWidth().weight(1f),update={ v -> if(v.page!=page||v.source!=source||v.tag!=payload) { v.load(q,page,source,payload.first,payload.second,payload.third);v.tag=payload };v.paper=paperColor(s.obj("reader").str("paper"));v.selected=selected;v.playing=current?.verseId;v.bookmarks=s.obj("bookmarks").values.map { it.jsonObject }.filter { it["deletedAt"]==null }.map { it.num("verseId") }.toSet();v.difficulties=s.obj("difficultyMarkers").keys.mapNotNull { it.toIntOrNull() }.toSet();v.onVerse={selected=it};v.onPage=onPage;v.invalidate() })
+        if(controlsVisible) {
         if(selected!=null) {
             val id=selected!!
             SelectedVerseActions(q,id,s.obj("difficultyMarkers").obj(id.toString())["user"]?.let { it!=JsonNull }==true,{vm.action { vm.repo.mutate { Bookmarks(q).save(it,id,source,page) } }},{startInput=id.toString();endInput=id.toString();showAudio=true},{vm.action { vm.repo.mutate { vm.repo.review.toggleDifficulty(it,id) } }},{selected=null})
@@ -245,5 +257,10 @@ import java.time.Instant
         if(showRecorder) AlertDialog(onDismissRequest={if(!recordingActive) showRecorder=false},title={Text("Ma récitation")},text={ Column(Modifier.verticalScroll(rememberScrollState())) { RecorderPanel(vm,fixedRange=planned?.let { vm.repo.study.remaining(it,through) }?:pageRange,compact=true,onActiveChanged={recordingActive=it},onShare=onShareRecitation) } },confirmButton={TextButton(enabled=!recordingActive,onClick={showRecorder=false}) { Text("Fermer") }})
         ReaderAudioControls(q,current,isPlaying,passageProgress,activePreferences,{showAudio=true},::command)
         if(showAudio) ReaderAudioDialog(vm,if(startInput.isBlank()&&current!=null) RecitationService.activeRange.value?:pageRange else VerseRange(startInput.toIntOrNull()?:session?.num("start")?:task?.range?.start?:pageRange.start,endInput.toIntOrNull()?:session?.num("end")?:task?.range?.end?:pageRange.end),pageRange,reciterId,{reciterId=it},{showAudio=false;startInput="";endInput=""})
+        }
+    }
+    FilledTonalIconButton(onClick={controlsVisible=!controlsVisible},modifier=Modifier.align(Alignment.TopEnd).displayCutoutPadding().padding(4.dp)) {
+        Icon(if(controlsVisible) Icons.Default.Fullscreen else Icons.Default.Tune,if(controlsVisible) "Masquer les commandes" else "Afficher les commandes")
+    }
     }
 }
