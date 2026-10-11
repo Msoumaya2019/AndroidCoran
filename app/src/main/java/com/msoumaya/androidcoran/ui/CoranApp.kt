@@ -44,6 +44,7 @@ import java.time.Instant
     var pendingRecitationOwner by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(user) { if(pendingRecitationOwner!=user) pendingRecitation=null }
     LaunchedEffect(route) { if(route!="Récitations") pendingRecitation=null }
+    var pendingDailyContent by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingInvocation by rememberSaveable { mutableStateOf<String?>(null) }
     val recovery by vm.repo.passwordRecovery.collectAsStateWithLifecycle()
     LaunchedEffect(recovery,user) { if(recovery&&user!=null) route="Compte" }
@@ -64,12 +65,13 @@ import java.time.Instant
                     "Marques-pages" -> BookmarkScreen(vm,s) { id -> sessionId=null;reviewTask=null;open(id) }
                     "Révisions" -> RevisionScreen(vm,s) { task -> sessionId=null;reviewTask=task;open(task.range.start) }
                     "Contenus quotidiens" -> ContentsScreen(vm)
+                    "Contenu du jour" -> ContentsScreen(vm,initialId=pendingDailyContent)
                     "Quiz" -> QuizScreen(vm)
                     "Récitations" -> RecitationsScreen(vm,pendingRecitation,onViewInvocation={id -> pendingInvocation=id;route="Invocation"})
                     "Invocation" -> ContentsScreen(vm,initialId=pendingInvocation)
                     "Signaler un problème" -> ReportScreen(vm)
                     else -> when(tab) {
-                        "Accueil" -> HomeScreen(vm,s,{route=it}, { sessionId=null;reviewTask=null;open(homeReadingVerse(s)) })
+                        "Accueil" -> HomeScreen(vm,s,{route=it}, { sessionId=null;reviewTask=null;open(homeReadingVerse(s)) },onOpenContent={id -> pendingDailyContent=id;route="Contenu du jour"})
                         "Coran" -> QuranScreen(vm,s) { id -> sessionId=null;reviewTask=null;open(id) }
                         "Programme" -> ProgramScreen(vm,s) { session -> sessionId=session.str("id");reviewTask=null;val record=s.obj("studyProgress").obj("learning:${session.str("id")}");open((record.num("through",session.num("start")-1)+1).coerceAtMost(session.num("end"))) }
                         "Progrès" -> ProgressScreen(vm,s)
@@ -82,8 +84,9 @@ import java.time.Instant
 }
 @Composable fun PageList(content: @Composable ColumnScope.()->Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp),content=content) }
 @Composable fun Panel(title: String,subtitle: String="",onClick: (()->Unit)?=null,content: @Composable ColumnScope.()->Unit={}) { Card(modifier=Modifier.fillMaxWidth().then(if(onClick!=null) Modifier.clickable(onClick=onClick) else Modifier),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)) { Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) { Text(title,style=MaterialTheme.typography.titleMedium);if(subtitle.isNotEmpty()) Text(subtitle,style=MaterialTheme.typography.bodyMedium);content() } } }
-@Composable fun HomeScreen(vm: CoranViewModel,s: JsonObject,navigate: (String)->Unit,read: ()->Unit) { val progress=vm.repo.program.progress(s);PageList {
+@Composable fun HomeScreen(vm: CoranViewModel,s: JsonObject,navigate: (String)->Unit,read: ()->Unit,onOpenContent: (String)->Unit={}) { val progress=vm.repo.program.progress(s);PageList {
     HomeGreeting(s)
+    HomeDailyContents(vm,onOpenContent)
     Panel("Mon objectif",s.obj("goal").str("label"),{navigate("Objectif")}) { LinearProgressIndicator(drawStopIndicator={},progress={progress.second},modifier=Modifier.fillMaxWidth());Text("${(progress.second*100).toInt()} % appris") }
     ContinueReadingCard(vm,s,read)
     Panel("Révisions","Consolidation, cycle et versets à retravailler",{navigate("Révisions")})

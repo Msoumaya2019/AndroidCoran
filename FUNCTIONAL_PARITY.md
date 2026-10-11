@@ -617,3 +617,14 @@ Source : src/RecitationsScreen.tsx:54, src/App.tsx:241, src/DailyContentsScreen.
 Statut développement : Implémenté. Statut test : 108 tests JVM réussis (dont trois nouveaux tests du texte de partage), Lint, APK principal et APK AndroidTest compilés dans la CI 37944413370. Deux tests Compose du lien écrits et compilés, non exécutés. Essai local interrompu par allocation mémoire JVM insuffisante, sans résultat complet. Tests Compose non exécutés et lecture/partage/favoris sur compte réel non validés. Aucun changement Supabase.
 
 Complément de ce lot : police Amiri existante pour le texte arabe des contenus/snapshots ; photos de profil des amis ajoutées au sélecteur de partage, via AvatarPreview et Storage existants. Première CI : tests JVM exécutés, compilation AndroidTest bloquée par un import inutile de assertDoesNotExist ; import corrigé, nouvelle CI requise. Aucun test Compose n’a été exécuté.
+
+### Contenus quotidiens de l’accueil et chargements isolés — 11 octobre 2026
+
+Source : src/DailyContentsScreen.tsx:TodayContents, DailyPreview, DailyContentsScreen ; services/dailyContents.ts:dayContents et cachedDayContents.
+
+- HomeDailyContents/TodayContentCarousel : un rappel puis une invocation, balayage horizontal et indicateurs, extrait arabe/phonétique/français/source, illustration reading.png existante et image distante si disponible. La pression ouvre la fiche du contenu exact ; Retour revient à l’accueil.
+- ContentService.cachedDaily lit le cache du jour avant le réseau. Le RPC daily_content_for_date est conservé ; retour au premier plan et changement de date actualisent le contenu, sans minuteur actif lorsque l’écran n’est pas commencé.
+- ContentBrowser + Flow : chargements liés au compte et à la sélection, annulation et génération empêchant une réponse ancienne de remplacer les nouveaux résultats ou de retirer leur état de chargement. Pagination dédupliquée avec offset distant réel, refus des doubles demandes, conservation de la liste après un échec et nouvel essai. Le changement Rappels/Invocations remet la catégorie à zéro.
+- Favoris : boutons protégés pendant l’envoi ; une ancienne réponse n’actualise pas les résultats d’une autre sélection/identité. Aucun compte réel n’a été modifié pendant les tests.
+
+Statut développement : Implémenté. Statut test : sept tests JVM de concurrence/pagination/ordre et deux tests Compose du carrousel ajoutés, à vérifier en CI. Les tests Compose ne sont pas exécutés faute de mémoire disponible pour un émulateur fiable. La fidélité visuelle complète, le renouvellement des médias, les données authentifiées et les notifications de publication distante restent non validés. Le rechargement à la reprise est implémenté ; l’abonnement observeContents interne source n’est pas reproduit par ce lot.
