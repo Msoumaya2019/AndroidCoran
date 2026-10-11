@@ -18,6 +18,7 @@ import com.msoumaya.androidcoran.audio.RecitationService
 import com.msoumaya.androidcoran.data.ContentService
 import com.msoumaya.androidcoran.domain.*
 import kotlinx.serialization.json.*
+import kotlinx.coroutines.launch
 
 @Composable fun ContentsScreen(vm: CoranViewModel,initialId: String?=null) {
     val owner by vm.repo.user.collectAsStateWithLifecycle();val service=remember(vm) { ContentService(vm.repo) }

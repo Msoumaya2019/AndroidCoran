@@ -628,3 +628,5 @@ Source : src/DailyContentsScreen.tsx:TodayContents, DailyPreview, DailyContentsS
 - Favoris : boutons protégés pendant l’envoi ; une ancienne réponse n’actualise pas les résultats d’une autre sélection/identité. Aucun compte réel n’a été modifié pendant les tests.
 
 Statut développement : Implémenté. Statut test : sept tests JVM de concurrence/pagination/ordre et deux tests Compose du carrousel ajoutés, à vérifier en CI. Les tests Compose ne sont pas exécutés faute de mémoire disponible pour un émulateur fiable. La fidélité visuelle complète, le renouvellement des médias, les données authentifiées et les notifications de publication distante restent non validés. Le rechargement à la reprise est implémenté ; l’abonnement observeContents interne source n’est pas reproduit par ce lot.
+
+Première CI de ce lot (38135335271) : compilation bloquée par l’import manquant de kotlinx.coroutines.launch dans ContentScreens ; corrigé avant de relancer les vérifications. Aucun résultat de test n’est attribué à ce premier build.
