@@ -49,7 +49,7 @@ class LearningReminderTest {
         compose.runOnIdle { assertFalse(compose.activity.intent.hasExtra(LocalReminders.ACCOUNT_EXTRA));assertFalse(compose.activity.intent.hasExtra("destination")) }
     }
     @Test fun reminderIntentIsHandledWhenActivityIsCreatedAgain()=fixture {
-        compose.runOnUiThread { compose.activity.intent=Intent(compose.activity,MainActivity::class.java).putExtra("destination","Programme").putExtra(LocalReminders.ACCOUNT_EXTRA,"guest") }
+        compose.runOnUiThread { compose.activity.intent=Intent(compose.activity.intent).putExtra("destination","Programme").putExtra(LocalReminders.ACCOUNT_EXTRA,"guest") }
         compose.activityRule.scenario.recreate()
         compose.onNodeWithText("Mon programme").assertExists()
     }

@@ -35,7 +35,7 @@ object LocalReminders {
         val manager=context.getSystemService(NotificationManager::class.java)
         if(!manager.areNotificationsEnabled()) return false
         manager.createNotificationChannel(NotificationChannel(CHANNEL,"Apprentissage du Coran",NotificationManager.IMPORTANCE_HIGH))
-        val open=Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val open=Intent.makeMainActivity(ComponentName(context,MainActivity::class.java)).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         if(account!=null) open.putExtra("destination","Programme").putExtra(ACCOUNT_EXTRA,account)
         val intent=PendingIntent.getActivity(context,id,open,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         manager.notify(id,Notification.Builder(context,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(title).setContentText(text).setContentIntent(intent).setAutoCancel(true).build())
