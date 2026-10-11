@@ -16,6 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msoumaya.androidcoran.data.*
 import com.msoumaya.androidcoran.domain.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable fun AvatarPreview(repo: Repository,path: String?,modifier: Modifier=Modifier.size(56.dp)) {
     val owner by repo.user.collectAsStateWithLifecycle()
@@ -27,10 +29,31 @@ import kotlinx.coroutines.CancellationException
 }
 @Composable fun AvatarEditor(vm: CoranViewModel,profilePath: String?,changed: ()->Unit) {
     val context=LocalContext.current
-    val picker=rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if(uri!=null) vm.action { vm.repo.uploadAvatar(context,uri);vm.repo.feedback("Photo enregistrée");changed() } }
+    var draft by rememberSaveable { mutableStateOf<String?>(null) }
+    var draftOwner by rememberSaveable { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    val owner by vm.repo.user.collectAsStateWithLifecycle()
+    val scope=rememberCoroutineScope()
+    val picker=rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if(uri!=null) { draftOwner=vm.repo.user.value;draft=uri.toString() } }
+    LaunchedEffect(owner) { if(draft!=null&&draftOwner!=owner) { draft=null;draftOwner=null } }
+    draft?.let { raw -> key(raw) {
+        var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+        LaunchedEffect(raw) {
+            try { bitmap=decodeAvatar(context,android.net.Uri.parse(raw)) } catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback(e.message?:"Image illisible");draft=null }
+        }
+        DisposableEffect(bitmap) { val loaded=bitmap;onDispose { loaded?.recycle() } }
+        AvatarCropDialog(bitmap,busy,onClose={draft=null},onConfirm={ selection ->
+            scope.launch {
+                busy=true
+                try { vm.repo.uploadAvatar(context,android.net.Uri.parse(raw),selection,draftOwner);draft=null;vm.repo.feedback("Photo enregistrée");changed() }
+                catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback(e.message?:"Enregistrement impossible") }
+                finally { busy=false }
+            }
+        })
+    } }
     AvatarPreview(vm.repo,profilePath,Modifier.size(100.dp))
     Row {
-        TextButton(onClick={picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))}) { Text("Choisir une photo") }
-        if(!profilePath.isNullOrBlank()) TextButton(onClick={vm.action { vm.repo.removeAvatar();vm.repo.feedback("Photo supprimée");changed() }}) { Text("Supprimer la photo") }
+        TextButton(enabled=!busy,onClick={picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))}) { Text("Choisir une photo") }
+        if(!profilePath.isNullOrBlank()) TextButton(enabled=!busy,onClick={vm.action { vm.repo.removeAvatar();vm.repo.feedback("Photo supprimée");changed() }}) { Text("Supprimer la photo") }
     }
 }
