@@ -16,7 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msoumaya.androidcoran.data.*
 import com.msoumaya.androidcoran.domain.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable fun AvatarPreview(repo: Repository,path: String?,modifier: Modifier=Modifier.size(56.dp)) {
@@ -39,7 +39,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
     draft?.let { raw -> key(raw) {
         var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
         LaunchedEffect(raw) {
-            try { bitmap=decodeAvatar(context,android.net.Uri.parse(raw)) } catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback(e.message?:"Image illisible");draft=null }
+            var loaded: android.graphics.Bitmap?=null
+            try {
+                withContext(Dispatchers.IO) { loaded=decodeAvatar(context,android.net.Uri.parse(raw)) }
+                currentCoroutineContext().ensureActive()
+                bitmap=loaded;loaded=null
+            } catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback(e.message?:"Image illisible");draft=null }
+            finally { loaded?.recycle() }
         }
         DisposableEffect(bitmap) { val loaded=bitmap;onDispose { loaded?.recycle() } }
         AvatarCropDialog(bitmap,busy,onClose={draft=null},onConfirm={ selection ->

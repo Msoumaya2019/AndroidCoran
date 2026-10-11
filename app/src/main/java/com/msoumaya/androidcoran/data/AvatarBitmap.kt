@@ -4,8 +4,8 @@ import android.graphics.*
 import android.media.ExifInterface
 import android.net.Uri
 import com.msoumaya.androidcoran.domain.*
-import kotlinx.coroutines.*
-suspend fun decodeAvatar(context: Context,uri: Uri): Bitmap = withContext(Dispatchers.IO) {
+@androidx.annotation.WorkerThread
+fun decodeAvatar(context: Context,uri: Uri): Bitmap {
  val bounds=BitmapFactory.Options().apply { inJustDecodeBounds=true }
  context.contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it,null,bounds) }
  require(bounds.outWidth>0&&bounds.outHeight>0) { "Image illisible" }
@@ -13,7 +13,7 @@ suspend fun decodeAvatar(context: Context,uri: Uri): Bitmap = withContext(Dispat
  val bitmap=context.contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it,null,options) }?:error("Image illisible")
  try {
    val orientation=try { context.contentResolver.openInputStream(uri).use { input->if(input==null) 1 else ExifInterface(input).getAttributeInt(ExifInterface.TAG_ORIENTATION,1) } } catch(_: java.io.IOException) { 1 }
-   orientAvatar(bitmap,orientation)
+   return orientAvatar(bitmap,orientation)
  } catch(e: Exception) { bitmap.recycle();throw e }
 }
 fun orientAvatar(bitmap: Bitmap,orientation: Int): Bitmap {
