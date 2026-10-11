@@ -32,8 +32,8 @@ class AvatarCropAndroidTest {
   val restore=StateRestorationTester(compose)
   try {
    restore.setContent { MaterialTheme { AvatarCropDialog(image,false,{cancelled++},{selected=it}) } }
-   compose.onAllNodes(hasProgressBarRangeInfo())[0].performSemanticsAction(SemanticsActions.SetProgress) { it(1f) }
-   compose.onAllNodes(hasProgressBarRangeInfo())[2].performSemanticsAction(SemanticsActions.SetProgress) { it(2f) }
+   compose.onNodeWithContentDescription("Position horizontale").performSemanticsAction(SemanticsActions.SetProgress) { it(1f) }
+   compose.onNodeWithContentDescription("Zoom").performSemanticsAction(SemanticsActions.SetProgress) { it(2f) }
    restore.emulateSavedInstanceStateRestore()
    compose.onNodeWithText("Annuler").performClick();assertEquals(1,cancelled);assertNull(selected)
    compose.onNodeWithText("Utiliser cette photo").performClick();assertEquals(AvatarCrop(1f,0.5f,2f),selected)

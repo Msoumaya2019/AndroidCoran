@@ -8,6 +8,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -21,9 +23,9 @@ import com.msoumaya.androidcoran.domain.*
     val crop=avatarCropRect(bitmap.width,bitmap.height,AvatarCrop(x,y,zoom))
     drawImage(bitmap.asImageBitmap(),srcOffset=IntOffset(crop.left,crop.top),srcSize=IntSize(crop.side,crop.side),dstSize=IntSize(size.width.toInt(),size.height.toInt()))
    }
-   Text("Position horizontale");Slider(x,{x=it},enabled=!busy&&bitmap!=null)
-   Text("Position verticale");Slider(y,{y=it},enabled=!busy&&bitmap!=null)
-   Text("Zoom");Slider(zoom,{zoom=it},valueRange=1f..3f,enabled=!busy&&bitmap!=null)
+   Text("Position horizontale");Slider(x,{x=it},modifier=Modifier.semantics { contentDescription="Position horizontale" },enabled=!busy&&bitmap!=null)
+   Text("Position verticale");Slider(y,{y=it},modifier=Modifier.semantics { contentDescription="Position verticale" },enabled=!busy&&bitmap!=null)
+   Text("Zoom");Slider(zoom,{zoom=it},modifier=Modifier.semantics { contentDescription="Zoom" },valueRange=1f..3f,enabled=!busy&&bitmap!=null)
    TextButton(onClick={x=0.5f;y=0.5f;zoom=1f},enabled=!busy) { Text("Recentrer") }
   }
  },confirmButton={TextButton(enabled=bitmap!=null&&!busy,onClick={onConfirm(AvatarCrop(x,y,zoom))}) { Text(if(busy) "Enregistrement…" else "Utiliser cette photo") }},dismissButton={TextButton(enabled=!busy,onClick=onClose) { Text("Annuler") }})
