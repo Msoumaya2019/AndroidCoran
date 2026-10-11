@@ -25,7 +25,7 @@ class RecitationService: MediaSessionService() {
     private val transition=Runnable { repeatPause.takeDue(now())?.let { _waiting.value=false;position=it;startAudio() } }
     private fun clearPending() { handler.removeCallbacks(transition);repeatPause.clear();_waiting.value=false }
     private fun pausePlayback() { requestedPlaying=false;generation++;handler.removeCallbacks(follow); handler.removeCallbacks(transition);repeatPause.pause(now());player.pause();_playing.value=false }
-    private fun resumePlayback() { requestedPlaying=true;if(repeatPause.next!=null) { handler.postDelayed(transition,repeatPause.resume(now()));_playing.value=true } else if(loading) { generation++;startAudio() } else if(player.playbackState==Player.STATE_ENDED) { if(standalone) { player.seekTo(0);player.play() } else { position=AudioPosition(range.start);startAudio() } } else { player.play();if(timeline!=null) handler.post(follow) } }
+    private fun resumePlayback() { requestedPlaying=true;if(repeatPause.next!=null) { handler.postDelayed(transition,repeatPause.resume(now()));_playing.value=true } else if(loading) { generation++;startAudio() } else if(player.playbackState==Player.STATE_ENDED) { if(standalone) { player.seekTo(0);player.play() } else { position=AudioPosition(range.start);startAudio() } } else { player.play() } }
     private fun applyPreferences(prefs: RepeatPreferences) { count=prefs.count;mode=prefs.mode;gap=prefs.gap;speed=prefs.speed;autoStop=prefs.autoStop;player.setPlaybackSpeed(speed);_activePreferences.value=prefs }
     private fun finishBoundary() {
         if(repeatPause.next!=null) return
@@ -35,19 +35,26 @@ class RecitationService: MediaSessionService() {
         if(next==null) { requestedPlaying=false;player.pause();_playing.value=false }
         else { val wait=repetitionDelay(range,position,next,mode,gap);player.pause();repeatPause.start(next,wait,now());_waiting.value=true;_playing.value=true;handler.removeCallbacks(transition);handler.postDelayed(transition,wait) }
     }
-    private fun updateProgress() { _passageProgress.value=if(standalone||_current.value==null) null else audioProgress(range,position,player.currentPosition,player.duration) }
+    private fun updateProgress() { _passageProgress.value=if(standalone||_current.value==null) null else timeline?.let { chapterProgress(it.timings,range,position,player.currentPosition+clipStart) } ?: audioProgress(range,position,player.currentPosition,player.duration) }
     private val progress=object: Runnable { override fun run() { if(player.isPlaying) { _elapsed.value=player.currentPosition.coerceAtLeast(0);updateProgress();handler.postDelayed(this,250) } } }
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
-    private var timeline: ChapterAudio?=null;private var chapterEnd=0;private var clipStart=0L
+    private var timeline: ChapterAudio?=null;private var chapterEnd=0;private var chapterStart=0;private var clipStart=0L
     private val follow=object: Runnable { override fun run() {
         val times=timeline?:return
+        if(!player.isPlaying) return
         val clock=player.currentPosition+clipStart
         if(mode==RepeatMode.EACH_VERSE&&clock>=(times.timings[position.verseId]?.second?:Long.MAX_VALUE)) { finishBoundary();return }
-        var id=position.verseId
-        while(id<chapterEnd&&(times.timings[id+1]?.first?:Long.MAX_VALUE)<=clock) id++
-        if(id!=position.verseId) { position=position.copy(verseId=id);_current.value=position;updateProgress() }
+        syncChapterPosition()
         handler.postDelayed(this,80)
     } }
+
+    private fun syncChapterPosition() {
+        val times=timeline?:return
+        if(chapterStart<1||chapterEnd<chapterStart) return
+        val id=chapterVerseAt(times.timings,VerseRange(chapterStart,chapterEnd),player.currentPosition+clipStart)
+        if(id!=position.verseId) { position=position.copy(verseId=id);_current.value=position }
+        updateProgress()
+    }
 
     private val prefetchJobs=mutableMapOf<String,Job>()
     private fun preloadVerses(q: Quran) {
@@ -62,7 +69,8 @@ class RecitationService: MediaSessionService() {
     override fun onCreate() {
         super.onCreate();player=ExoPlayer.Builder(this).setMediaSourceFactory(QuranAudioCache.factory(this)).build();player.setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(),true);player.setHandleAudioBecomingNoisy(true)
         player.addListener(object: Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) { _playing.value=requestedPlaying&&(isPlaying||repeatPause.active||loading);handler.removeCallbacks(progress);_elapsed.value=player.currentPosition.coerceAtLeast(0);updateProgress();if(isPlaying) handler.post(progress) }
+            override fun onIsPlayingChanged(isPlaying: Boolean) { _playing.value=requestedPlaying&&(isPlaying||repeatPause.active||loading);handler.removeCallbacks(progress);_elapsed.value=player.currentPosition.coerceAtLeast(0);updateProgress();handler.removeCallbacks(follow);if(isPlaying) { handler.post(progress);if(timeline!=null) handler.post(follow) } }
+            override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo,newPosition: Player.PositionInfo,reason: Int) { if(reason==Player.DISCONTINUITY_REASON_SEEK) { syncChapterPosition();_elapsed.value=player.currentPosition.coerceAtLeast(0) } }
             override fun onPlaybackStateChanged(state: Int) { if(state==Player.STATE_ENDED) { if(timeline!=null&&!standalone) { position=position.copy(verseId=chapterEnd);_current.value=position };finishBoundary() } }
             override fun onPlayerError(error: PlaybackException) { requestedPlaying=false;loading=false;generation++;clearPending();handler.removeCallbacks(follow); (application as CoranApplication).repository.feedback("Lecture audio interrompue : ${error.errorCodeName}");_playing.value=false }
         });session=MediaSession.Builder(this,object: ForwardingPlayer(player) {
@@ -99,9 +107,9 @@ class RecitationService: MediaSessionService() {
             if(expected!=generation) return@launch
             loading=false
             if(chapter==null) { playVerse();return@launch }
-            standalone=false;timeline=chapter;val start=position.verseId;chapterEnd=minOf(range.end,q.surah(start).range.end);clipStart=chapter.timings[start]!!.first
+            standalone=false;timeline=chapter;val start=position.verseId;chapterStart=start;chapterEnd=minOf(range.end,q.surah(start).range.end);clipStart=chapter.timings[start]!!.first
             val clip=MediaItem.ClippingConfiguration.Builder().setStartPositionMs(chapter.timings[start]!!.first).setEndPositionMs(chapter.timings[chapterEnd]!!.second).build()
-            player.setMediaItem(MediaItem.Builder().setUri(chapter.url).setClippingConfiguration(clip).setMediaMetadata(MediaMetadata.Builder().setTitle(q.surah(start).name).setArtist(reciter.name).build()).build());_current.value=position;player.prepare();player.play();handler.post(follow)
+            player.setMediaItem(MediaItem.Builder().setUri(chapter.url).setClippingConfiguration(clip).setMediaMetadata(MediaMetadata.Builder().setTitle(q.surah(start).name).setArtist(reciter.name).build()).build());_current.value=position;player.prepare();player.play()
         }
     }
 }

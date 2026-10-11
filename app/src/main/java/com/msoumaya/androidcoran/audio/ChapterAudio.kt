@@ -20,5 +20,5 @@ suspend fun chapterAudio(context: Context,q: Quran,id: Int,reciter: Reciter): Ch
     try { if(cache.isFile) return@withContext parse(Json.parseToJsonElement(cache.readText()).jsonObject)
         val connection=(URL("https://api.quran.com/api/v4/chapter_recitations/$resource/$chapter?segments=true").openConnection() as java.net.HttpURLConnection).apply { connectTimeout=10000;readTimeout=10000 }
         try { check(connection.responseCode==200);val text=connection.inputStream.bufferedReader().use { it.readText() };val parsed=parse(Json.parseToJsonElement(text).jsonObject);cache.writeText(text);parsed } finally { connection.disconnect() }
-    } catch(e: Exception) { null }
+    } catch(e: Exception) { if(e is kotlinx.coroutines.CancellationException) throw e;null }
 }
