@@ -23,6 +23,17 @@ class AvatarCropAndroidTest {
    try { assertEquals(if(orientation>=5) 3 else 2,result.width);assertEquals(if(orientation>=5) 2 else 3,result.height);assertEquals(expected[orientation-1],(0..5).map { Color.red(result.getPixel(it%result.width,it/result.width)) }) } finally { result.recycle() }
   }
  }
+ @Test fun jpegExifAndLargePhotoAreDecodedWithBoundedMemory() {
+  val context=androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+  val file=java.io.File.createTempFile("avatar-orientation-",".jpg",context.cacheDir)
+  val image=Bitmap.createBitmap(3000,2000,Bitmap.Config.ARGB_8888);image.eraseColor(Color.RED)
+  try {
+   file.outputStream().use { image.compress(Bitmap.CompressFormat.JPEG,65,it) }
+   val exif=android.media.ExifInterface(file.absolutePath);exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION,"6");exif.saveAttributes()
+   val decoded=decodeAvatar(context,android.net.Uri.fromFile(file))
+   try { assertEquals(500,decoded.width);assertEquals(750,decoded.height);assertTrue(Color.red(decoded.getPixel(250,375))>230) } finally { decoded.recycle() }
+  } finally { image.recycle();file.delete() }
+ }
  @Test fun selectedRegionProduces512PixelJpegWithoutRecyclingPreview() {
   val image=Bitmap.createBitmap(1024,512,Bitmap.Config.ARGB_8888);val canvas=android.graphics.Canvas(image);canvas.drawColor(Color.RED);val paint=android.graphics.Paint().apply { color=Color.BLUE };canvas.drawRect(512f,0f,1024f,512f,paint)
   try { val bytes=encodeAvatar(image,AvatarCrop(x=1f));assertTrue(bytes.size<=2097152);assertFalse(image.isRecycled);val decoded=BitmapFactory.decodeByteArray(bytes,0,bytes.size);try { assertEquals(512,decoded.width);assertEquals(512,decoded.height);assertTrue(Color.blue(decoded.getPixel(256,256))>230);assertTrue(Color.red(decoded.getPixel(256,256))<20) } finally { decoded.recycle() } } finally { image.recycle() }
