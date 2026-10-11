@@ -678,3 +678,7 @@ Développement : Implémenté pour cette correction. Tests : Testé ; cinq scén
 ## Séances manquées — 12 octobre 2026
 
 Source : src/ui/MainScreens.tsx, ProgramScreen. Section « À rattraper » portée dans LearningScreens.kt : dix premières séances todo dont scheduledDate (ou date legacy) précède le jour local, dans leur ordre existant. Ouverture avec identifiant original vers le lecteur plein écran, sans déplacer les dates ni modifier le statut. Données : user_state.data.sessions existant, aucun changement du backend. Développement : Implémenté. Test : En développement ; parcours Android ajouté pour ouverture, contrôles de validation et retour sans changement de séance.
+
+## Échéance des objectifs — 12 octobre 2026
+
+Source : src/ui/GoalScreen.tsx. Échéance facultative AAAA-MM-JJ, validation stricte du calendrier et suppression par « Sans date » portées dans GoalScreen natif. Comme la source, la date est un repère et ne modifie pas le rythme de génération. Enregistrer un objectif conserve ses champs existants au lieu de remplacer tout son JSON. Supabase : user_state.data.goal.deadline, aucune modification de table. Développement : Implémenté. Tests : En développement (quatre tests JVM ajoutés).
