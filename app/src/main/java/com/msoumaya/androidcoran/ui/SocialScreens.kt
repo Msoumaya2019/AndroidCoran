@@ -6,6 +6,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -91,6 +92,8 @@ import java.time.*
 @Composable private fun ConversationScreen(vm: CoranViewModel,service: SocialService,room: ChatRoom,snapshot: SocialSnapshot?,back: ()->Unit) {
     val owner by vm.repo.user.collectAsStateWithLifecycle()
     var messages by remember(room.id,owner) { mutableStateOf<List<JsonObject>>(emptyList()) }
+    val listState=remember(room.id,owner) { LazyListState() }
+    var loadingOlder by remember(room.id,owner) { mutableStateOf(false) }
     var cursor by remember(room.id,owner) { mutableStateOf<String?>(null) }
     var hasMore by remember(room.id,owner) { mutableStateOf(false) }
     var body by rememberSaveable(room.id,owner) { mutableStateOf("") }
@@ -107,7 +110,7 @@ import java.time.*
     val context=LocalContext.current
     suspend fun load(older: Boolean=false) {
         val result=service.messages(room,if(older) cursor else null)
-        messages=if(older) (result.messages+messages).distinctBy { it.str("id") } else (messages.filter { it.str("created_at")<(result.cursor?:"") }+result.messages).distinctBy { it.str("id") }.sortedBy { it.str("created_at") }
+        messages=mergeConversationMessages(messages,result.messages)
         if(older||cursor==null) { cursor=result.cursor;hasMore=result.hasMore }
         service.markRead(room)
         lastReadReceipt=Instant.now().toString();signals?.markRead(lastReadReceipt)
@@ -139,12 +142,15 @@ import java.time.*
             }
         }
     }
+    LaunchedEffect(room.id,owner,messages.lastOrNull()?.str("id")) {
+        if(messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex+if(hasMore) 1 else 0)
+    }
     if(details) { ConversationDetails(vm,service,room,snapshot,{details=false},back);return }
     Column(Modifier.fillMaxSize().padding(12.dp)) {
         Row { TextButton(onClick=back) { Text("Retour") };TextButton(onClick={details=true}) { Text(room.title) };TextButton(onClick={vm.action { load() }}) { Text("Actualiser") } }
         ConversationTypingIndicator(signalState.typing)
-        LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            if(hasMore) item { TextButton(onClick={vm.action { load(true) }}) { Text("Messages plus anciens") } }
+        LazyColumn(Modifier.weight(1f),state=listState,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            if(hasMore) item { TextButton(enabled=!loadingOlder,onClick={if(!loadingOlder) { loadingOlder=true;vm.action { try { load(true) } finally { loadingOlder=false } } }}) { Text(if(loadingOlder) "Chargement…" else "Messages plus anciens") } }
             items(messages,key={it.str("id")}) { row ->
                 val deleted=row.str("deleted_at").isNotBlank()
                 Panel(if(row.str("sender_id")==owner) "Moi" else snapshot?.profiles?.firstOrNull { it.str("id")==row.str("sender_id") }?.str("display_name")?:"Membre",if(deleted) "Message supprimé" else row.str("body")) {
