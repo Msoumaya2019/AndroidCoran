@@ -5,13 +5,16 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msoumaya.androidcoran.audio.RecitationService
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.msoumaya.androidcoran.domain.*
 @Composable fun RecitationPlaybackControls(active: Boolean,playing: Boolean,elapsed: Long,duration: Long,onPlay: ()->Unit,onToggle: ()->Unit,onSeek: (Long)->Unit) {
+ Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
  TextButton(onClick={if(active) onToggle() else onPlay()}) { Text(if(active&&playing) "Pause" else if(active&&elapsed>0) "Reprendre" else "Réécouter") }
  Row { TextButton(enabled=active,onClick={onSeek(-10000)}) { Text("− 10 s") };TextButton(enabled=active,onClick={onSeek(10000)}) { Text("+ 10 s") } }
  val position=if(active) elapsed.coerceAtLeast(0) else 0L
  LinearProgressIndicator(progress={recordingPlaybackProgress(position,duration)},modifier=Modifier.fillMaxWidth())
  Text("Position : "+recordingTime(position)+" / "+recordingTime(duration))
+ }
 }
 
 @Composable fun LiveRecitationPlaybackControls(key: String,duration: Long,onPlay: ()->Unit,onToggle: ()->Unit,onSeek: (Long)->Unit) {
