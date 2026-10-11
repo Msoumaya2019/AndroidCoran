@@ -1,6 +1,9 @@
 package com.msoumaya.androidcoran.ui
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -47,6 +50,7 @@ import java.time.*
     }
     if(owner==null) { PageList { Text("Connecte-toi pour retrouver tes amis et conversations") };return }
     if(roomId!=null) { ConversationScreen(vm,service,ChatRoom(roomId!!,group,other,title),snapshot) { roomId=null;refresh() };return }
+    BackHandler(settings) { settings=false }
     if(settings&&snapshot!=null) { SocialProfileScreen(vm,snapshot!!.profile) { settings=false;refresh() };return }
     LazyColumn(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
         item {
@@ -93,13 +97,20 @@ import java.time.*
     var kind by rememberSaveable(room.id,owner) { mutableStateOf("text") }
     var details by rememberSaveable(room.id) { mutableStateOf(false) }
     var report by remember { mutableStateOf<String?>(null) };var reason by rememberSaveable { mutableStateOf("") }
-    var otherRead by remember { mutableStateOf("") }
+    var otherRead by remember(room.id,owner) { mutableStateOf("") }
+    var lastReadReceipt by remember(room.id,owner) { mutableStateOf("") }
+    var signals by remember(room.id,owner) { mutableStateOf<RoomSignals?>(null) }
+    val emptySignals=remember { MutableStateFlow(RoomSignalState()) }
+    val signalState by (signals?.state?:emptySignals).collectAsStateWithLifecycle()
+    var sending by remember(room.id,owner) { mutableStateOf(false) }
+    BackHandler { if(details) details=false else back() }
     val context=LocalContext.current
     suspend fun load(older: Boolean=false) {
         val result=service.messages(room,if(older) cursor else null)
         messages=if(older) (result.messages+messages).distinctBy { it.str("id") } else (messages.filter { it.str("created_at")<(result.cursor?:"") }+result.messages).distinctBy { it.str("id") }.sortedBy { it.str("created_at") }
         if(older||cursor==null) { cursor=result.cursor;hasMore=result.hasMore }
         service.markRead(room)
+        lastReadReceipt=Instant.now().toString();signals?.markRead(lastReadReceipt)
         if(!room.group&&room.otherId!=null) otherRead=vm.repo.query("friend_message_reads",eq=mapOf("link_id" to room.id,"user_id" to room.otherId),orderBy="last_read_at").firstOrNull()?.str("last_read_at")?:""
     }
     val lifecycle=LocalLifecycleOwner.current.lifecycle
@@ -110,9 +121,28 @@ import java.time.*
             catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback("Actualisation en direct indisponible. Utilise Actualiser.") }
         }
     }
+    LaunchedEffect(room.id,owner,lifecycle) {
+        val user=owner?:return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            var current: RoomSignals?=null
+            try {
+                current=RoomSignals(user,if(room.group) null else room.otherId,SupabaseRoomSignals(vm.repo,room,user),this)
+                signals=current;current.changed(body);current.start()
+                if(!room.group&&lastReadReceipt.isNotBlank()) current.markRead(lastReadReceipt)
+                awaitCancellation()
+            } catch(e: Exception) {
+                if(e is CancellationException) throw e
+                // Optional ephemeral signals must not prevent sending or reading messages.
+            } finally {
+                if(signals===current) signals=null
+                withContext(NonCancellable) { withTimeoutOrNull(2000) { current?.close() } }
+            }
+        }
+    }
     if(details) { ConversationDetails(vm,service,room,snapshot,{details=false},back);return }
     Column(Modifier.fillMaxSize().padding(12.dp)) {
         Row { TextButton(onClick=back) { Text("Retour") };TextButton(onClick={details=true}) { Text(room.title) };TextButton(onClick={vm.action { load() }}) { Text("Actualiser") } }
+        ConversationTypingIndicator(signalState.typing)
         LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             if(hasMore) item { TextButton(onClick={vm.action { load(true) }}) { Text("Messages plus anciens") } }
             items(messages,key={it.str("id")}) { row ->
@@ -120,7 +150,7 @@ import java.time.*
                 Panel(if(row.str("sender_id")==owner) "Moi" else snapshot?.profiles?.firstOrNull { it.str("id")==row.str("sender_id") }?.str("display_name")?:"Membre",if(deleted) "Message supprimé" else row.str("body")) {
                     Text(row.str("created_at"),style=MaterialTheme.typography.labelSmall)
                     if(!deleted&&row.str("kind")=="recitation"&&row.obj("recitation").str("storage_path").isNotBlank()) TextButton(onClick={vm.action { val url=vm.repo.signedRecitation(row.obj("recitation").str("storage_path"));context.startService(Intent(context,RecitationService::class.java).setAction("PLAY_URL").putExtra("url",url)) }}) { Text("Écouter la récitation") }
-                    if(row.str("sender_id")==owner&&otherRead.isNotBlank()&&row.str("created_at")<=otherRead) Text("Lu")
+                    if(row.str("sender_id")==owner&&maxOf(otherRead,signalState.readAt.orEmpty()).isNotBlank()&&row.str("created_at")<=maxOf(otherRead,signalState.readAt.orEmpty())) Text("Lu")
                     if(!deleted) Row {
                         TextButton(onClick={vm.action { service.hide(row.str("id"));messages=messages.filter { it.str("id")!=row.str("id") } }}) { Text("Masquer") }
                         if(row.str("sender_id")==owner) TextButton(onClick={vm.action { vm.repo.rpc("delete_friend_message",json("p_message" to row.str("id")));load() }}) { Text("Supprimer") }
@@ -130,8 +160,8 @@ import java.time.*
             }
         }
         Row { listOf("text" to "Message","encouragement" to "Encouragement","progress" to "Progrès").forEach { (id,label)->FilterChip(selected=kind==id,onClick={kind=id},label={Text(label)}) } }
-        OutlinedTextField(body,{if(it.length<=2000) body=it},label={Text("Message")},modifier=Modifier.fillMaxWidth())
-        Button(enabled=body.isNotBlank(),onClick={vm.action { service.send(room,body,kind);body="";load() }}) { Text("Envoyer") }
+        OutlinedTextField(body,{if(it.length<=2000) { body=it;signals?.changed(it) }},label={Text("Message")},modifier=Modifier.fillMaxWidth())
+        Button(enabled=body.isNotBlank()&&!sending,onClick={if(!sending) { val draft=body;val messageKind=kind;sending=true;vm.action { try { service.send(room,draft,messageKind);if(body==draft) { body="";signals?.stopTyping() };load() } finally { sending=false } } }}) { Text("Envoyer") }
     }
     if(report!=null) AlertDialog(onDismissRequest={report=null},title={Text("Signaler un message")},text={OutlinedTextField(reason,{reason=it},label={Text("Motif")})},confirmButton={TextButton(enabled=reason.isNotBlank(),onClick={val id=report!!;vm.action { vm.repo.rpc("report_friend_message",json("p_message" to id,"p_reason" to reason.trim()));report=null;reason="";vm.repo.feedback("Signalement envoyé") }}) { Text("Envoyer") }},dismissButton={TextButton(onClick={report=null}) { Text("Annuler") }})
 }
