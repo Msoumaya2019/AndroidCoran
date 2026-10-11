@@ -98,6 +98,14 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("À rattraper").assertExists()
         assertEquals("todo",repo.state.value.arr("sessions").first().jsonObject.str("status"))
         assertEquals(yesterday,repo.state.value.arr("sessions").first().jsonObject.str("scheduledDate"))
+        compose.onNodeWithText(yesterday+" · "+repo.quran.reference(VerseRange(6235,6236))).performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Afficher les commandes").performClick()
+        compose.onNodeWithText("Terminer mon apprentissage").performClick()
+        compose.onNodeWithText("J’ai tout appris").performScrollTo().performClick()
+        compose.onNodeWithText("Valider tout l’apprentissage").performScrollTo().performClick()
+        compose.waitUntil(10000) { repo.state.value.arr("sessions").any { it.jsonObject.str("id")==id&&it.jsonObject.str("status")=="done" } }
+        compose.onNodeWithText("À rattraper").assertDoesNotExist()
+        assertTrue(known(repo.state.value,6235));assertTrue(known(repo.state.value,6236))
     }
     @Test fun revisionKeepsGradesAvailableBehindFullscreenControls() = fixture {
         val repo=(compose.activity.application as CoranApplication).repository
