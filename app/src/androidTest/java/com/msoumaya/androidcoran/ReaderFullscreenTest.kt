@@ -59,7 +59,7 @@ class ReaderFullscreenTest {
         }
     }
     @Test fun freeReadingHidesBarsAndRestoresThemOnExit() = fixture {
-        compose.onNodeWithText("Lire le Coran").performClick()
+        compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
         assertFullscreen()
         compose.onNodeWithContentDescription("Afficher les commandes").performClick()
         compose.onNodeWithText("1 / 604").assertExists()
@@ -92,9 +92,10 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("Terminer mon apprentissage").assertDoesNotExist()
     }
     @Test fun recreationRestoresFullscreenReader() = fixture {
-        compose.onNodeWithText("Lire le Coran").performClick()
+        compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
         assertFullscreen()
         compose.activityRule.scenario.recreate()
         assertFullscreen()
     }
 }
+

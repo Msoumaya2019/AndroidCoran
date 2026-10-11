@@ -16,7 +16,7 @@ class NativeSmokeTest {
         val repo=(compose.activity.application as CoranApplication).repository
         kotlinx.coroutines.runBlocking { repo.awaitReady();repo.mutate { it.with("lastRead" to json("verseId" to 1,"page" to 1)) } }
         compose.waitForIdle()
-        compose.onNodeWithText("Lire le Coran").performClick()
+        compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
             compose.onNodeWithContentDescription("Afficher les commandes").performClick()
         compose.onNodeWithText("1 / 604").assertExists()
         compose.onNodeWithText("Suivante").performClick()
@@ -199,3 +199,4 @@ class NativeSmokeTest {
         } finally { compose.waitForIdle();kotlinx.coroutines.runBlocking { repo.mutate { saved } } }
     }
 }
+
