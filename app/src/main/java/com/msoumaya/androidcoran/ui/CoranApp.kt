@@ -185,6 +185,7 @@ import java.time.Instant
         } else {
             OutlinedTextField(email,{email=it},label={Text("E-mail")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Email));OutlinedTextField(password,{password=it},label={Text("Mot de passe")},visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password))
             Row { Checkbox(register,{register=it});Text("Créer un compte",Modifier.padding(top=12.dp)) }
+            if(register) key(avatarEmail(email)) { AvatarEditor(vm,null,{},pendingEmail=email) }
             Button(enabled=!busy&&email.isNotBlank()&&password.length>=(if(register) 6 else 1),onClick={run { vm.repo.login(email,password,register);password="" }}) { Text(if(register) "Inscription" else "Connexion") }
             TextButton(enabled=!busy&&email.contains('@'),onClick={run { vm.repo.resendSignupConfirmation(email) }}) { Text("Renvoyer le courriel de confirmation") }
             TextButton(enabled=!busy&&email.contains('@'),onClick={run { vm.repo.resetPassword(email) }}) { Text("Mot de passe oublié") }

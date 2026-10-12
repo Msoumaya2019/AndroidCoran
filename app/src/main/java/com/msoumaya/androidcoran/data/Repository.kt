@@ -34,6 +34,8 @@ class Repository(private val context: Context) {
     private val _user=MutableStateFlow<String?>(null);val user=_user.asStateFlow()
     private val _passwordRecovery=MutableStateFlow(false);val passwordRecovery=_passwordRecovery.asStateFlow()
     private val _recordingVersion=MutableStateFlow(0L);val recordingVersion=_recordingVersion.asStateFlow()
+    internal val pendingAvatars=PendingAvatars(java.io.File(context.filesDir,"pending-avatars"))
+    private val _pendingAvatarVersion=MutableStateFlow(0L);val pendingAvatarVersion=_pendingAvatarVersion.asStateFlow()
     private var account="guest"
     private val ready=CompletableDeferred<Unit>()
     val quiz by lazy { QuizService(this,local,context) }
@@ -68,10 +70,11 @@ class Repository(private val context: Context) {
         if(register) db().auth.signUpWith(Email,redirectUrl=MOBILE_AUTH_REDIRECT) { this.email=email.trim();this.password=password } else db().auth.signInWith(Email) { this.email=email.trim();this.password=password }
         val user=db().auth.currentUserOrNull();if(user!=null) activate(user.id) else _notice.value="Consulte ton e-mail pour confirmer l’inscription"
     }
-    private suspend fun activate(id: String) = lock.withLock {
+    private suspend fun activate(id: String) { lock.withLock {
         account=id;_user.value=id;_state.value=local.load(id)?.data?:defaultState().with("userId" to JsonPrimitive(id))
         try { syncLocked() } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Compte connecté ; synchronisation en attente : ${e.message}" }
         OutboxWorker.enqueue(context,id)
+    };syncPendingAvatar()
     }
     suspend fun logout() = lock.withLock { client?.auth?.signOut();LocalReminders.schedule(context,false,account);account="guest";_passwordRecovery.value=false;_user.value=null;_state.value=local.load("guest")?.data?:defaultState();_notice.value="Déconnecté" }
     suspend fun consumeAuthLink(raw: String) {
@@ -85,6 +88,22 @@ class Repository(private val context: Context) {
         _passwordRecovery.value=link.recovery
         _notice.value=if(link.recovery) "Choisis ton nouveau mot de passe" else "Compte confirmé ; données retrouvées"
     }
+    suspend fun stageAvatar(email: String,uri: android.net.Uri,selection: AvatarCrop) = withContext(Dispatchers.IO) {
+        check(user.value==null) { "Le compte a changé" }
+        val bitmap=decodeAvatar(context,uri)
+        val bytes=try { encodeAvatar(bitmap,selection) } finally { bitmap.recycle() }
+        check(user.value==null) { "Le compte a changé" }
+        pendingAvatars.save(email,bytes);_pendingAvatarVersion.value++
+    }
+    suspend fun removePendingAvatar(email: String) = withContext(Dispatchers.IO) { pendingAvatars.remove(email);_pendingAvatarVersion.value++ }
+    private suspend fun syncPendingAvatar() {
+        val verified=client?.auth?.currentUserOrNull()?:return
+        val email=verified.email?:return
+        val expected=AvatarAccount(verified.id,email)
+        try {
+            if(pendingAvatars.sync(expected,current={client?.auth?.currentUserOrNull()?.let { u -> if(user.value==u.id&&u.email!=null) AvatarAccount(u.id,u.email!!) else null }},upload={ bytes,id -> uploadAvatarBytes(bytes,id) })) _pendingAvatarVersion.value++
+        } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Compte connecté ; photo conservée pour un nouvel essai" }
+    }
     suspend fun resendSignupConfirmation(email: String) { db().auth.resendEmail(OtpType.Email.SIGNUP,email.trim(),redirectUrl=MOBILE_AUTH_REDIRECT);_notice.value="Nouveau courriel de confirmation envoyé" }
     suspend fun resetPassword(email: String) { db().auth.resetPasswordForEmail(email.trim(),redirectUrl=MOBILE_AUTH_REDIRECT);_notice.value="Lien de réinitialisation envoyé" }
     suspend fun changePassword(password: String) { require(password.length>=8) { "Utilise au moins 8 caractères" };db().auth.updateUser { this.password=password };_passwordRecovery.value=false;_notice.value="Mot de passe mis à jour" }
@@ -94,7 +113,7 @@ class Repository(private val context: Context) {
         local.save(account,stored);_state.value=next
         if(account!="guest") { val owner=account;scope.launch { try { sync() } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Sauvegardé sur cet appareil. ${e.message}";OutboxWorker.enqueue(context,owner) } } }
     }
-    suspend fun sync() = lock.withLock { syncLocked() }
+    suspend fun sync() { lock.withLock { syncLocked() };syncPendingAvatar() }
     private suspend fun syncLocked() {
         val id=db().auth.currentUserOrNull()?.id ?: return
         check(id==account) { "Le compte a changé" }

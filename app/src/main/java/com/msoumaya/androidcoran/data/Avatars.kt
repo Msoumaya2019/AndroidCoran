@@ -5,6 +5,7 @@ import android.graphics.*
 import android.net.Uri
 import com.msoumaya.androidcoran.domain.*
 import io.github.jan.supabase.storage.storage
+import io.github.jan.supabase.auth.auth
 import io.ktor.http.ContentType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,11 +20,17 @@ suspend fun Repository.uploadAvatar(context: Context,uri: Uri,selection: AvatarC
         val bitmap=decodeAvatar(context,uri)
         try { encodeAvatar(bitmap,selection) } finally { bitmap.recycle() }
     }
-    check(owner==user.value) { "Le compte a changé" }
+    uploadAvatarBytes(bytes,owner)
+}
+suspend fun Repository.uploadAvatarBytes(bytes: ByteArray,owner: String) {
+    require(bytes.size in 4..2097152) { "Photo trop volumineuse" }
+    fun verify() { check(owner==user.value&&db().auth.currentUserOrNull()?.id==owner) { "Le compte a changé" } }
+    verify()
     val path="$owner/avatar.jpg"
     db().storage.from("friend-avatars").upload(path,bytes) { upsert=true;contentType=ContentType.Image.JPEG }
-    check(owner==user.value) { "Le compte a changé" }
+    verify()
     rpc("ensure_social_profile")
+    verify()
     updateRows("friend_profiles",json("avatar_path" to path),mapOf("id" to owner))
 }
 suspend fun Repository.removeAvatar() {
