@@ -37,4 +37,3 @@ class SignupAvatarTest {
   } finally { image.recycle();runBlocking { repo.removePendingAvatar(email) };if(old!=null) repo.pendingAvatars.save(email,old) }
  }
 }
-

@@ -110,6 +110,7 @@ class ReaderFullscreenTest {
     @Test fun revisionKeepsGradesAvailableBehindFullscreenControls() = fixture {
         val repo=(compose.activity.application as CoranApplication).repository
         compose.onNodeWithText("Révisions").performScrollTo().performClick()
+        compose.waitUntil(10000) { compose.onAllNodesWithText(repo.quran.reference(VerseRange(1,3))).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText(repo.quran.reference(VerseRange(1,3))).performScrollTo().performClick()
         assertFullscreen()
         compose.onNodeWithContentDescription("Afficher les commandes").performClick()
@@ -124,4 +125,3 @@ class ReaderFullscreenTest {
         assertFullscreen()
     }
 }
-
