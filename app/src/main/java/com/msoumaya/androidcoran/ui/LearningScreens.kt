@@ -43,7 +43,7 @@ import java.time.LocalDate
                 Column(Modifier.fillMaxWidth()) {
                     Text("Apprentissage",style=MaterialTheme.typography.titleMedium)
                     Text(if(learning!=null) vm.repo.quran.reference(range(learning)) else "Programme terminé")
-                    if(learning!=null) Text("Page "+vm.repo.quran.page(learning.num("start")))
+                    if(learning!=null) Text("Page "+vm.repo.quran.sourcePage(learning.num("start"),s.obj("reader").str("mushaf","coranTest")))
                 }
             }
             if(learning!=null&&learning.str("scheduledDate",learning.str("date"))!=today.toString()) Text("Prochaine séance prévue : "+learning.str("scheduledDate",learning.str("date")))
@@ -51,7 +51,7 @@ import java.time.LocalDate
                 Column(Modifier.fillMaxWidth()) {
                     Text("Révision",style=MaterialTheme.typography.titleMedium)
                     Text(if(review!=null) vm.repo.quran.reference(review.range) else "Révisions à jour")
-                    if(review!=null) Text("Page "+vm.repo.quran.page(review.range.start))
+                    if(review!=null) Text("Page "+vm.repo.quran.sourcePage(review.range.start,s.obj("reader").str("mushaf","coranTest")))
                 }
             }
             Button(onClick={if(learning!=null) open(learning) else onGoal()},modifier=Modifier.fillMaxWidth()) { Text("Ouvrir la lecture du jour") }
