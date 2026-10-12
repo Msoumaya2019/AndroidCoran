@@ -690,3 +690,7 @@ Source : src/services/avatars.ts, chooseAvatar (allowsEditing, carré). Recadrag
 ## Photo avant inscription — 12 octobre 2026
 
 Source : src/services/avatars.ts (stageAvatar/syncStagedAvatar), App.tsx (inscription, activation). Photo recadrée enregistrée dans les fichiers privés, par e-mail normalisé et nom SHA-256. Prévisualisation et suppression avant inscription, conservation après recréation, isolation lors du changement d’e-mail. Envoi après authentification vérifiée correspondant à l’e-mail ; échec conservé, nouvel essai à la connexion/restauration ou Synchroniser. Suppression seulement après succès si la photo n’a pas été remplacée. Compte revérifié avant/après réseau. Aucun nouveau backend. Développement : Implémenté. Tests : Testé localement (huit JVM et un Android : persistance par e-mail, recréation d’activité, autre adresse sans photo, suppression). Les essais d’envoi JVM utilisent un transport simulé. Inscription, confirmation par courriel et upload authentifié réels restent non validés.
+
+## Programme : séances quotidiennes natives
+
+Source : `src/ui/MainScreens.tsx` (ProgramScreen). Apprentissage du jour, sinon première séance à venir sur dix jours, accès direct à la lecture, modification de l’objectif et première révision selon le moteur existant. Révisions masquées lorsqu’elles sont désactivées ; absence de séance ouvre la configuration correspondante. Reprise partielle conservée par le lecteur commun plein écran. Aucun changement Supabase. Statut : Implémenté ; tests Android ajoutés, exécution en attente.

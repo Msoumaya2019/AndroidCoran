@@ -9,19 +9,22 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.msoumaya.androidcoran.domain.*
 import kotlinx.serialization.json.*
 import java.time.LocalDate
 
-@Composable fun ProgramScreen(vm: CoranViewModel,s: JsonObject,open: (JsonObject)->Unit) {
+@Composable fun ProgramScreen(vm: CoranViewModel,s: JsonObject,onGoal: ()->Unit,onReviews: ()->Unit,onReview: (ReviewTask)->Unit,open: (JsonObject)->Unit) {
     val sessions=s.arr("sessions").map { it.jsonObject };val today=LocalDate.now();val week=weeklyProgress(s,today)
     var period by rememberSaveable { mutableStateOf("Jour") };var history by rememberSaveable { mutableStateOf(false) }
     val upcoming=sessions.filter { it.str("status")=="todo"&&it.str("scheduledDate",it.str("date")) in today.toString()..today.plusDays(10).toString() }
+    val learning=sessions.firstOrNull { it.str("status")=="todo"&&it.str("scheduledDate",it.str("date"))==today.toString() }?:upcoming.firstOrNull()
+    val review=vm.repo.review.tasks(s,today).firstOrNull()
     val future=when(period) { "Jour" -> upcoming.filter { it.str("scheduledDate",it.str("date"))==upcoming.firstOrNull()?.str("scheduledDate",upcoming.firstOrNull()?.str("date")?:today.toString()) };"Semaine" -> upcoming.filter { it.str("scheduledDate",it.str("date"))<=today.plusDays(7).toString() };else -> upcoming }
     val overdue=sessions.filter { it.str("status")=="todo"&&it.str("scheduledDate",it.str("date"))<today.toString() }.take(10)
     val partial=sessions.filter { it.str("status")=="todo"&&s.obj("studyProgress").obj("learning:${it.str("id")}").str("status")=="partial" }
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+    LazyColumn(Modifier.testTag("programme-list").fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
         item {
             Text("Mon programme",style=MaterialTheme.typography.headlineSmall)
             Text(s.obj("goal").str("label"));Text("Rythme : ${paceLabels[s.str("pace")]?:s.str("pace")}")
@@ -33,6 +36,26 @@ import java.time.LocalDate
         if(overdue.isNotEmpty()) item { Text("À rattraper",style=MaterialTheme.typography.titleLarge) }
         items(overdue,key={"catchup-${it.str("id")}"}) { session ->
             OutlinedButton(onClick={open(session)},modifier=Modifier.fillMaxWidth()) { Text("${session.str("scheduledDate",session.str("date"))} · ${vm.repo.quran.reference(range(session))}") }
+        }
+        item {
+            Text("Aujourd’hui",style=MaterialTheme.typography.titleLarge)
+            OutlinedButton(onClick={if(learning!=null) open(learning) else onGoal()},modifier=Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    Text("Apprentissage",style=MaterialTheme.typography.titleMedium)
+                    Text(if(learning!=null) vm.repo.quran.reference(range(learning)) else "Programme terminé")
+                    if(learning!=null) Text("Page "+vm.repo.quran.page(learning.num("start")))
+                }
+            }
+            if(learning!=null&&learning.str("scheduledDate",learning.str("date"))!=today.toString()) Text("Prochaine séance prévue : "+learning.str("scheduledDate",learning.str("date")))
+            if(s.obj("reviewSettings").flag("enabled",true)) OutlinedButton(onClick={if(review!=null) onReview(review) else onReviews()},modifier=Modifier.testTag("programme-daily-review").fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    Text("Révision",style=MaterialTheme.typography.titleMedium)
+                    Text(if(review!=null) vm.repo.quran.reference(review.range) else "Révisions à jour")
+                    if(review!=null) Text("Page "+vm.repo.quran.page(review.range.start))
+                }
+            }
+            Button(onClick={if(learning!=null) open(learning) else onGoal()},modifier=Modifier.fillMaxWidth()) { Text("Ouvrir la lecture du jour") }
+            TextButton(onClick=onGoal) { Text("Modifier mon objectif") }
         }
         item { Row { listOf("Jour","Semaine","Mois").forEach { FilterChip(selected=period==it,onClick={period=it},label={Text(it)}) } } }
         items(future,key={it.str("id")}) { session -> Panel(vm.repo.quran.reference(range(session)),"${session.str("scheduledDate",session.str("date"))} · ${sessionStatus(s,session)}",{open(session)}) { TextButton(onClick={vm.action { vm.repo.mutate { vm.repo.program.postpone(it,session.str("id")) } }}) { Text("Reporter") } } }

@@ -85,7 +85,7 @@ import java.time.Instant
                     else -> when(tab) {
                         "Accueil" -> HomeScreen(vm,s,{route=it}, { sessionId=null;reviewTask=null;open(homeReadingVerse(s)) },onOpenContent={id -> pendingDailyContent=id;route="Contenu du jour"})
                         "Coran" -> QuranScreen(vm,s) { id -> sessionId=null;reviewTask=null;open(id) }
-                        "Programme" -> ProgramScreen(vm,s) { session -> sessionId=session.str("id");reviewTask=null;val record=s.obj("studyProgress").obj("learning:${session.str("id")}");open((record.num("through",session.num("start")-1)+1).coerceAtMost(session.num("end"))) }
+                        "Programme" -> ProgramScreen(vm,s,onGoal={route="Objectif"},onReviews={route="Révisions"},onReview={task -> sessionId=null;reviewTask=task;open(task.range.start)}) { session -> sessionId=session.str("id");reviewTask=null;val record=s.obj("studyProgress").obj("learning:${session.str("id")}");open((record.num("through",session.num("start")-1)+1).coerceAtMost(session.num("end"))) }
                         "Progrès" -> ProgressScreen(vm,s)
                         "Amis" -> FriendsScreen(vm)
                     }

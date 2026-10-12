@@ -75,12 +75,23 @@ class ReaderFullscreenTest {
     @Test fun learningKeepsValidationAvailableBehindFullscreenControls() = fixture {
         val repo=(compose.activity.application as CoranApplication).repository
         compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
-        compose.onNodeWithText(repo.quran.reference(VerseRange(6236,6236))).performClick()
+        compose.onNodeWithTag("programme-list").performScrollToNode(hasText("Ouvrir la lecture du jour"))
+        compose.onNodeWithText("Ouvrir la lecture du jour").performClick()
         assertFullscreen()
         compose.onNodeWithContentDescription("Afficher les commandes").performClick()
         compose.onNodeWithText("Terminer mon apprentissage").assertExists()
         compose.onNodeWithContentDescription("Masquer les commandes").performClick()
         assertFullscreen()
+    }
+    @Test fun programmeDailyReviewOpensFullscreenWithGrades() = fixture {
+        compose.onNodeWithText("Programme",useUnmergedTree=true).performClick()
+        compose.onNodeWithTag("programme-list").performScrollToNode(hasTestTag("programme-daily-review"))
+        compose.onNodeWithTag("programme-daily-review").performClick()
+        assertFullscreen()
+        compose.onNodeWithContentDescription("Afficher les commandes").performClick()
+        compose.onNodeWithText("Quelques hésitations").assertExists()
+        compose.onNodeWithText("À retravailler").assertExists()
+        compose.onNodeWithText("Terminer mon apprentissage").assertDoesNotExist()
     }
     @Test fun overdueLearningCanBeOpenedAndCompletedInFullscreen() = fixture {
         val repo=(compose.activity.application as CoranApplication).repository
