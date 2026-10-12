@@ -24,6 +24,7 @@ class SignupAvatarTest {
    compose.onNode(isToggleable()).performClick()
    compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Photo choisie pour ce compte").fetchSemanticsNodes().isNotEmpty() }
    compose.activityRule.scenario.recreate();compose.waitForIdle()
+   compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Photo choisie pour ce compte").fetchSemanticsNodes().isNotEmpty() }
    compose.onNodeWithContentDescription("Photo choisie pour ce compte").assertExists()
    compose.onNodeWithText("E-mail").performScrollTo().performTextReplacement("another-native-avatar@example.invalid")
    compose.onNodeWithContentDescription("Photo choisie pour ce compte").assertDoesNotExist()
@@ -36,3 +37,4 @@ class SignupAvatarTest {
   } finally { image.recycle();runBlocking { repo.removePendingAvatar(email) };if(old!=null) repo.pendingAvatars.save(email,old) }
  }
 }
+
