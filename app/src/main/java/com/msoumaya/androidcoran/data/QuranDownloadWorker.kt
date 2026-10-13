@@ -8,7 +8,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
-import java.util.zip.ZipInputStream
+import com.msoumaya.androidcoran.domain.MushafArchive
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 
 /** Downloads only the original Coran 1441 archive; each line is installed atomically. */
 class QuranDownloadWorker(context: Context,params: WorkerParameters): CoroutineWorker(context,params) {
@@ -36,9 +38,15 @@ class QuranDownloadWorker(context: Context,params: WorkerParameters): CoroutineW
             }
             check(archive.length()==SIZE) { "Archive incomplète" }
             extracting=true
-            val installed=mutableSetOf<String>();var expanded=0L
-            ZipInputStream(archive.inputStream().buffered()).use { zip -> while(true) { if(isStopped) return@withContext Result.retry();val entry=zip.nextEntry?:break;val match=Regex("^width_1440/(\\d+)/(\\d+)\\.png$").matchEntire(entry.name);if(!entry.isDirectory&&match!=null) { val page=match.groupValues[1].toInt();val line=match.groupValues[2].toInt();val name="%03d-%02d.png".format(page,line);check(page in 1..604&&line in 1..15&&installed.add(name));val file=File(directory,name);val temp=File(directory,"$name.tmp");var bytes=0L;temp.outputStream().use { output -> val buffer=ByteArray(65536);while(true) { val n=zip.read(buffer);if(n<0) break;bytes+=n;expanded+=n;check(bytes<=8_000_000&&expanded<=1_000_000_000);output.write(buffer,0,n) } };val options=android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds=true };android.graphics.BitmapFactory.decodeFile(temp.path,options);check(options.outWidth==1440&&options.outHeight==232);check(temp.renameTo(file));setProgress(workDataOf("phase" to "Installation","percent" to installed.size*100/9060)) };zip.closeEntry() } }
-            check(installed.size==9060);File(directory,"ready-v1").writeText("9060");archive.delete();Result.success()
+            val jobContext=coroutineContext
+            MushafArchive(directory).install(archive,validate={file ->
+                val options=android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds=true }
+                android.graphics.BitmapFactory.decodeFile(file.path,options)
+                options.outWidth==1440&&options.outHeight==232
+            },checkActive={jobContext.ensureActive();if(isStopped) throw CancellationException("Téléchargement suspendu")},progress={count ->
+                if(count%30==0||count==9060) setProgressAsync(workDataOf("phase" to "Installation","percent" to count*100/9060))
+            })
+            archive.delete();Result.success()
         } catch(e: CancellationException) { throw e
         } catch(e: Exception) { if(extracting) archive.delete();if(runAttemptCount<4) Result.retry() else Result.failure(workDataOf("error" to (e.message?:"Téléchargement impossible"))) }
     }
