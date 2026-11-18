@@ -22,6 +22,19 @@ import java.util.concurrent.TimeUnit
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class ChapterAudioServiceTest {
+ @Test fun emptyForegroundRestartStopsWithoutLeavingAnIdleService() {
+    val context=InstrumentationRegistry.getInstrumentation().targetContext
+    context.stopService(Intent(context,RecitationService::class.java))
+    try {
+      ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        scenario.onActivity { assertNotNull(it.startForegroundService(Intent(it,RecitationService::class.java))) }
+        runBlocking { delay(1000) }
+        val manager=context.getSystemService(android.app.ActivityManager::class.java)
+        runBlocking { withTimeout(5000) { while(manager.getRunningServices(100).any { it.service.className==RecitationService::class.java.name }) delay(50) } }
+        assertNull(RecitationService.current.value)
+      }
+    } finally { context.stopService(Intent(context,RecitationService::class.java)) }
+ }
  @Test fun pausedSystemSeeksUpdateClippedVerseAndProgress() {
     val context=InstrumentationRegistry.getInstrumentation().targetContext
     val url="https://androidcoran-test.invalid/chapter-${System.nanoTime()}.wav"

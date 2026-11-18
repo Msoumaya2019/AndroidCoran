@@ -9,7 +9,7 @@ private fun mergeField(base: JsonElement?,local: JsonElement?,remote: JsonElemen
     if(remote==base||local==remote) return local
     if(path.startsWith(".readerInk.")&&path.count { it=='.' }==2&&local is JsonObject&&remote is JsonObject) {
         val deleted=listOf(local,remote).filter { it.str("deletedAt").isNotBlank() }
-        return (if(deleted.isNotEmpty()) deleted else listOf(local,remote)).maxBy { it.str("updatedAt") }
+        return (if(deleted.isNotEmpty()) deleted else listOf(local,remote)).maxBy { runCatching { Instant.parse(it.str("updatedAt")) }.getOrDefault(Instant.EPOCH) }
     }
     if(local is JsonArray&&remote is JsonArray) {
         if((local+remote).all { it is JsonObject && (it["id"] as? JsonPrimitive)?.isString==true }) {

@@ -3,10 +3,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -17,7 +23,7 @@ import kotlinx.serialization.json.*
 import java.time.Instant
 
 @Composable fun ReaderInkEditor(annotation: ReaderInk,onChange: (ReaderInk)->Unit,onDelete: ()->Unit,onClose: ()->Unit) {
-    var saved by rememberSaveable(annotation.id) { mutableStateOf(annotation.toJson().toString()) }
+    var saved by remember(annotation.id) { mutableStateOf(annotation.toJson().toString()) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     val draft=readerInk(json("readerInk" to json("draft" to Json.parseToJsonElement(saved))),annotation.page).firstOrNull()?:annotation
     fun update(strokes: List<InkStroke>) { val next=draft.copy(note=strokes,updatedAt=Instant.now().toString());saved=next.toJson().toString();onChange(next) }
@@ -28,7 +34,7 @@ import java.time.Instant
                 Text("Écrivez librement au stylet. Les traits sont sauvegardés sans conversion en texte.")
                 BoxWithConstraints(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
                     val padWidth=minOf(maxWidth,maxHeight*1.4f)
-                    AndroidView(factory={HandwritingView(it)},modifier=Modifier.width(padWidth).height(padWidth/1.4f),update={v -> v.strokes=draft.note;v.onStroke={update(draft.note+it)} })
+                    AndroidView(factory={HandwritingView(it)},modifier=Modifier.width(padWidth).height(padWidth/1.4f).semantics { contentDescription="Zone de note manuscrite" },update={v -> v.strokes=draft.note;v.onStroke={update(draft.note+it)} })
                 }
                 Row { TextButton(enabled=draft.note.isNotEmpty(),onClick={update(draft.note.dropLast(1))}) { Text("Annuler le trait") };TextButton(enabled=draft.note.isNotEmpty(),onClick={update(emptyList())}) { Text("Effacer la note") } }
                 Row { TextButton(onClick={confirmDelete=true}) { Text("Supprimer l’annotation") };Spacer(Modifier.weight(1f));Button(onClick=onClose) { Text("Fermer") } }
@@ -40,10 +46,9 @@ import java.time.Instant
 @Composable fun ReaderInkControls(vm: CoranViewModel,s: JsonObject,page: Int,enabled: Boolean,onToggle: ()->Unit,onEdit: (ReaderInk)->Unit) {
     var list by rememberSaveable(page) { mutableStateOf(false) }
     val annotations=readerInk(s,page)
-    Column {
-        FilledTonalButton(onClick=onToggle) { Text(if(enabled) "Terminer le tracé" else "Annoter au stylet") }
-        if(enabled) Text("Entourez librement le passage",style=MaterialTheme.typography.labelSmall)
-        if(annotations.isNotEmpty()) TextButton(onClick={list=true}) { Text("Annotations de cette page ("+annotations.size+")") }
+    Row {
+        FilledTonalIconButton(onClick=onToggle) { Icon(if(enabled) Icons.Default.Done else Icons.Default.Edit,if(enabled) "Terminer le tracé" else "Annoter au stylet") }
+        if(annotations.isNotEmpty()) FilledTonalIconButton(onClick={list=true}) { Icon(Icons.Default.StickyNote2,"Annotations de cette page ("+annotations.size+")") }
     }
     if(list) AlertDialog(
         onDismissRequest={list=false},

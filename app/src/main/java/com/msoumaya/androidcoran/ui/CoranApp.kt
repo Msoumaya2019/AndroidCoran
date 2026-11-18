@@ -7,6 +7,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -108,15 +111,20 @@ import java.time.Instant
     HomeDailyContents(vm,onOpenContent)
     Panel("Mon objectif",s.obj("goal").str("label"),{navigate("Objectif")}) { LinearProgressIndicator(drawStopIndicator={},progress={progress.second},modifier=Modifier.fillMaxWidth());Text("${(progress.second*100).toInt()} % appris") }
     ContinueReadingCard(vm,s,read)
-    Panel("Révisions","Consolidation, cycle et versets à retravailler",{navigate("Révisions")})
-    Panel("Quiz","Question du jour et défis entre amis",{navigate("Quiz")})
-    Panel("Rappels et invocations","Contenus quotidiens",{navigate("Contenus quotidiens")})
-    Panel("Mes récitations","Enregistrements et corrections",{navigate("Récitations")})
-    Panel("Marques-pages","Retrouver mes versets",{navigate("Marques-pages")})
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val columns=if(maxWidth>=720.dp) 2 else 1
+        val destinations=listOf(Triple("Révisions","Consolidation, cycle et versets à retravailler","Révisions"),Triple("Quiz","Question du jour et défis entre amis","Quiz"),Triple("Rappels et invocations","Contenus quotidiens","Contenus quotidiens"),Triple("Mes récitations","Enregistrements et corrections","Récitations"),Triple("Marques-pages","Retrouver mes versets","Marques-pages"))
+        Column(verticalArrangement=Arrangement.spacedBy(14.dp)) {
+            destinations.chunked(columns).forEach { row -> Row(horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+                row.forEach { (title,description,target) -> Box(Modifier.weight(1f)) { Panel(title,description,{navigate(target)}) } }
+                if(row.size<columns) Spacer(Modifier.weight(1f))
+            } }
+        }
+    }
 } }
 @Composable fun QuranScreen(vm: CoranViewModel,s: JsonObject,open: (Int)->Unit) { var search by rememberSaveable { mutableStateOf("") };var division by rememberSaveable { mutableStateOf("Sourates") }
     Column(Modifier.padding(16.dp)) { OutlinedTextField(search,{search=it},label={Text("Rechercher une sourate")},modifier=Modifier.fillMaxWidth());Row { listOf("Sourates","Juz","Hizb").forEach { FilterChip(selected=division==it,onClick={division=it},label={Text(it)},modifier=Modifier.padding(end=6.dp)) } }
-        LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) { if(division=="Sourates") items(vm.repo.quran.surahs.filter { it.name.contains(search,true)||it.arabic.contains(search)||it.number.toString()==search },key={it.number}) { surah -> Panel("${surah.number}. ${surah.name}","${surah.arabic} · ${surah.meaning} · ${surah.range.ids.size} versets",{open(surah.range.start)}) } else items(if(division=="Juz") vm.repo.quran.juzs else vm.repo.quran.hizbs) { r -> val units=if(division=="Juz") vm.repo.quran.juzs else vm.repo.quran.hizbs;Panel("$division ${units.indexOf(r)+1}",vm.repo.quran.reference(r),{open(r.start)}) } }
+        LazyVerticalGrid(columns=GridCells.Adaptive(300.dp),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) { if(division=="Sourates") gridItems(vm.repo.quran.surahs.filter { it.name.contains(search,true)||it.arabic.contains(search)||it.number.toString()==search },key={it.number}) { surah -> Panel("${surah.number}. ${surah.name}","${surah.arabic} · ${surah.meaning} · ${surah.range.ids.size} versets",{open(surah.range.start)}) } else gridItems(if(division=="Juz") vm.repo.quran.juzs else vm.repo.quran.hizbs) { r -> val units=if(division=="Juz") vm.repo.quran.juzs else vm.repo.quran.hizbs;Panel("$division ${units.indexOf(r)+1}",vm.repo.quran.reference(r),{open(r.start)}) } }
     }
 }
 @Composable fun GoalScreen(vm: CoranViewModel,s: JsonObject) { val q=vm.repo.quran;var selected by rememberSaveable(stateSaver=listSaver<List<VerseRange>,Int>(save={it.flatMap { r -> listOf(r.start,r.end) }},restore={it.chunked(2).map { pair -> VerseRange(pair[0],pair[1]) }})) { mutableStateOf(s.obj("goal").arr("ranges").map { range(it.jsonObject) }) };var label by rememberSaveable { mutableStateOf(s.obj("goal").str("label")) };var pace by rememberSaveable { mutableStateOf(s.str("pace","verse3")) };var fromNas by rememberSaveable { mutableStateOf(s.obj("goal").str("direction")=="fromNas") };var days by rememberSaveable(stateSaver=listSaver<List<Int>,Int>(save={it},restore={it})) { mutableStateOf(s.arr("learningDays").map { it.jsonPrimitive.int }) }
@@ -213,9 +221,11 @@ import java.time.Instant
 @Composable fun ReaderScreen(vm: CoranViewModel,s: JsonObject,page: Int,onPage: (Int)->Unit,sessionId: String?,task: ReviewTask?,onShareRecitation: ((String)->Unit)?=null,onChangeSurah: (Int)->Unit={},onExit: ()->Unit={},onStudyValidated: ()->Unit={}) {
     var controlsVisible by rememberSaveable { mutableStateOf(false) }
     val inkOwner by vm.repo.user.collectAsStateWithLifecycle()
+    val expectedInkOwner=inkOwner
+    val inkState=if(s.str("userId")==expectedInkOwner.orEmpty()) s else json()
     var inkMode by rememberSaveable(page,inkOwner) { mutableStateOf(false) }
     var editingInkId by rememberSaveable(page,inkOwner) { mutableStateOf<String?>(null) }
-    fun persistInk(ink: ReaderInk) { vm.action { vm.repo.mutate { latest -> if(vm.repo.user.value==inkOwner) saveReaderInk(latest,ink) else latest } } }
+    fun persistInk(ink: ReaderInk) { vm.action { vm.repo.mutate { latest -> if(vm.repo.user.value==expectedInkOwner) saveReaderInk(latest,ink) else latest } } }
 
     val context=LocalContext.current;val q=vm.repo.quran;val source=s.obj("reader").str("mushaf","coranTest");val current by RecitationService.current.collectAsStateWithLifecycle();val isPlaying by RecitationService.playing.collectAsStateWithLifecycle();val passageProgress by RecitationService.passageProgress.collectAsStateWithLifecycle();val activePreferences by RecitationService.activePreferences.collectAsStateWithLifecycle()
     var selected by rememberSaveable(page,source) { mutableStateOf<Int?>(null) };var reciterId by rememberSaveable { mutableStateOf(s.obj("audioPreferences").str("reciterId","ar.shaatree")) };var french by rememberSaveable { mutableStateOf(false) };var showAudio by rememberSaveable { mutableStateOf(false) };var startInput by rememberSaveable { mutableStateOf("") };var endInput by rememberSaveable { mutableStateOf("") }
@@ -242,7 +252,7 @@ import java.time.Instant
         }
         Row(Modifier.fillMaxWidth().padding(horizontal=12.dp),verticalAlignment=Alignment.CenterVertically) { TextButton(onClick={onPage(page+1)}) { Text("Suivante") };Text("$page / 604",Modifier.weight(1f),textAlign=TextAlign.Center);TextButton(onClick={onPage(page-1)}) { Text("Précédente") };TextButton(onClick={french=!french}) { Text(if(french) "Arabe" else "Français") } }
         }
-        if(source=="coran_1441"&&payload.second==null) { Column(Modifier.weight(1f).padding(20.dp)) { Text("Télécharge le Coran 1441 depuis Réglages → Téléchargements");Button(onClick={QuranDownloadWorker.enqueue(context)}) { Text("Lancer le téléchargement") } } } else if(source=="tajweed"&&!french) TajwidReader(q,pageRange,selected,{selected=it},Modifier.weight(1f)) else if(french) LazyColumn(Modifier.weight(1f).padding(16.dp)) { items(pageRange.ids) { id -> Column(Modifier.fillMaxWidth().clickable { selected=id }.background(if(selected==id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(10.dp)) { Text("${q.verse(id).surah}:${q.verse(id).ayah} · ${q.french(id)}",lineHeight=25.sp);val notes=q.frenchNotes(id);if(notes.isNotBlank()) Text(notes,Modifier.padding(top=5.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } } } else AndroidView(factory={MushafView(it)},modifier=Modifier.fillMaxWidth().weight(1f),update={ v -> if(v.page!=page||v.source!=source||v.tag!=payload) { v.load(q,page,source,payload.first,payload.second,payload.third);v.tag=payload };v.paper=paperColor(s.obj("reader").str("paper"));v.selected=selected;v.playing=current?.verseId;v.bookmarks=s.obj("bookmarks").values.map { it.jsonObject }.filter { it["deletedAt"]==null }.map { it.num("verseId") }.toSet();v.difficulties=s.obj("difficultyMarkers").keys.mapNotNull { it.toIntOrNull() }.toSet();v.onVerse={selected=it};v.onPage=onPage;v.annotationMode=inkMode&&!french;v.annotations=readerInk(s,page);v.onInkClick={editingInkId=it.id};v.onInkStroke={stroke,verses -> val ink=newReaderInk(page,stroke,verses);persistInk(ink);editingInkId=ink.id;inkMode=false };v.invalidate() })
+        if(source=="coran_1441"&&payload.second==null) { Column(Modifier.weight(1f).padding(20.dp)) { Text("Télécharge le Coran 1441 depuis Réglages → Téléchargements");Button(onClick={QuranDownloadWorker.enqueue(context)}) { Text("Lancer le téléchargement") } } } else if(source=="tajweed"&&!french) TajwidReader(q,pageRange,selected,{selected=it},Modifier.weight(1f)) else if(french) LazyColumn(Modifier.weight(1f).padding(16.dp)) { items(pageRange.ids) { id -> Column(Modifier.fillMaxWidth().clickable { selected=id }.background(if(selected==id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(10.dp)) { Text("${q.verse(id).surah}:${q.verse(id).ayah} · ${q.french(id)}",lineHeight=25.sp);val notes=q.frenchNotes(id);if(notes.isNotBlank()) Text(notes,Modifier.padding(top=5.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } } } else AndroidView(factory={MushafView(it)},modifier=Modifier.fillMaxWidth().weight(1f),update={ v -> if(v.page!=page||v.source!=source||v.tag!=payload) { v.load(q,page,source,payload.first,payload.second,payload.third);v.tag=payload };v.paper=paperColor(s.obj("reader").str("paper"));v.selected=selected;v.playing=current?.verseId;v.bookmarks=s.obj("bookmarks").values.map { it.jsonObject }.filter { it["deletedAt"]==null }.map { it.num("verseId") }.toSet();v.difficulties=s.obj("difficultyMarkers").keys.mapNotNull { it.toIntOrNull() }.toSet();v.onVerse={selected=it};v.onPage=onPage;v.annotationOwner=expectedInkOwner?:"guest";v.annotationMode=inkMode&&!french&&s.str("userId")==expectedInkOwner.orEmpty();v.annotations=readerInk(inkState,page);v.onInkClick={editingInkId=it.id};v.onInkStroke={stroke,verses -> val ink=newReaderInk(page,stroke,verses);persistInk(ink);editingInkId=ink.id;inkMode=false };v.invalidate() })
         if(controlsVisible) {
         if(selected!=null) {
             val id=selected!!
@@ -285,8 +295,8 @@ import java.time.Instant
         }
     }
     if(source=="coranTest"&&!french) {
-        if(!controlsVisible) Box(Modifier.align(Alignment.TopStart).displayCutoutPadding().padding(4.dp)) { ReaderInkControls(vm,s,page,inkMode,{inkMode=!inkMode;selected=null;controlsVisible=false},{editingInkId=it.id}) }
-        readerInk(s,page).firstOrNull { it.id==editingInkId }?.let { ink -> ReaderInkEditor(ink,::persistInk,onDelete={vm.action { vm.repo.mutate { latest -> if(vm.repo.user.value==inkOwner) deleteReaderInk(latest,ink.id) else latest } };editingInkId=null},onClose={editingInkId=null}) }
+        if(!controlsVisible) Box(Modifier.align(Alignment.TopStart).displayCutoutPadding().padding(4.dp)) { ReaderInkControls(vm,inkState,page,inkMode,{inkMode=!inkMode;selected=null;controlsVisible=false},{editingInkId=it.id}) }
+        readerInk(inkState,page).firstOrNull { it.id==editingInkId }?.let { ink -> ReaderInkEditor(ink,::persistInk,onDelete={vm.action { vm.repo.mutate { latest -> if(vm.repo.user.value==expectedInkOwner) deleteReaderInk(latest,ink.id) else latest } };editingInkId=null},onClose={editingInkId=null}) }
     }
     FilledTonalIconButton(onClick={controlsVisible=!controlsVisible},modifier=Modifier.align(Alignment.TopEnd).displayCutoutPadding().padding(4.dp)) {
         Icon(if(controlsVisible) Icons.Default.Fullscreen else Icons.Default.Tune,if(controlsVisible) "Masquer les commandes" else "Afficher les commandes")

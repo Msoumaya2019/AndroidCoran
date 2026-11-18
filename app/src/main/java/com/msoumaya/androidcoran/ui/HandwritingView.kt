@@ -16,16 +16,17 @@ class HandwritingView(context: Context): View(context) {
     var strokes: List<InkStroke> = emptyList();set(value) { field=value;invalidate() }
     var onStroke: (InkStroke)->Unit={}
     private val draft=mutableListOf<InkPoint>()
+    private var drawing=false
     init { contentDescription="Zone de note manuscrite";isSaveEnabled=false;setBackgroundColor(Color.WHITE) }
     override fun onDraw(canvas: Canvas) { super.onDraw(canvas);drawHandwriting(canvas,strokes+if(draft.isEmpty()) emptyList() else listOf(InkStroke(draft)),width.toFloat(),height.toFloat(),Color.rgb(28,39,43)) }
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if(width==0||height==0) return false
-        if(event.pointerCount>1) { draft.clear();invalidate();return true }
+        if(event.pointerCount>1) { drawing=false;draft.clear();invalidate();return true }
         when(event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { parent?.requestDisallowInterceptTouchEvent(true);draft.clear();add(event) }
-            MotionEvent.ACTION_MOVE -> { for(i in 0 until event.historySize) append(event.getHistoricalX(i),event.getHistoricalY(i),event.getHistoricalPressure(i));add(event) }
-            MotionEvent.ACTION_UP -> { add(event);val stroke=InkStroke(draft.toList());draft.clear();onStroke(stroke);parent?.requestDisallowInterceptTouchEvent(false);performClick() }
-            MotionEvent.ACTION_CANCEL -> { draft.clear();parent?.requestDisallowInterceptTouchEvent(false) }
+            MotionEvent.ACTION_DOWN -> { drawing=true;parent?.requestDisallowInterceptTouchEvent(true);draft.clear();add(event) }
+            MotionEvent.ACTION_MOVE -> { if(!drawing) return true;for(i in 0 until event.historySize) append(event.getHistoricalX(i),event.getHistoricalY(i),event.getHistoricalPressure(i));add(event) }
+            MotionEvent.ACTION_UP -> { if(!drawing) return true;drawing=false;add(event);val stroke=InkStroke(draft.toList());draft.clear();onStroke(stroke);parent?.requestDisallowInterceptTouchEvent(false);performClick() }
+            MotionEvent.ACTION_CANCEL -> { drawing=false;draft.clear();parent?.requestDisallowInterceptTouchEvent(false) }
         }
         invalidate();return true
     }

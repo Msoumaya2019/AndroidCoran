@@ -29,7 +29,8 @@ class ReaderFullscreenTest {
         compose.onNodeWithContentDescription("Afficher les commandes").assertIsDisplayed()
         compose.onNodeWithText("Choisir une sourate ou une page").assertDoesNotExist()
         compose.waitUntil(10000) { barsHidden() }
-        compose.waitUntil(10000) {
+        var windowMetrics=""
+        try { compose.waitUntil(10000) {
             var fillsWindow=false
             compose.runOnUiThread {
                 fun find(view: android.view.View): android.view.View? {
@@ -39,10 +40,11 @@ class ReaderFullscreenTest {
                 }
                 val decor=compose.activity.window.decorView
                 val page=find(decor)
+                windowMetrics="decor="+decor.width+"x"+decor.height+" page="+page?.width+"x"+page?.height+" destroyed="+compose.activity.isDestroyed+" parents="+generateSequence(page as android.view.View?) { it.parent as? android.view.View }.joinToString("/") { it.javaClass.simpleName+":"+it.width+"x"+it.height+":"+it.paddingTop+","+it.paddingBottom }
                 fillsWindow=page!=null&&page.height>=decor.height-1&&page.width>=decor.width-1
             }
             fillsWindow
-        }
+        } } catch(e: Throwable) { var active="";compose.activityRule.scenario.onActivity { active=" actual="+it.window.decorView.width+"x"+it.window.decorView.height+" same="+(it===compose.activity) };throw AssertionError("Fullscreen bounds: "+windowMetrics+active,e) }
     }
     private fun fixture(block: ()->Unit) {
         val repo=(compose.activity.application as CoranApplication).repository
@@ -128,6 +130,50 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("Quelques hésitations").assertExists()
         compose.onNodeWithText("À retravailler").assertExists()
         compose.onNodeWithText("Terminer mon apprentissage").assertDoesNotExist()
+    }
+    @Test fun handwrittenOutlineAndNotePersistThroughReaderRecreationAndCanBeDeleted() = fixture {
+        val repo=(compose.activity.application as CoranApplication).repository
+        fun view(): com.msoumaya.androidcoran.ui.MushafView? {
+            fun find(v: android.view.View): com.msoumaya.androidcoran.ui.MushafView? {
+                if(v is com.msoumaya.androidcoran.ui.MushafView) return v
+                if(v is android.view.ViewGroup) for(i in 0 until v.childCount) find(v.getChildAt(i))?.let { return it }
+                return null
+            }
+            return find(compose.activity.window.decorView)
+        }
+        compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
+        compose.waitUntil(10000) { var ready=false;compose.runOnUiThread { ready=(view()?.tag as? Triple<*,*,*>)?.first!=null };ready }
+        val existingIds=readerInk(repo.state.value,1).map { it.id }.toSet()
+        compose.onNodeWithContentDescription("Annoter au stylet").performClick()
+        compose.waitUntil(10000) { var enabled=false;compose.runOnUiThread { enabled=view()?.annotationMode==true };enabled }
+        compose.runOnUiThread {
+            val target=view()!!;val down=android.os.SystemClock.uptimeMillis()
+            for(i in 0..24) {
+                val angle=i*2*Math.PI/24
+                val x=target.width*.5f+(kotlin.math.cos(angle)*target.width*.1).toFloat()
+                val y=target.height*.4f+(kotlin.math.sin(angle)*target.height*.04).toFloat()
+                val action=when(i) { 0->android.view.MotionEvent.ACTION_DOWN;24->android.view.MotionEvent.ACTION_UP;else->android.view.MotionEvent.ACTION_MOVE }
+                val event=android.view.MotionEvent.obtain(down,down+i*10,action,1,arrayOf(android.view.MotionEvent.PointerProperties().apply { id=0;toolType=android.view.MotionEvent.TOOL_TYPE_STYLUS }),arrayOf(android.view.MotionEvent.PointerCoords().apply { this.x=x;this.y=y;pressure=.8f;size=.1f }),0,0,1f,1f,0,0,android.view.InputDevice.SOURCE_STYLUS,0)
+                try { target.dispatchTouchEvent(event) } finally { event.recycle() }
+            }
+        }
+        compose.waitUntil(10000) { readerInk(repo.state.value,1).any { it.id !in existingIds } }
+        compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Zone de note manuscrite").fetchSemanticsNodes().isNotEmpty() }
+        val id=readerInk(repo.state.value,1).single { it.id !in existingIds }.id
+        compose.onNodeWithContentDescription("Zone de note manuscrite").performTouchInput { swipe(centerLeft,centerRight,300) }
+        compose.waitUntil(10000) { readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty() }
+        compose.onNodeWithText("Fermer",substring=false).performClick()
+        compose.activityRule.scenario.recreate();assertFullscreen()
+        assertEquals(id,readerInk(repo.state.value,1).single { it.id==id }.id)
+        assertTrue(readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty())
+        val annotations=readerInk(repo.state.value,1);val ink=annotations.single { it.id==id }
+        val label="Annotation "+(annotations.indexOf(ink)+1)+(if(ink.verses.isNotEmpty()) " · "+repo.quran.reference(VerseRange(ink.verses.min(),ink.verses.max())) else "")
+        compose.onNodeWithContentDescription("Annotations de cette page ("+annotations.size+")").performClick()
+        compose.onNodeWithText(label,substring=false).performClick()
+        compose.onNodeWithText("Supprimer l’annotation").performClick()
+        compose.onNodeWithText("Supprimer",substring=false).performClick()
+        compose.waitUntil(10000) { readerInk(repo.state.value,1).none { it.id==id } }
+        assertTrue(repo.state.value.obj("readerInk").obj(id).str("deletedAt").isNotBlank())
     }
     @Test fun recreationRestoresFullscreenReader() = fixture {
         compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()

@@ -9,11 +9,13 @@ import kotlinx.serialization.json.*
 
 /** Native Canvas painter: keeps the reference's words, 122-unit lines and page proportions. */
 class MushafView(context: Context): View(context) {
+    var annotationOwner="";set(value) { if(field!=value) { inkDraft.clear();inkDrawing=false };field=value }
     var annotationMode=false
     var annotations: List<ReaderInk> = emptyList()
     var onInkStroke: (InkStroke,List<Int>)->Unit={_,_->}
     var onInkClick: (ReaderInk)->Unit={}
     private val inkDraft=mutableListOf<InkPoint>()
+    private var inkDrawing=false
     private fun inkPoint(x: Float,y: Float,pressure: Float)=InkPoint(((x-left-offsetX)/(ratio*zoom)/1000f).coerceIn(0f,1f),((y-top-offsetY)/(ratio*zoom)/2120f).coerceIn(0f,1f),pressure.coerceIn(.1f,1f))
     private fun annotationAt(x: Float,y: Float): ReaderInk? {
         val p=inkPoint(x,y,1f)
@@ -37,16 +39,17 @@ class MushafView(context: Context): View(context) {
         override fun onScroll(e1: android.view.MotionEvent?,e2: android.view.MotionEvent,distanceX: Float,distanceY: Float): Boolean { if(zoom>1f) { offsetX-=distanceX;offsetY-=distanceY;invalidate() };return true }
         override fun onFling(e1: android.view.MotionEvent?,e2: android.view.MotionEvent,velocityX: Float,velocityY: Float): Boolean { if(zoom==1f&&e1!=null&&kotlin.math.abs(e2.x-e1.x)>80&&kotlin.math.abs(velocityX)>150) onPage(if(e2.x>e1.x) page+1 else page-1);return true }
     })
-    fun load(q: Quran,page: Int,source: String,document: JsonObject?,image: Bitmap?,regions: JsonArray?) { this.page=page;this.source=source;inkDraft.clear();data=document;bitmap=image;bounds=regions;zoom=1f;offsetX=0f;offsetY=0f;invalidate();contentDescription="Mushaf page $page" }
+    fun load(q: Quran,page: Int,source: String,document: JsonObject?,image: Bitmap?,regions: JsonArray?) { this.page=page;this.source=source;inkDrawing=false;inkDraft.clear();data=document;bitmap=image;bounds=regions;zoom=1f;offsetX=0f;offsetY=0f;invalidate();contentDescription="Mushaf page $page" }
     private fun font(name: String): Typeface { val file=when(name) { "surah-name"->"surah-name-v4";"basmala"->"vertopal.com_QCF_Bismillah-Regular";else->name };return fonts[file] ?: Typeface.createFromAsset(context.assets,"fonts/$file.ttf").also { fonts.put(file,it) } }
     override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
         if(annotationMode&&source=="coranTest"&&data!=null) {
-            if(event.pointerCount>1) { inkDraft.clear();invalidate();return true }
+            if(event.pointerCount>1) { inkDrawing=false;inkDraft.clear();invalidate();return true }
             fun add(x: Float,y: Float,p: Float) { if(inkDraft.size<12000) inkDraft+=inkPoint(x,y,p) }
             when(event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { parent?.requestDisallowInterceptTouchEvent(true);inkDraft.clear();add(event.x,event.y,event.pressure) }
-                MotionEvent.ACTION_MOVE -> { for(i in 0 until event.historySize) add(event.getHistoricalX(i),event.getHistoricalY(i),event.getHistoricalPressure(i));add(event.x,event.y,event.pressure) }
+                MotionEvent.ACTION_DOWN -> { inkDrawing=true;parent?.requestDisallowInterceptTouchEvent(true);inkDraft.clear();add(event.x,event.y,event.pressure) }
+                MotionEvent.ACTION_MOVE -> { if(!inkDrawing) return true;for(i in 0 until event.historySize) add(event.getHistoricalX(i),event.getHistoricalY(i),event.getHistoricalPressure(i));add(event.x,event.y,event.pressure) }
                 MotionEvent.ACTION_UP -> {
+                    if(!inkDrawing) return true;inkDrawing=false
                     add(event.x,event.y,event.pressure);val stroke=InkStroke(inkDraft.toList());inkDraft.clear()
                     if(stroke.points.isNotEmpty()) {
                         val rect=RectF(stroke.points.minOf { it.x }*1000,stroke.points.minOf { it.y }*2120,stroke.points.maxOf { it.x }*1000,stroke.points.maxOf { it.y }*2120)
@@ -54,7 +57,7 @@ class MushafView(context: Context): View(context) {
                     }
                     parent?.requestDisallowInterceptTouchEvent(false)
                 }
-                MotionEvent.ACTION_CANCEL -> { inkDraft.clear();parent?.requestDisallowInterceptTouchEvent(false) }
+                MotionEvent.ACTION_CANCEL -> { inkDrawing=false;inkDraft.clear();parent?.requestDisallowInterceptTouchEvent(false) }
             }
             invalidate();return true
         }

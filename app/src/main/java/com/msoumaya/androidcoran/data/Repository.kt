@@ -40,6 +40,12 @@ class Repository(private val context: Context) {
     private val ready=CompletableDeferred<Unit>()
     val quiz by lazy { QuizService(this,local,context) }
     val reports by lazy { ProblemReportService(this,local,context) }
+    private fun preserveInk(owner: String,state: JsonObject): JsonObject {
+        val key=owner+":readerInk";val saved=local.cached(key) as? JsonObject?:json()
+        val merged=mergeReaderInkCopies(saved,state.obj("readerInk"))
+        if(merged!=saved) local.cache(key,merged)
+        return if(merged.isEmpty()&&state["readerInk"]==null) state else state.with("readerInk" to merged)
+    }
     suspend fun awaitReady()=ready.await()
     suspend fun refreshReminders(): Unit = withContext(Dispatchers.IO) { awaitReady();lock.withLock { LocalReminders.schedule(context,_state.value.obj("notifications").flag("learning"),account) } }
     internal fun pendingState(owner: String)=local.load(owner)?.pending==true
@@ -55,7 +61,7 @@ class Repository(private val context: Context) {
                 override fun onStop(owner: LifecycleOwner) { client?.auth?.stopAutoRefreshForCurrentSession() }
             })
         }
-        scope.launch { try { _state.value=local.load(account)?.data?:defaultState();val key=context.config.data.first()[stringPreferencesKey("publicKey")]?:com.msoumaya.androidcoran.BuildConfig.SUPABASE_PUBLIC_KEY;if(!key.isNullOrBlank()) configure(key) } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value=e.message?:"Configuration indisponible" } finally { ready.complete(Unit) } } }
+        scope.launch { try { _state.value=preserveInk(account,local.load(account)?.data?:defaultState());val key=context.config.data.first()[stringPreferencesKey("publicKey")]?:com.msoumaya.androidcoran.BuildConfig.SUPABASE_PUBLIC_KEY;if(!key.isNullOrBlank()) configure(key) } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value=e.message?:"Configuration indisponible" } finally { ready.complete(Unit) } } }
     suspend fun configure(key: String) {
         require(key.isNotBlank()&&!key.contains("service_role")) { "Une clé publique est nécessaire" }
         if(key.startsWith("eyJ")) { val payload=String(android.util.Base64.decode(key.split('.')[1],android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP));require(Json.parseToJsonElement(payload).jsonObject.str("role")=="anon") { "Clé anon uniquement" } }
@@ -72,12 +78,12 @@ class Repository(private val context: Context) {
         val user=db().auth.currentUserOrNull();if(user!=null) activate(user.id) else _notice.value="Consulte ton e-mail pour confirmer l’inscription"
     }
     private suspend fun activate(id: String) { lock.withLock {
-        account=id;_user.value=id;_state.value=local.load(id)?.data?:defaultState().with("userId" to JsonPrimitive(id))
+        account=id;_user.value=id;_state.value=preserveInk(id,local.load(id)?.data?:defaultState().with("userId" to JsonPrimitive(id)))
         try { syncLocked() } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Compte connecté ; synchronisation en attente : ${e.message}" }
         OutboxWorker.enqueue(context,id)
     };syncPendingAvatar()
     }
-    suspend fun logout() = lock.withLock { client?.auth?.signOut();LocalReminders.schedule(context,false,account);account="guest";_passwordRecovery.value=false;_user.value=null;_state.value=local.load("guest")?.data?:defaultState();_notice.value="Déconnecté" }
+    suspend fun logout() = lock.withLock { client?.auth?.signOut();LocalReminders.schedule(context,false,account);account="guest";_passwordRecovery.value=false;_user.value=null;_state.value=preserveInk("guest",local.load("guest")?.data?:defaultState());_notice.value="Déconnecté" }
     suspend fun consumeAuthLink(raw: String) {
         val link=mobileAuthLink(raw) ?: return
         awaitReady()
@@ -109,7 +115,7 @@ class Repository(private val context: Context) {
     suspend fun resetPassword(email: String) { db().auth.resetPasswordForEmail(email.trim(),redirectUrl=MOBILE_AUTH_REDIRECT);_notice.value="Lien de réinitialisation envoyé" }
     suspend fun changePassword(password: String) { require(password.length>=8) { "Utilise au moins 8 caractères" };db().auth.updateUser { this.password=password };_passwordRecovery.value=false;_notice.value="Mot de passe mis à jour" }
     suspend fun mutate(transform: (JsonObject)->JsonObject) = lock.withLock {
-        val next=transform(_state.value);if(next==_state.value) return@withLock
+        val next=preserveInk(account,transform(_state.value));if(next==_state.value) return@withLock
         val old=local.load(account);val stored=StoredState(next,old?.base,old?.remoteVersion,account!="guest")
         local.save(account,stored);_state.value=next
         if(account!="guest") { val owner=account;scope.launch { try { sync() } catch(e: Exception) { if(e is CancellationException) throw e;_notice.value="Sauvegardé sur cet appareil. ${e.message}";OutboxWorker.enqueue(context,owner) } } }
@@ -122,12 +128,13 @@ class Repository(private val context: Context) {
         val remote=row?.obj("data");val version=row?.str("updated_at");val stored=local.load(id)
         if(stored?.pending==true) {
             check(stored.data.str("userId")==id) { "Ces données appartiennent à un autre compte" }
-            val next=if(remote==stored.base) stored.data else {
+            val merged=if(remote==stored.base) stored.data else {
                 check(remote!=null&&stored.base!=null) { "La base distante a changé : sauvegarde locale conservée" }
                 require(remote.num("schema")==1&&remote["sessions"] is JsonArray&&remote["revisions"] is JsonArray) { "Schéma utilisateur non reconnu" }
                 check(listOf(remote,stored.base).all { it.str("userId").isBlank()||it.str("userId")==id }) { "Identité distante incompatible" }
                 mergeOfflineState(stored.base.with("userId" to JsonPrimitive(id)),stored.data,remote.with("userId" to JsonPrimitive(id)))
             }
+            val next=preserveInk(id,merged)
             val payload=json("user_id" to id,"data" to next,"updated_at" to next.str("updatedAt"))
             if(row==null) db().from("user_state").insert(payload) else {
                 val changed=db().from("user_state").update(payload) { filter { eq("user_id",id);eq("updated_at",version!!) };select(Columns.list("user_id")) }.decodeList<JsonObject>()
@@ -136,8 +143,8 @@ class Repository(private val context: Context) {
             local.save(id,StoredState(next,next,next.str("updatedAt"),false));_state.value=next
         } else if(remote!=null) {
             require(remote.num("schema")==1&&remote["sessions"] is JsonArray&&remote["revisions"] is JsonArray) { "Schéma utilisateur non reconnu" }
-            val restored=remote.with("userId" to JsonPrimitive(id));local.save(id,StoredState(restored,remote,version,false));_state.value=restored
-        } else { val fresh=stored?.data?:defaultState().with("userId" to JsonPrimitive(id));local.save(id,StoredState(fresh,null,null,false));_state.value=fresh }
+            val restored=preserveInk(id,remote.with("userId" to JsonPrimitive(id)));local.save(id,StoredState(restored,remote,version,false));_state.value=restored
+        } else { val fresh=preserveInk(id,stored?.data?:defaultState().with("userId" to JsonPrimitive(id)));local.save(id,StoredState(fresh,null,null,false));_state.value=fresh }
         _notice.value="Synchronisation terminée"
     }
     suspend fun rpc(name: String,args: JsonObject=json(),authenticated: Boolean=true): JsonElement { if(authenticated) check(user.value!=null);val owner=user.value;val result=Json.parseToJsonElement(db().postgrest.rpc(name,args).data);check(owner==user.value) { "Le compte a changé" };return result }

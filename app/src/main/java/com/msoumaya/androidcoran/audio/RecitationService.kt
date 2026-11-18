@@ -82,6 +82,19 @@ class RecitationService: MediaSessionService() {
     }
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
     override fun onStartCommand(intent: Intent?,flags: Int,startId: Int): Int {
+        // Media3 starts itself with an empty intent when promoting a notification.
+        // A delayed intent can recreate a stopped, empty service; fulfil the OS
+        // foreground contract before stopping that orphan instead of staying sticky.
+        if(intent?.action==null&&player.mediaItemCount==0&&!loading) {
+            super.onStartCommand(intent,flags,startId)
+            val manager=getSystemService(android.app.NotificationManager::class.java)
+            manager.createNotificationChannel(android.app.NotificationChannel("recitation-startup","Lecture audio",android.app.NotificationManager.IMPORTANCE_LOW))
+            val notification=android.app.Notification.Builder(this,"recitation-startup").setSmallIcon(android.R.drawable.ic_media_play).setContentTitle("Coran Mémoire").setContentText("Fin de la lecture audio").setOngoing(true).build()
+            startForeground(9001,notification)
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelfResult(startId)
+            return START_NOT_STICKY
+        }
         val expectedRecording=intent?.getStringExtra("expectedRecordingKey")
         if(expectedRecording!=null&&expectedRecording!=_standaloneKey.value) return super.onStartCommand(intent,flags,startId)
         when(intent?.action) {
@@ -92,7 +105,7 @@ class RecitationService: MediaSessionService() {
             "PLAY_RANGE" -> { val start=intent.getIntExtra("start",1);val end=intent.getIntExtra("end",7);if(start !in 1..6236||end !in start..6236) return super.onStartCommand(intent,flags,startId);generation++;clearPending();handler.removeCallbacksAndMessages(null);player.stop();range=VerseRange(start,end);position=AudioPosition(range.start);reciter=reciters.firstOrNull { it.id==intent.getStringExtra("reciter") }?:reciters[3];count=intent.getIntExtra("count",3).let { if(it==0) null else it.coerceAtLeast(1) };gap=intent.getIntExtra("gap",0).takeIf { it in repeatGaps }?:0;speed=intent.getFloatExtra("speed",1f).takeIf { it in audioSpeeds }?:1f;autoStop=intent.getBooleanExtra("autoStop",true);player.setPlaybackSpeed(speed);mode=if(intent.getBooleanExtra("each",false)) RepeatMode.EACH_VERSE else RepeatMode.PASSAGE;_activePreferences.value=RepeatPreferences(count?.toString()?:"continuous",count?.toString()?:"20",mode,gap,speed,autoStop);startAudio() }
             "PREVIOUS_VERSE", "NEXT_VERSE", "RESTART" -> if(!standalone&&_current.value!=null) { generation++;clearPending();handler.removeCallbacksAndMessages(null);player.pause();position=AudioPosition(if(intent.action=="RESTART") range.start else (position.verseId+if(intent.action=="NEXT_VERSE") 1 else -1).coerceIn(range.start,range.end));startAudio() }
             "TOGGLE" -> { if(requestedPlaying&&(player.isPlaying||repeatPause.active||loading)) pausePlayback() else resumePlayback() }
-            "STOP" -> { _standaloneKey.value=null;requestedPlaying=false;loading=false; generation++;clearPending();handler.removeCallbacksAndMessages(null);player.stop();_current.value=null;_passageProgress.value=null;_activePreferences.value=null;_activeRange.value=null;stopSelf() }
+            "STOP" -> { _standaloneKey.value=null;requestedPlaying=false;loading=false; generation++;clearPending();handler.removeCallbacksAndMessages(null);player.stop();player.clearMediaItems();_current.value=null;_passageProgress.value=null;_activePreferences.value=null;_activeRange.value=null;stopForeground(STOP_FOREGROUND_REMOVE);stopSelf() }
         }
         return super.onStartCommand(intent,flags,startId)
     }

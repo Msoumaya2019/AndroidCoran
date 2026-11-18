@@ -29,9 +29,17 @@ fun newReaderInk(page: Int,stroke: InkStroke,verses: List<Int>,now: String=Insta
 fun saveReaderInk(s: JsonObject,ink: ReaderInk): JsonObject {
     val existing=s.obj("readerInk").obj(ink.id)
     if(existing.str("deletedAt").isNotBlank()) return s
+    if(runCatching { Instant.parse(existing.str("updatedAt")).isAfter(Instant.parse(ink.updatedAt)) }.getOrDefault(false)) return s
     return touch(s.with("readerInk" to s.obj("readerInk").with(ink.id to ink.toJson())))
 }
 fun deleteReaderInk(s: JsonObject,id: String,now: String=Instant.now().toString()): JsonObject {
     val old=s.obj("readerInk").obj(id);if(old.isEmpty()) return s
-    return touch(s.with("readerInk" to s.obj("readerInk").with(id to old.with("deletedAt" to JsonPrimitive(now),"updatedAt" to JsonPrimitive(now)))))
+    return touch(s.with("readerInk" to s.obj("readerInk").with(id to old.with("deletedAt" to JsonPrimitive(now),"updatedAt" to JsonPrimitive(now),"outlines" to JsonArray(emptyList()),"note" to JsonArray(emptyList())))))
 }
+
+/** Local ink is retained even when an older client sends a state without this extension. */
+fun mergeReaderInkCopies(local: JsonObject,remote: JsonObject): JsonObject = JsonObject((local.keys+remote.keys).filter { local[it] is JsonObject||remote[it] is JsonObject }.associateWith { id ->
+    val candidates=listOfNotNull(local[id] as? JsonObject,remote[id] as? JsonObject)
+    val deleted=candidates.filter { it.str("deletedAt").isNotBlank() }
+    (if(deleted.isNotEmpty()) deleted else candidates).maxBy { runCatching { Instant.parse(it.str("updatedAt")) }.getOrDefault(Instant.EPOCH) }
+})

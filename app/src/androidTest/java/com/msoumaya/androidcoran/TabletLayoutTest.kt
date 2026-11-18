@@ -24,7 +24,7 @@ class TabletLayoutTest {
   val repo=(compose.activity.application as CoranApplication).repository;runBlocking { repo.awaitReady() }
   compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
   compose.onNodeWithTag("tablet-navigation").assertDoesNotExist()
-  compose.onNodeWithText("Annoter au stylet").assertIsDisplayed()
+  compose.onNodeWithContentDescription("Annoter au stylet").assertIsDisplayed()
   compose.onNodeWithContentDescription("Afficher les commandes").assertIsDisplayed()
   compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
   compose.onNodeWithTag("tablet-navigation").assertIsDisplayed()
