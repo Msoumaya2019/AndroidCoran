@@ -16,10 +16,10 @@ Les quatre commits plus anciens de cette branche (notamment l’ensemble Roqya) 
 
 ## Tablettes et annotation demandée
 
-Navigation latérale dès 600 dp de largeur avec hauteur suffisante, formulaires/listes centrés et limités à 1040 dp, lecture plein écran sans barre latérale. Le dimensionnement suit la fenêtre disponible, y compris le partage d’écran.
+Navigation latérale dès 600 dp de largeur avec hauteur suffisante, formulaires/listes centrés et limités à 1040 dp, accueil à deux colonnes et grille adaptative de sourates, lecture plein écran sans barre latérale. Le dimensionnement suit la fenêtre disponible, y compris le partage d’écran.
 
 Mushaf QCF : contours libres et notes manuscrites, pression du stylet, aucune reconnaissance ni conversion en texte. Coordonnées relatives à la page ; notes dans un canevas au ratio constant. Un tracé ouvre une note ; toucher un contour ou la liste de page permet de la rouvrir. Suppression confirmée du contour et de la note, tombstones empêchant la réapparition après fusion concurrente.
 
-Les données sont dans readerInk du JSON utilisateur existant et sauvegardées localement par le mécanisme habituel. Aucune table ajoutée. Compatibilité réelle aller-retour Expo/Android à valider : une ancienne application peut ne pas conserver des champs JSON qu’elle ne connaît pas. Ne pas annoncer une synchronisation inter-applications validée.
+Les données sont dans readerInk du JSON utilisateur existant et sauvegardées localement par le mécanisme habituel. Aucune table ajoutée. Une copie locale indépendante par compte conserve les annotations quand un ancien état distant omet le champ. Compatibilité réelle aller-retour Expo/Android et restauration sur un nouvel appareil à valider : une ancienne application peut ne pas conserver des champs JSON qu’elle ne connaît pas. Ne pas annoncer une synchronisation inter-applications validée.
 
-Tests : cas JVM de portage, de fusion et de suppression ; tests Android de stylet, restauration et confirmation ; suite tablette distincte prévue. Résultats à compléter après exécution.
+Tests : cas JVM de portage, de fusion et de suppression ; tests Android de stylet, restauration et confirmation ; suite tablette distincte prévue. Validation du commit 59f7b77 : 176 tests JVM et lint réussis ; GitHub Actions Android 15 : 43 tests téléphone et 13 sur profil tablette Pixel C, sans échec ni test ignoré. En local : 43 tests téléphone et 15 tests dans chacun des deux formats tablette portrait/paysage. Parcours complet du contour à la suppression validé sur émulateur. Contrôles visuels de l’accueil, de la grille et du Mushaf effectués sur émulateur.
