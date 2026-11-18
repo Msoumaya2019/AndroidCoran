@@ -44,12 +44,13 @@ import java.util.Locale
             TextButton(onClick={page="Contenus"}) { Text("Administrer les contenus") }
             TextButton(onClick={page="Récitations"}) { Text("Corriger les récitations") }
             TextButton(onClick={page="Signalements"}) { Text("Traiter les signalements") }
+            TextButton(onClick={page="Modération"}) { Text("Modération des messages") }
             TextButton(onClick={page="Quiz"}) { Text("Administrer les quiz") }
             Row {
                 FilterChip(selected=page=="Comptes",onClick={page="Comptes"},label={Text("Comptes")})
                 FilterChip(selected=page=="Notifications",onClick={page="Notifications"},label={Text("Historique notifications")})
             }
-            if(page=="Contenus") AdminContentsPanel(vm) else if(page=="Récitations") AdminRecitationsPanel(vm) else if(page=="Signalements") AdminReportsPanel(vm) else if(page=="Quiz") AdminQuizPanel(vm) else if(page=="Comptes") {
+            if(page=="Modération") AdminModerationPanel(vm) else if(page=="Contenus") AdminContentsPanel(vm) else if(page=="Récitations") AdminRecitationsPanel(vm) else if(page=="Signalements") AdminReportsPanel(vm) else if(page=="Quiz") AdminQuizPanel(vm) else if(page=="Comptes") {
                 Text("$total comptes inscrits")
                 OutlinedTextField(search,{search=it},label={Text("Prénom ou adresse e-mail")},singleLine=true)
                 Button(onClick={load(0)},enabled=!busy) { Text("Rechercher / actualiser") }
@@ -58,6 +59,13 @@ import java.util.Locale
                     val state=defaultState().with("knowledge" to row.obj("knowledge"),"goal" to (row["goal"] as? JsonObject?:defaultState().obj("goal")))
                     val progress=vm.repo.program.progress(state)
                     Panel(row.str("first_name"),row.str("email").ifBlank { "Adresse non renseignée" }) {
+                        if(row.str("usage_error").isNotBlank()) Text(row.str("usage_error"))
+                        else if(row.obj("last_usage").isNotEmpty()) {
+                            val usage=row.obj("last_usage")
+                            Text("Dernière session : "+usage.str("started_at"))
+                            val recent=runCatching { java.time.Duration.between(java.time.Instant.parse(usage.str("updated_at")),java.time.Instant.now()).seconds in 0..44 }.getOrDefault(false)
+                            Text("Temps dans l’application : "+formatUsageDuration(usage.num("seconds"))+(if(!usage.flag("ended")&&recent) " · En cours" else ""))
+                        } else Text("Aucune session reçue depuis une version récente de l’application.")
                         Text("Inscrit le ${row.str("created_at").take(10)}")
                         if(row.str("synced_at").isNotBlank()) {
                             Text("${knownIds(state).size} versets mémorisés · ${String.format(Locale.FRANCE,"%.1f",progress.first*100)} % du Coran")

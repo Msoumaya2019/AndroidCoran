@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -25,7 +26,10 @@ import java.time.Instant
             Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 Text("Annotation manuscrite · page "+annotation.page,style=MaterialTheme.typography.titleLarge)
                 Text("Écrivez librement au stylet. Les traits sont sauvegardés sans conversion en texte.")
-                AndroidView(factory={HandwritingView(it)},modifier=Modifier.fillMaxWidth().weight(1f),update={v -> v.strokes=draft.note;v.onStroke={update(draft.note+it)} })
+                BoxWithConstraints(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
+                    val padWidth=minOf(maxWidth,maxHeight*1.4f)
+                    AndroidView(factory={HandwritingView(it)},modifier=Modifier.width(padWidth).height(padWidth/1.4f),update={v -> v.strokes=draft.note;v.onStroke={update(draft.note+it)} })
+                }
                 Row { TextButton(enabled=draft.note.isNotEmpty(),onClick={update(draft.note.dropLast(1))}) { Text("Annuler le trait") };TextButton(enabled=draft.note.isNotEmpty(),onClick={update(emptyList())}) { Text("Effacer la note") } }
                 Row { TextButton(onClick={confirmDelete=true}) { Text("Supprimer l’annotation") };Spacer(Modifier.weight(1f));Button(onClick=onClose) { Text("Fermer") } }
             }
@@ -41,5 +45,19 @@ import java.time.Instant
         if(enabled) Text("Entourez librement le passage",style=MaterialTheme.typography.labelSmall)
         if(annotations.isNotEmpty()) TextButton(onClick={list=true}) { Text("Annotations de cette page ("+annotations.size+")") }
     }
-    if(list) AlertDialog(onDismissRequest={list=false},title={Text("Annotations manuscrites")},text={Column(Modifier.verticalScroll(rememberScrollState())) { annotations.forEachIndexed { index,ink -> TextButton(onClick={list=false;onEdit(ink)}) { Text("Annotation "+(index+1)+(if(ink.verses.isNotEmpty()) " · "+vm.repo.quran.reference(VerseRange(ink.verses.min(),ink.verses.max())) else "")) } }},confirmButton={TextButton(onClick={list=false}) { Text("Fermer") }})
+    if(list) AlertDialog(
+        onDismissRequest={list=false},
+        title={Text("Annotations manuscrites")},
+        text={
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                annotations.forEachIndexed { index,ink ->
+                    TextButton(onClick={list=false;onEdit(ink)}) {
+                        val reference=if(ink.verses.isNotEmpty()) " · "+vm.repo.quran.reference(VerseRange(ink.verses.min(),ink.verses.max())) else ""
+                        Text("Annotation "+(index+1)+reference)
+                    }
+                }
+            }
+        },
+        confirmButton={TextButton(onClick={list=false}) { Text("Fermer") }}
+    )
 }

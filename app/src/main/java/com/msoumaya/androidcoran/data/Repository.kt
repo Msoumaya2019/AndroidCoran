@@ -44,6 +44,7 @@ class Repository(private val context: Context) {
     suspend fun refreshReminders(): Unit = withContext(Dispatchers.IO) { awaitReady();lock.withLock { LocalReminders.schedule(context,_state.value.obj("notifications").flag("learning"),account) } }
     internal fun pendingState(owner: String)=local.load(owner)?.pending==true
     init {
+        ForegroundUsage(context,this,scope).start()
         scope.launch(Dispatchers.Main.immediate) {
             ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) { scope.launch {
