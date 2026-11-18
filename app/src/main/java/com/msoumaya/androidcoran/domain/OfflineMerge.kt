@@ -7,6 +7,10 @@ import java.time.Instant
 private fun mergeField(base: JsonElement?,local: JsonElement?,remote: JsonElement?,path: String=""): JsonElement? {
     if(local==base) return remote
     if(remote==base||local==remote) return local
+    if(path.startsWith(".readerInk.")&&path.count { it=='.' }==2&&local is JsonObject&&remote is JsonObject) {
+        val deleted=listOf(local,remote).filter { it.str("deletedAt").isNotBlank() }
+        return (if(deleted.isNotEmpty()) deleted else listOf(local,remote)).maxBy { it.str("updatedAt") }
+    }
     if(local is JsonArray&&remote is JsonArray) {
         if((local+remote).all { it is JsonObject && (it["id"] as? JsonPrimitive)?.isString==true }) {
             fun keyed(rows: JsonElement?) = (rows as? JsonArray)?.associate { it.jsonObject.str("id") to it }?:emptyMap()

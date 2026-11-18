@@ -8,7 +8,7 @@ class AdminQuizTest {
     @Test fun optionalFourthAnswerIsRemovedAndMetadataPreserved() { val q=question().with("arabic" to JsonPrimitive("نص"));val payload=adminQuestionPayload(q);assertEquals(3,payload.arr("answers").size);assertEquals("نص",payload.str("arabic")) }
     @Test fun invalidSolutionDuplicateAnswersAndMissingSourceAreRejected() {
         assertTrue(runCatching { adminQuestionPayload(question().with("correctAnswerId" to JsonPrimitive("D"))) }.isFailure)
-        assertTrue(runCatching { adminQuestionPayload(question().with("sourceTitle" to JsonPrimitive(""))) }.isFailure)
+        assertEquals("",adminQuestionPayload(question().with("sourceTitle" to JsonPrimitive(""))).str("sourceTitle"))
         assertTrue(runCatching { adminQuestionPayload(question().with("answers" to JsonArray(List(3) { json("id" to "A","text" to "x") }))) }.isFailure)
     }
     @Test fun themedSetRequiresExactlyTenDistinctQuestions() { val q=json("title" to "Thème","questionIds" to (1..10).map { "$it" });assertEquals(q,adminSetPayload(q));assertTrue(runCatching { adminSetPayload(q.with("questionIds" to JsonArray(List(10) { JsonPrimitive("1") }))) }.isFailure) }

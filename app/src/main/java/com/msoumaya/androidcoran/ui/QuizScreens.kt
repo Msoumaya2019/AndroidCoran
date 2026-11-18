@@ -23,6 +23,7 @@ import java.time.*
     val snapshot=if(vm.repo.quiz.cacheOwner==owner) stored else emptyQuiz()
     var view by rememberSaveable(owner) { mutableStateOf("Accueil") };var historyDay by rememberSaveable(owner) { mutableStateOf<String?>(null) };var challengeId by rememberSaveable(owner) { mutableStateOf<String?>(null) }
     var friends by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) };var profiles by remember(owner) { mutableStateOf<List<JsonObject>>(emptyList()) };var opponent by rememberSaveable(owner) { mutableStateOf("") };var setId by rememberSaveable(owner) { mutableStateOf<String?>(null) };var count by rememberSaveable { mutableIntStateOf(10) };var busy by remember { mutableStateOf(false) };var now by remember { mutableStateOf(Instant.now()) }
+    val solo=remember(owner) { SoloQuiz(owner,{vm.repo.user.value}) { name,args -> vm.repo.rpc(name,args) } }
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     fun refresh() { vm.action { vm.repo.quiz.refresh() } }
     LaunchedEffect(owner) {
@@ -50,11 +51,13 @@ import java.time.*
             "Accueil" -> {
                 Text("Teste tes connaissances",style=MaterialTheme.typography.headlineSmall)
                 Panel("Question du jour",if(snapshot.arr("responses").any { it.jsonObject.str("day")==day }) "Terminée aujourd’hui" else if(daily==null) "Aucune question publiée aujourd’hui" else "Disponible",{historyDay=null;view="Question"})
+                Panel("Jouer en solo","10 questions aléatoires · correction après chaque question",{view="Solo"})
                 Panel("Défis entre amis","5 ou 10 questions · durée de 48 heures",{view="Défis"})
                 TextButton(onClick={view="Créer"}) { Text("Nouveau défi") };TextButton(onClick={view="Historique"}) { Text("Historique des réponses") }
                 QuizStatsCard(snapshot,owner?:"")
                 Row { Checkbox(snapshot.flag("notificationsEnabled",true),{ enabled -> vm.action { vm.repo.rpc("quiz_set_notifications",json("p_enabled" to enabled,"p_timezone" to ZoneId.systemDefault().id));vm.repo.quiz.refresh() } },enabled=owner!=null);Text("Notifications Quiz") }
             }
+            "Solo" -> SoloQuizPanel(vm,solo,owner!=null)
             "Question" -> if(daily==null||daily.isEmpty()) Text("Aucune question disponible pour ce jour") else {
                 Text(daily.str("category"));Text(daily.str("question"),style=MaterialTheme.typography.titleLarge)
                 QuizAnswers(daily,response?.str("selectedAnswerId"),enabled=owner!=null&&response==null) { answer -> vm.action { vm.repo.quiz.answer(daily,answer);try { vm.repo.quiz.refresh() } catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback("Réponse sauvegardée sur cet appareil, en attente de synchronisation") } } }
@@ -106,10 +109,10 @@ import java.time.*
         }
     }
 }
-@Composable private fun QuizAnswers(question: JsonObject,selected: String?,enabled: Boolean,onAnswer: (String)->Unit) {
+@Composable internal fun QuizAnswers(question: JsonObject,selected: String?,enabled: Boolean,onAnswer: (String)->Unit) {
     question.arr("answers").forEach { raw -> val answer=raw.jsonObject;OutlinedButton(enabled=enabled,onClick={onAnswer(answer.str("id"))},modifier=Modifier.fillMaxWidth()) { Text("${if(answer.str("id")==selected) "✓ " else ""}${answer.str("text")}") } }
 }
-@Composable private fun QuizCorrection(question: JsonObject,response: JsonObject) {
+@Composable internal fun QuizCorrection(question: JsonObject,response: JsonObject) {
     val context=LocalContext.current
     Panel(if(response.flag("isCorrect")) "Bonne réponse" else "Mauvaise réponse") {
         val correct=question.arr("answers").map { it.jsonObject }.firstOrNull { it.str("id")==question.str("correctAnswerId") }

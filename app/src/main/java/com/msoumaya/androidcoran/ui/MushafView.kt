@@ -9,6 +9,20 @@ import kotlinx.serialization.json.*
 
 /** Native Canvas painter: keeps the reference's words, 122-unit lines and page proportions. */
 class MushafView(context: Context): View(context) {
+    var annotationMode=false
+    var annotations: List<ReaderInk> = emptyList()
+    var onInkStroke: (InkStroke,List<Int>)->Unit={_,_->}
+    var onInkClick: (ReaderInk)->Unit={}
+    private val inkDraft=mutableListOf<InkPoint>()
+    private fun inkPoint(x: Float,y: Float,pressure: Float)=InkPoint(((x-left-offsetX)/(ratio*zoom)/1000f).coerceIn(0f,1f),((y-top-offsetY)/(ratio*zoom)/2120f).coerceIn(0f,1f),pressure.coerceIn(.1f,1f))
+    private fun annotationAt(x: Float,y: Float): ReaderInk? {
+        val p=inkPoint(x,y,1f)
+        return annotations.lastOrNull { ink -> ink.outlines.any { stroke -> stroke.points.zipWithNext().any { (a,b) ->
+            val dx=b.x-a.x;val dy=(b.y-a.y)*2.12f;val px=p.x-a.x;val py=(p.y-a.y)*2.12f
+            val t=if(dx*dx+dy*dy==0f) 0f else ((px*dx+py*dy)/(dx*dx+dy*dy)).coerceIn(0f,1f)
+            (px-t*dx)*(px-t*dx)+(py-t*dy)*(py-t*dy)<.0004f
+        } } }
+    }
     var paper="#faf7f2"
     var page=1;var source="coranTest";var selected: Int?=null;var playing: Int?=null
     var bookmarks=emptySet<Int>();var difficulties=emptySet<Int>();var onVerse: (Int)->Unit={};var onPage: (Int)->Unit={}
@@ -18,14 +32,34 @@ class MushafView(context: Context): View(context) {
     private val scale=ScaleGestureDetector(context,object: ScaleGestureDetector.SimpleOnScaleGestureListener() { override fun onScale(detector: ScaleGestureDetector): Boolean { zoom=(zoom*detector.scaleFactor).coerceIn(1f,3f);invalidate();return true } })
     private val gestures=GestureDetector(context,object: GestureDetector.SimpleOnGestureListener() {
         override fun onDown(e: android.view.MotionEvent)=true
-        override fun onSingleTapConfirmed(e: android.view.MotionEvent): Boolean { val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);regions.lastOrNull { it.first.contains(x,y) }?.let { onVerse(it.second) };return true }
+        override fun onSingleTapConfirmed(e: android.view.MotionEvent): Boolean { if(source=="coranTest") annotationAt(e.x,e.y)?.let { onInkClick(it);return true };val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);regions.lastOrNull { it.first.contains(x,y) }?.let { onVerse(it.second) };return true }
         override fun onDoubleTap(e: android.view.MotionEvent): Boolean { zoom=if(zoom>1f) 1f else 2f;offsetX=0f;offsetY=0f;invalidate();return true }
         override fun onScroll(e1: android.view.MotionEvent?,e2: android.view.MotionEvent,distanceX: Float,distanceY: Float): Boolean { if(zoom>1f) { offsetX-=distanceX;offsetY-=distanceY;invalidate() };return true }
         override fun onFling(e1: android.view.MotionEvent?,e2: android.view.MotionEvent,velocityX: Float,velocityY: Float): Boolean { if(zoom==1f&&e1!=null&&kotlin.math.abs(e2.x-e1.x)>80&&kotlin.math.abs(velocityX)>150) onPage(if(e2.x>e1.x) page+1 else page-1);return true }
     })
-    fun load(q: Quran,page: Int,source: String,document: JsonObject?,image: Bitmap?,regions: JsonArray?) { this.page=page;this.source=source;data=document;bitmap=image;bounds=regions;zoom=1f;offsetX=0f;offsetY=0f;invalidate();contentDescription="Mushaf page $page" }
+    fun load(q: Quran,page: Int,source: String,document: JsonObject?,image: Bitmap?,regions: JsonArray?) { this.page=page;this.source=source;inkDraft.clear();data=document;bitmap=image;bounds=regions;zoom=1f;offsetX=0f;offsetY=0f;invalidate();contentDescription="Mushaf page $page" }
     private fun font(name: String): Typeface { val file=when(name) { "surah-name"->"surah-name-v4";"basmala"->"vertopal.com_QCF_Bismillah-Regular";else->name };return fonts[file] ?: Typeface.createFromAsset(context.assets,"fonts/$file.ttf").also { fonts.put(file,it) } }
-    override fun onTouchEvent(event: android.view.MotionEvent): Boolean { scale.onTouchEvent(event);if(!scale.isInProgress) gestures.onTouchEvent(event);return true }
+    override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+        if(annotationMode&&source=="coranTest"&&data!=null) {
+            if(event.pointerCount>1) { inkDraft.clear();invalidate();return true }
+            fun add(x: Float,y: Float,p: Float) { if(inkDraft.size<12000) inkDraft+=inkPoint(x,y,p) }
+            when(event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { parent?.requestDisallowInterceptTouchEvent(true);inkDraft.clear();add(event.x,event.y,event.pressure) }
+                MotionEvent.ACTION_MOVE -> { for(i in 0 until event.historySize) add(event.getHistoricalX(i),event.getHistoricalY(i),event.getHistoricalPressure(i));add(event.x,event.y,event.pressure) }
+                MotionEvent.ACTION_UP -> {
+                    add(event.x,event.y,event.pressure);val stroke=InkStroke(inkDraft.toList());inkDraft.clear()
+                    if(stroke.points.isNotEmpty()) {
+                        val rect=RectF(stroke.points.minOf { it.x }*1000,stroke.points.minOf { it.y }*2120,stroke.points.maxOf { it.x }*1000,stroke.points.maxOf { it.y }*2120)
+                        onInkStroke(stroke,regions.filter { RectF.intersects(it.first,rect) }.map { it.second }.distinct())
+                    }
+                    parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                MotionEvent.ACTION_CANCEL -> { inkDraft.clear();parent?.requestDisallowInterceptTouchEvent(false) }
+            }
+            invalidate();return true
+        }
+        scale.onTouchEvent(event);if(!scale.isInProgress) gestures.onTouchEvent(event);return true
+    }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas);val b=bitmap;val w=b?.width?.toFloat()?:1000f;val h=b?.height?.toFloat()?:2120f
         ratio=minOf(width/w,height/h);left=(width-w*ratio)/2;top=(height-h*ratio)/2
@@ -44,7 +78,7 @@ class MushafView(context: Context): View(context) {
                     "basmallah" -> { paint.color=Color.BLACK;paint.typeface=font("basmala");paint.textSize=80f;val surah=lines.drop(i+1).firstOrNull { it.jsonObject.arr("words").isNotEmpty() }?.jsonObject?.arr("words")?.first()?.jsonArray?.get(1)?.jsonPrimitive?.int?:d.num("surah");val text=when(surah) { 2->"ﲚﲛﲞﲤ";95,97->"ﭗﲫﲮﲴ";else->"ﲪﲫﲮﲴ" };canvas.drawText(text,500f-paint.measureText(text)/2,cy-(paint.fontMetrics.ascent+paint.fontMetrics.descent)/2,paint) }
                 }
             }
-        };canvas.restore()
+        };if(source=="coranTest") { drawHandwriting(canvas,annotations.flatMap { it.outlines },1000f,2120f);if(inkDraft.isNotEmpty()) drawHandwriting(canvas,listOf(InkStroke(inkDraft)),1000f,2120f) };canvas.restore()
     }
     private fun overlay(canvas: Canvas,r: RectF,id: Int) { val color=when { id==playing -> 0x5554734E;id==selected -> 0x557B285C;id in difficulties -> 0x33A85353;id in bookmarks -> 0x33C89A52;else -> return };paint.color=color;canvas.drawRoundRect(r,8f,8f,paint) }
 }

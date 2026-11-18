@@ -62,9 +62,13 @@ import java.time.Instant
     val snackbar=remember { SnackbarHostState() }
     LaunchedEffect(notice,fullscreen) { if(fullscreen&&notice.isNotEmpty()) snackbar.showSnackbar(notice) }
     NativeAppTheme(s) {
+      BoxWithConstraints(Modifier.fillMaxSize()) {
+        val wide=maxWidth>=600.dp&&maxHeight>=480.dp
         BackHandler(route!=null) { route=if(route=="Invocation") "Récitations" else null;sessionId=null;reviewTask=null }
-        Scaffold(contentWindowInsets=if(fullscreen) WindowInsets(0,0,0,0) else ScaffoldDefaults.contentWindowInsets,snackbarHost={SnackbarHost(snackbar)},topBar={ if(!fullscreen) TopAppBar(title={ Text(if(route=="reader") "Coran Mémoire" else route?:tab) },navigationIcon={ if(route!=null) IconButton(onClick={route=if(route=="Invocation") "Récitations" else null;sessionId=null;reviewTask=null}) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"Retour") } },actions={ IconButton(onClick={route="Réglages"}) { Icon(Icons.Default.Settings,"Réglages") };IconButton(onClick={route="Compte"}) { Icon(Icons.Default.AccountCircle,"Compte") } }) },bottomBar={ if(route==null) NavigationBar { listOf("Accueil" to Icons.Default.Home,"Coran" to Icons.Default.MenuBook,"Programme" to Icons.Default.DateRange,"Progrès" to Icons.Default.Insights,"Amis" to Icons.Default.People).forEach { (label,icon)->NavigationBarItem(colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.primary,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant),selected=tab==label,onClick={tab=label},icon={Icon(icon,label)},label={Text(label,fontSize=10.sp)}) } } }) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding)) {
+        Scaffold(contentWindowInsets=if(fullscreen) WindowInsets(0,0,0,0) else ScaffoldDefaults.contentWindowInsets,snackbarHost={SnackbarHost(snackbar)},topBar={ if(!fullscreen) TopAppBar(title={ Text(if(route=="reader") "Coran Mémoire" else route?:tab) },navigationIcon={ if(route!=null) IconButton(onClick={route=if(route=="Invocation") "Récitations" else null;sessionId=null;reviewTask=null}) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"Retour") } },actions={ IconButton(onClick={route="Réglages"}) { Icon(Icons.Default.Settings,"Réglages") };IconButton(onClick={route="Compte"}) { Icon(Icons.Default.AccountCircle,"Compte") } }) },bottomBar={ if(route==null&&!wide) NavigationBar { listOf("Accueil" to Icons.Default.Home,"Coran" to Icons.Default.MenuBook,"Programme" to Icons.Default.DateRange,"Progrès" to Icons.Default.Insights,"Amis" to Icons.Default.People).forEach { (label,icon)->NavigationBarItem(colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.primary,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant),selected=tab==label,onClick={tab=label},icon={Icon(icon,label)},label={Text(label,fontSize=10.sp)}) } } }) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
+              AdaptiveAppContent(wide,fullscreen,route==null,tab,{tab=it}) {
+               Column(Modifier.fillMaxSize()) {
                 if(!fullscreen&&notice.isNotEmpty()) Text(notice,Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(10.dp),fontSize=12.sp)
                 val open: (Int)->Unit = { id -> val source=s.obj("reader").str("mushaf","coranTest");page=vm.repo.quran.sourcePage(id,source);route="reader" }
                 when(route) {
@@ -90,8 +94,11 @@ import java.time.Instant
                         "Amis" -> FriendsScreen(vm)
                     }
                 }
+               }
+              }
             }
         }
+      }
     }
 }
 @Composable fun PageList(content: @Composable ColumnScope.()->Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp),content=content) }
@@ -205,6 +212,11 @@ import java.time.Instant
 
 @Composable fun ReaderScreen(vm: CoranViewModel,s: JsonObject,page: Int,onPage: (Int)->Unit,sessionId: String?,task: ReviewTask?,onShareRecitation: ((String)->Unit)?=null,onChangeSurah: (Int)->Unit={},onExit: ()->Unit={},onStudyValidated: ()->Unit={}) {
     var controlsVisible by rememberSaveable { mutableStateOf(false) }
+    val inkOwner by vm.repo.user.collectAsStateWithLifecycle()
+    var inkMode by rememberSaveable(page,inkOwner) { mutableStateOf(false) }
+    var editingInkId by rememberSaveable(page,inkOwner) { mutableStateOf<String?>(null) }
+    fun persistInk(ink: ReaderInk) { vm.action { vm.repo.mutate { latest -> if(vm.repo.user.value==inkOwner) saveReaderInk(latest,ink) else latest } } }
+
     val context=LocalContext.current;val q=vm.repo.quran;val source=s.obj("reader").str("mushaf","coranTest");val current by RecitationService.current.collectAsStateWithLifecycle();val isPlaying by RecitationService.playing.collectAsStateWithLifecycle();val passageProgress by RecitationService.passageProgress.collectAsStateWithLifecycle();val activePreferences by RecitationService.activePreferences.collectAsStateWithLifecycle()
     var selected by rememberSaveable(page,source) { mutableStateOf<Int?>(null) };var reciterId by rememberSaveable { mutableStateOf(s.obj("audioPreferences").str("reciterId","ar.shaatree")) };var french by rememberSaveable { mutableStateOf(false) };var showAudio by rememberSaveable { mutableStateOf(false) };var startInput by rememberSaveable { mutableStateOf("") };var endInput by rememberSaveable { mutableStateOf("") }
     val session=s.arr("sessions").map { it.jsonObject }.firstOrNull { it.str("id")==sessionId }
@@ -230,7 +242,7 @@ import java.time.Instant
         }
         Row(Modifier.fillMaxWidth().padding(horizontal=12.dp),verticalAlignment=Alignment.CenterVertically) { TextButton(onClick={onPage(page+1)}) { Text("Suivante") };Text("$page / 604",Modifier.weight(1f),textAlign=TextAlign.Center);TextButton(onClick={onPage(page-1)}) { Text("Précédente") };TextButton(onClick={french=!french}) { Text(if(french) "Arabe" else "Français") } }
         }
-        if(source=="coran_1441"&&payload.second==null) { Column(Modifier.weight(1f).padding(20.dp)) { Text("Télécharge le Coran 1441 depuis Réglages → Téléchargements");Button(onClick={QuranDownloadWorker.enqueue(context)}) { Text("Lancer le téléchargement") } } } else if(source=="tajweed"&&!french) TajwidReader(q,pageRange,selected,{selected=it},Modifier.weight(1f)) else if(french) LazyColumn(Modifier.weight(1f).padding(16.dp)) { items(pageRange.ids) { id -> Column(Modifier.fillMaxWidth().clickable { selected=id }.background(if(selected==id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(10.dp)) { Text("${q.verse(id).surah}:${q.verse(id).ayah} · ${q.french(id)}",lineHeight=25.sp);val notes=q.frenchNotes(id);if(notes.isNotBlank()) Text(notes,Modifier.padding(top=5.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } } } else AndroidView(factory={MushafView(it)},modifier=Modifier.fillMaxWidth().weight(1f),update={ v -> if(v.page!=page||v.source!=source||v.tag!=payload) { v.load(q,page,source,payload.first,payload.second,payload.third);v.tag=payload };v.paper=paperColor(s.obj("reader").str("paper"));v.selected=selected;v.playing=current?.verseId;v.bookmarks=s.obj("bookmarks").values.map { it.jsonObject }.filter { it["deletedAt"]==null }.map { it.num("verseId") }.toSet();v.difficulties=s.obj("difficultyMarkers").keys.mapNotNull { it.toIntOrNull() }.toSet();v.onVerse={selected=it};v.onPage=onPage;v.invalidate() })
+        if(source=="coran_1441"&&payload.second==null) { Column(Modifier.weight(1f).padding(20.dp)) { Text("Télécharge le Coran 1441 depuis Réglages → Téléchargements");Button(onClick={QuranDownloadWorker.enqueue(context)}) { Text("Lancer le téléchargement") } } } else if(source=="tajweed"&&!french) TajwidReader(q,pageRange,selected,{selected=it},Modifier.weight(1f)) else if(french) LazyColumn(Modifier.weight(1f).padding(16.dp)) { items(pageRange.ids) { id -> Column(Modifier.fillMaxWidth().clickable { selected=id }.background(if(selected==id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(10.dp)) { Text("${q.verse(id).surah}:${q.verse(id).ayah} · ${q.french(id)}",lineHeight=25.sp);val notes=q.frenchNotes(id);if(notes.isNotBlank()) Text(notes,Modifier.padding(top=5.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } } } else AndroidView(factory={MushafView(it)},modifier=Modifier.fillMaxWidth().weight(1f),update={ v -> if(v.page!=page||v.source!=source||v.tag!=payload) { v.load(q,page,source,payload.first,payload.second,payload.third);v.tag=payload };v.paper=paperColor(s.obj("reader").str("paper"));v.selected=selected;v.playing=current?.verseId;v.bookmarks=s.obj("bookmarks").values.map { it.jsonObject }.filter { it["deletedAt"]==null }.map { it.num("verseId") }.toSet();v.difficulties=s.obj("difficultyMarkers").keys.mapNotNull { it.toIntOrNull() }.toSet();v.onVerse={selected=it};v.onPage=onPage;v.annotationMode=inkMode&&!french;v.annotations=readerInk(s,page);v.onInkClick={editingInkId=it.id};v.onInkStroke={stroke,verses -> val ink=newReaderInk(page,stroke,verses);persistInk(ink);editingInkId=ink.id;inkMode=false };v.invalidate() })
         if(controlsVisible) {
         if(selected!=null) {
             val id=selected!!
@@ -271,6 +283,10 @@ import java.time.Instant
         ReaderAudioControls(q,current,isPlaying,passageProgress,activePreferences,{showAudio=true},::command)
         if(showAudio) ReaderAudioDialog(vm,if(startInput.isBlank()&&current!=null) RecitationService.activeRange.value?:pageRange else VerseRange(startInput.toIntOrNull()?:session?.num("start")?:task?.range?.start?:pageRange.start,endInput.toIntOrNull()?:session?.num("end")?:task?.range?.end?:pageRange.end),pageRange,reciterId,{reciterId=it},{showAudio=false;startInput="";endInput=""})
         }
+    }
+    if(source=="coranTest"&&!french) {
+        if(!controlsVisible) Box(Modifier.align(Alignment.TopStart).displayCutoutPadding().padding(4.dp)) { ReaderInkControls(vm,s,page,inkMode,{inkMode=!inkMode;selected=null;controlsVisible=false},{editingInkId=it.id}) }
+        readerInk(s,page).firstOrNull { it.id==editingInkId }?.let { ink -> ReaderInkEditor(ink,::persistInk,onDelete={vm.action { vm.repo.mutate { latest -> if(vm.repo.user.value==inkOwner) deleteReaderInk(latest,ink.id) else latest } };editingInkId=null},onClose={editingInkId=null}) }
     }
     FilledTonalIconButton(onClick={controlsVisible=!controlsVisible},modifier=Modifier.align(Alignment.TopEnd).displayCutoutPadding().padding(4.dp)) {
         Icon(if(controlsVisible) Icons.Default.Fullscreen else Icons.Default.Tune,if(controlsVisible) "Masquer les commandes" else "Afficher les commandes")

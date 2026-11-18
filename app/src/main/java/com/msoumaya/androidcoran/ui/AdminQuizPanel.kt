@@ -8,6 +8,9 @@ import com.msoumaya.androidcoran.domain.*
 import kotlinx.serialization.json.*
 
 @Composable fun AdminQuizPanel(vm: CoranViewModel) {
+    var responses by rememberSaveable { mutableStateOf(false) };var responseQuestion by rememberSaveable { mutableStateOf<String?>(null) }
+    if(responses) { AdminQuizResponsesPanel(vm,responseQuestion) { responses=false };return }
+    TextButton(onClick={responseQuestion=null;responses=true}) { Text("Réponses des utilisateurs") }
     var rows by remember { mutableStateOf<List<JsonObject>>(emptyList()) };var sets by remember { mutableStateOf<List<JsonObject>>(emptyList()) }
     var themed by rememberSaveable { mutableStateOf(false) };var draft by rememberSaveable(stateSaver=Saver<JsonObject?,String>(save={it?.toString()},restore={Json.parseToJsonElement(it).jsonObject})) { mutableStateOf<JsonObject?>(null) };var busy by remember { mutableStateOf(false) };var deleting by remember { mutableStateOf<JsonObject?>(null) }
     fun act(block: suspend ()->Unit) { if(busy) return;busy=true;vm.action { try { check(AdminService(vm.repo).authorized());block();rows=vm.repo.rpc("quiz_admin_list").jsonArray.map { it.jsonObject };sets=vm.repo.rpc("quiz_admin_sets").jsonArray.map { it.jsonObject } } finally { busy=false } } }
@@ -18,6 +21,7 @@ import kotlinx.serialization.json.*
     if(d==null) {
         Button(onClick={draft=if(themed) json("id" to "","title" to "","category" to "Coran","questionIds" to listOf<String>(),"isActive" to true) else freshAdminQuestion()}) { Text("Créer") }
         (if(themed) sets else rows).forEach { q -> Panel(q.str(if(themed) "title" else "question"),q.str("category")) {
+            if(!themed) TextButton(onClick={responseQuestion=q.str("id");responses=true}) { Text("Voir les réponses") }
             TextButton(onClick={draft=q}) { Text("Modifier") }
             TextButton(onClick={draft=if(themed) q.with("id" to JsonPrimitive(""),"title" to JsonPrimitive(q.str("title")+" (copie)")) else q.with("id" to JsonPrimitive(""),"publicationDate" to JsonPrimitive(java.time.LocalDate.now().toString()),"isDailyQuestion" to JsonPrimitive(false))}) { Text("Dupliquer") }
             TextButton(onClick={save(q.with("isActive" to JsonPrimitive(!q.flag("isActive"))))},enabled=!busy) { Text(if(q.flag("isActive")) "Désactiver" else "Activer") }
