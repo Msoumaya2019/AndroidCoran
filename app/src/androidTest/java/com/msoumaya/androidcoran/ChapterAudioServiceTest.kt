@@ -61,6 +61,8 @@ class ChapterAudioServiceTest {
           runBlocking { withTimeout(5000) { RecitationService.current.first { it?.verseId==4 } } }
           scenario.onActivity { active.seekTo(1000) }
           runBlocking { withTimeout(5000) { RecitationService.current.first { it?.verseId==2 } } }
+          // Media3 publishes current verse and passage progress as separate flows.
+          runBlocking { withTimeout(5000) { RecitationService.passageProgress.first { it?.elapsedMs==1000L } } }
           assertFalse(RecitationService.playing.value)
           assertEquals(1f/6,RecitationService.passageProgress.value!!.fraction,0.01f)
           assertEquals(1000L,RecitationService.passageProgress.value!!.elapsedMs)

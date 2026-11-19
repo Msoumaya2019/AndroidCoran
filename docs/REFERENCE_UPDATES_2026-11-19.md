@@ -10,14 +10,14 @@
 
 | Origine Expo | Rôle et données existantes | Équivalent Kotlin | Développement | Tests |
 |---|---|---|---|---|
-| src/core/tablet.ts, src/ui/TabletSettings.tsx | Mode auto/on/off, reader.tablet ; seuils réels de fenêtre | domain/Tablet.kt, ui/TabletSettings.kt | Implémenté | En développement |
-| src/App.tsx, src/ui/TabletToolbar.tsx | Outils verticaux 72 dp, notes 280 dp, outils horizontaux réservés en portrait ; double page RTL | ui/TabletReader.kt | Implémenté | En développement |
-| src/core/tabletInk.ts, src/ui/NativeInkSurface.tsx | Stylo/crayon, surligneur, cercle, souligné, flèche, gomme, sélection, note, six couleurs et épaisseurs ; historique 40 actions | MushafView.kt, ReaderInkDrawing.kt, TabletReader.kt | Implémenté | En développement |
-| src/core/readerAnnotations.ts, src/ui/ReaderAnnotationMarks.tsx | Appui long mot/verset et repères résolus contre la géométrie originale, readerAnnotations | MushafView.kt, TajwidReader.kt, ReaderInk.kt | Implémenté | En développement |
-| src/ui/ReaderAnnotationEditor.tsx | Texte et écriture manuscrite conservés ensemble, suppression | ReaderInkPanel.kt, HandwritingView.kt | Implémenté | En développement |
-| src/ui/AnnotationNotebook.tsx, src/core/tablet.ts | Cahier : filtres sourate/page/couleur/type/favori/difficulté, tris, maîtrise indépendante des connaissances, réouverture de la bonne édition | AnnotationNotebook.kt (UI et domaine) | Implémenté | En développement |
-| src/core/annotationExport.ts, src/services/annotationExport.ts, src/ui/AnnotationExportDialog.tsx | PNG page courante, PDF 1–20 pages et texte des notes filtrées | PrintedPage.kt, AnnotationExport.kt, FileProvider privé | Implémenté | En développement |
-| src/ui/ReaderPageTurn.tsx | Transition de page 420 ms, mouvement réduit | AnimatedContent natif, réglage d’animation Android | Implémenté | En développement |
+| src/core/tablet.ts, src/ui/TabletSettings.tsx | Mode auto/on/off, reader.tablet ; seuils réels de fenêtre | domain/Tablet.kt, ui/TabletSettings.kt | Implémenté | Testé partiellement (voir limites) |
+| src/App.tsx, src/ui/TabletToolbar.tsx | Outils verticaux 72 dp, notes 280 dp, outils horizontaux réservés en portrait ; double page RTL | ui/TabletReader.kt | Implémenté | Testé partiellement (voir limites) |
+| src/core/tabletInk.ts, src/ui/NativeInkSurface.tsx | Stylo/crayon, surligneur, cercle, souligné, flèche, gomme, sélection, note, six couleurs et épaisseurs ; historique 40 actions | MushafView.kt, ReaderInkDrawing.kt, TabletReader.kt | Implémenté | Testé partiellement (voir limites) |
+| src/core/readerAnnotations.ts, src/ui/ReaderAnnotationMarks.tsx | Appui long mot/verset et repères résolus contre la géométrie originale, readerAnnotations | MushafView.kt, TajwidReader.kt, ReaderInk.kt | Implémenté | Testé partiellement (voir limites) |
+| src/ui/ReaderAnnotationEditor.tsx | Texte et écriture manuscrite conservés ensemble, suppression | ReaderInkPanel.kt, HandwritingView.kt | Implémenté | Testé partiellement (voir limites) |
+| src/ui/AnnotationNotebook.tsx, src/core/tablet.ts | Cahier : filtres sourate/page/couleur/type/favori/difficulté, tris, maîtrise indépendante des connaissances, réouverture de la bonne édition | AnnotationNotebook.kt (UI et domaine) | Implémenté | Testé partiellement (voir limites) |
+| src/core/annotationExport.ts, src/services/annotationExport.ts, src/ui/AnnotationExportDialog.tsx | PNG page courante, PDF 1–20 pages et texte des notes filtrées | PrintedPage.kt, AnnotationExport.kt, FileProvider privé | Implémenté | Testé partiellement (voir limites) |
+| src/ui/ReaderPageTurn.tsx | Transition de page 420 ms, mouvement réduit | AnimatedContent natif, réglage d’animation Android | Implémenté | Testé partiellement (voir limites) |
 
 Tous les champs restent dans user_state.data existant. Les marqueurs de difficulté réutilisent difficultyMarkers et les préférences reader.tablet. Aucune migration, table, règle RLS, configuration Auth ou configuration d’appareil modifiée. Les trois parcours lecture/apprentissage/révision utilisent le même lecteur.
 
@@ -49,4 +49,12 @@ Interface Android sans empattements, famille système Roboto/SansSerif, corps 16
 
 ## Validation
 
-En cours : les résultats réellement obtenus seront ajoutés après la compilation et les suites Android.
+Code applicatif : 5ef6d241477cfd4ed0cfcaeb25216a8627ef839a. [Compilation GitHub Actions réussie](https://github.com/Msoumaya2019/AndroidCoran/actions/runs/44564107331) : 185 tests JVM, zéro échec/ignoré, Lint, APK et compilation des tests Android. Les rapports HTML ont été récupérés. Compilation et Lint locaux également réussis.
+
+Sur l’émulateur Android 15 local : 19 tests réussis en paysage 1600 × 1000 à 160 dpi, 19 en portrait 1000 × 1600 à 160 dpi, puis 47 sur le format téléphone natif 1080 × 2400 à 420 dpi. Aucune suppression des notes existantes dans les fixtures : les tests nettoient seulement les identifiants qu’ils créent. Les parcours comprennent la recréation, la réouverture/suppression d’une note, le cahier et sa maîtrise indépendante des connaissances, la double page, les panneaux, le plein écran, les pixels du PNG, deux pages PDF, les coordonnées de mots et le rejet des événements doigt en mode stylet uniquement.
+
+Les premiers passages ont révélé des cibles de test ambiguës/masquées par Material, des sauvegardes asynchrones non attendues et une accumulation des notes de test, puisque leur copie locale est durable. Les tests utilisent maintenant le dispatcher Compose standard et ciblent précisément l’onglet ou le titre de note. Deux courses observées dans les suites complètes sont en cours de vérification : action de navigation pendant le chargement des contenus d’accueil et publication distincte du verset/progrès Media3. Les assertions de plein écran, d’apprentissage et de progression audio sont conservées.
+
+APK de ce code : artefact AndroidCoran-debug-apk du build 44564107331 ; SHA-256 4B76894FD5DFA79F0D78B1C99DF61B305DC3CB6362C3969B398E7C2BE616C9ED.
+
+La suite CI finale sera consignée après son résultat. Les menus de tous les types d’annotations, le rendu de tous les mots dans toutes les éditions, tous les tris du cahier, le partage vers des applications externes et l’animation 420 ms avec animations système activées ne sont pas déclarés intégralement validés. Les tests d’interface désactivent les animations et l’aide système de première ouverture plein écran.
