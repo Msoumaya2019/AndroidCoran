@@ -81,7 +81,7 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
   }
   Column(Modifier.fillMaxSize()) {
    if(layout.enabled&&!immersive) {
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("tablet-reader-actions"),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.fillMaxWidth().padding(end=56.dp).horizontalScroll(rememberScrollState()).testTag("tablet-reader-actions"),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
      FilterChip(annotating,{if(annotating) annotating=false else startDrawing(tool)},label={Text("Annoter")})
      TextButton(onClick={notesOpen=!notesOpen}) { Text("Mes annotations") }
      TextButton(onClick={notebook=true}) { Text("Mon cahier de révision") }
@@ -90,7 +90,7 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
      TextButton(enabled=source!="tajweed",onClick={export=true}) { Text("Exporter") }
      TextButton(onClick={immersive=true;notesOpen=false}) { Text("Lecture plein écran") }
     }
-    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(end=56.dp),verticalAlignment=Alignment.CenterVertically) {
      TextButton(onClick={onPage(nextSpread(page,-1,double))}) { Text("Précédente") }
      Text((if(double) "Pages "+pages.sorted().joinToString("–") else "Page "+page)+(if(annotating) " · Annotation" else " · Lecture"),Modifier.weight(1f))
      TextButton(onClick={onPage(nextSpread(page,1,double))}) { Text("Suivante") }

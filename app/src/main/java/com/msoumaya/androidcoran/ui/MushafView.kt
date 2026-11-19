@@ -39,6 +39,8 @@ class MushafView(context: Context): View(context) {
     var onInkClick: (ReaderInk)->Unit={}
     private val inkDraft=mutableListOf<InkPoint>()
     private var inkDrawing=false
+    private val erasedIds=mutableSetOf<String>()
+    private fun eraseAt(x: Float,y: Float) { annotationAt(x,y)?.let { if(erasedIds.add(it.id)) onInkErase(it) } }
     private fun inkPoint(x: Float,y: Float,pressure: Float)=InkPoint(((x-left-offsetX)/(ratio*zoom)/paperWidth()).coerceIn(0f,1f),((y-top-offsetY)/(ratio*zoom)/paperHeight()).coerceIn(0f,1f),pressure.coerceIn(.1f,1f))
     private fun annotationAt(x: Float,y: Float): ReaderInk? {
         val p=inkPoint(x,y,1f)
@@ -76,12 +78,12 @@ class MushafView(context: Context): View(context) {
             fun add(x: Float,y: Float,p: Float) { if(inkDraft.size<12000) inkDraft+=inkPoint(x,y,p) }
             when(event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    if(inkTool=="eraser") { inkDrawing=true;onInkActive(true);parent?.requestDisallowInterceptTouchEvent(true);annotationAt(event.x,event.y)?.let(onInkErase);return true }
+                    if(inkTool=="eraser") { erasedIds.clear();inkDrawing=true;onInkActive(true);parent?.requestDisallowInterceptTouchEvent(true);eraseAt(event.x,event.y);return true }
                     inkDrawing=true;onInkActive(true);parent?.requestDisallowInterceptTouchEvent(true);inkDraft.clear();add(event.x,event.y,event.pressure) }
-                MotionEvent.ACTION_MOVE -> { if(!inkDrawing) return true;if(inkTool=="eraser") { annotationAt(event.x,event.y)?.let(onInkErase);return true };for(i in 0 until event.historySize) add(event.getHistoricalX(i),event.getHistoricalY(i),event.getHistoricalPressure(i));add(event.x,event.y,event.pressure) }
+                MotionEvent.ACTION_MOVE -> { if(!inkDrawing) return true;if(inkTool=="eraser") { eraseAt(event.x,event.y);return true };for(i in 0 until event.historySize) add(event.getHistoricalX(i),event.getHistoricalY(i),event.getHistoricalPressure(i));add(event.x,event.y,event.pressure) }
                 MotionEvent.ACTION_UP -> {
                     if(!inkDrawing) return true;inkDrawing=false;onInkActive(false)
-                    if(inkTool=="eraser") { parent?.requestDisallowInterceptTouchEvent(false);return true }
+                    if(inkTool=="eraser") { erasedIds.clear();parent?.requestDisallowInterceptTouchEvent(false);return true }
                     add(event.x,event.y,event.pressure);val stroke=InkStroke(inkDraft.toList());inkDraft.clear()
                     if(stroke.points.isNotEmpty()) {
                         val rect=RectF(stroke.points.minOf { it.x }*paperWidth(),stroke.points.minOf { it.y }*paperHeight(),stroke.points.maxOf { it.x }*paperWidth(),stroke.points.maxOf { it.y }*paperHeight())

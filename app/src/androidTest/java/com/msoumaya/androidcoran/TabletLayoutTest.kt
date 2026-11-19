@@ -14,9 +14,10 @@ class TabletLayoutTest {
  private fun fixture(block: ()->Unit) {
   val repo=(compose.activity.application as CoranApplication).repository;runBlocking { repo.awaitReady() };assertNull(repo.user.value);val saved=repo.state.value
   runBlocking { repo.mutate { defaultState().with("reader" to defaultState().obj("reader").with("tablet" to TabletPreferences(mode="on").toJson()),"lastRead" to json("verseId" to 1,"page" to 1)) } }
-  try { compose.waitForIdle();block() } catch(e: Throwable) { captureReaderState("tablet",compose.onRoot(useUnmergedTree=true).printToString());throw e } finally {
+  try { compose.waitForIdle();block() } catch(e: Throwable) { runCatching { captureReaderState("tablet",compose.onAllNodes(isRoot(),useUnmergedTree=true).onFirst().printToString()) };throw e } finally {
    if(compose.onAllNodesWithContentDescription("Afficher les commandes").fetchSemanticsNodes().isNotEmpty()) compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
-   runBlocking { repo.mutate { saved.with("reader" to saved.obj("reader").with("tablet" to TabletPreferences.from(saved.obj("reader").obj("tablet")).toJson())) } }
+   runBlocking { repo.mutate { latest -> allReaderInk(latest).filter { ink -> allReaderInk(saved).none { it.id==ink.id } }.fold(latest) { acc,ink -> deleteReaderInk(acc,ink.id,annotationTime(ink.updatedAt)) } } }
+            runBlocking { repo.mutate { saved.with("reader" to saved.obj("reader").with("tablet" to TabletPreferences.from(saved.obj("reader").obj("tablet")).toJson())) } }
   }
  }
  @Test fun navigationRetainsReferenceTabsRatherThanPreviousSideRail() = fixture {
@@ -27,6 +28,7 @@ class TabletLayoutTest {
  @Test fun readerToolsAndNotesFollowWindowOrientationAndHideInFullscreen() = fixture {
   compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
   compose.onNodeWithTag("tablet-reader-actions").assertIsDisplayed()
+  assertFalse(compose.onNodeWithText("Suivante",substring=false).fetchSemanticsNode().boundsInRoot.overlaps(compose.onNodeWithContentDescription("Afficher les commandes").fetchSemanticsNode().boundsInRoot))
   val density=compose.activity.resources.displayMetrics.density;val decor=compose.activity.window.decorView
   val sidebars=decor.width/density>=1000&&decor.height/density>=480&&decor.width>decor.height
   compose.onNodeWithTag(if(sidebars) "tablet-tools-vertical" else "tablet-tools-floating").assertIsDisplayed()
@@ -51,14 +53,14 @@ class TabletLayoutTest {
  }
  @Test fun notebookFiltersAndMasteryPreserveActualMemorization() = fixture {
   val repo=(compose.activity.application as CoranApplication).repository
-  val ink=newReaderInk(1,InkStroke(listOf(InkPoint(.1f,.2f),InkPoint(.3f,.3f))),listOf(1)).copy(text="Ma note tablette",favorite=true)
+  val ink=newReaderInk(1,InkStroke(listOf(InkPoint(.1f,.2f),InkPoint(.3f,.3f))),listOf(1)).copy(text="Ma note tablette "+System.nanoTime(),favorite=true)
   runBlocking { repo.mutate { saveReaderInk(it,ink) } }
   compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
   compose.onNodeWithText("Mon cahier de révision",substring=false).performScrollTo().performClick()
-  compose.onNodeWithText("Ma note tablette").assertExists()
+  compose.onNodeWithText(ink.text).assertExists()
   compose.onNodeWithText("Difficiles",substring=false).performClick();compose.onNodeWithText("Aucune annotation pour ces filtres").assertIsDisplayed()
   compose.onNodeWithText("Difficiles",substring=false).performClick()
-  compose.onNodeWithText("Passage maîtrisé",substring=false).performScrollTo().performClick()
+  compose.onNode(hasText("Passage maîtrisé") and hasAnyAncestor(hasText(ink.text))).performScrollTo().performClick()
   compose.waitUntil(10000) { allReaderInk(repo.state.value).firstOrNull { it.id==ink.id }?.masteredAt!=null }
   assertFalse(known(repo.state.value,1))
   compose.onNodeWithText("Page (1–604)",substring=false).performTextReplacement("2")

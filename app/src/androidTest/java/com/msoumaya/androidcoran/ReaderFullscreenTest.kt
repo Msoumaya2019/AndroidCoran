@@ -55,9 +55,10 @@ class ReaderFullscreenTest {
         val learning=json("id" to "fullscreen-learning","start" to 6236,"end" to 6236,"date" to today.toString(),"scheduledDate" to today.toString(),"status" to "todo")
         val known=markKnowledge(defaultState().with("reader" to defaultState().obj("reader").with("tablet" to TabletPreferences(mode="off").toJson())),VerseRange(1,3),"perfect",today).with("sessions" to element(listOf(learning)),"lastRead" to json("verseId" to 1,"page" to 1))
         runBlocking { repo.mutate { repo.review.prepare(repo.review.setQuantity(known,"hizb",today),today) } }
-        try { compose.waitForIdle();block() } catch(e: Throwable) { captureReaderState("reader",compose.onRoot(useUnmergedTree=true).printToString());throw e } finally {
+        try { compose.waitForIdle();block() } catch(e: Throwable) { runCatching { captureReaderState("reader",compose.onAllNodes(isRoot(),useUnmergedTree=true).onFirst().printToString()) };throw e } finally {
             if(compose.onAllNodesWithContentDescription("Afficher les commandes").fetchSemanticsNodes().isNotEmpty()||compose.onAllNodesWithContentDescription("Masquer les commandes").fetchSemanticsNodes().isNotEmpty()) compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
             compose.waitForIdle()
+            runBlocking { repo.mutate { latest -> allReaderInk(latest).filter { ink -> allReaderInk(saved).none { it.id==ink.id } }.fold(latest) { acc,ink -> deleteReaderInk(acc,ink.id,annotationTime(ink.updatedAt)) } } }
             runBlocking { repo.mutate { saved.with("reader" to saved.obj("reader").with("tablet" to TabletPreferences.from(saved.obj("reader").obj("tablet")).toJson())) } }
         }
     }
@@ -143,6 +144,7 @@ class ReaderFullscreenTest {
         compose.waitUntil(10000) { readerInk(repo.state.value,1).any { it.id !in existingIds } }
         val id=readerInk(repo.state.value,1).single { it.id !in existingIds }.id
         compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
         compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Zone de note manuscrite").fetchSemanticsNodes().isNotEmpty() }
         compose.runOnUiThread { sendReaderStylus(findReaderView<com.msoumaya.androidcoran.ui.HandwritingView>(compose.activity.window.decorView)!!,listOf(.1f to .2f,.5f to .5f,.9f to .8f)) }
@@ -153,6 +155,7 @@ class ReaderFullscreenTest {
         assertTrue(readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty())
         compose.onNodeWithText("Quitter la lecture plein écran").performClick()
         compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
         compose.onNodeWithText("Supprimer l’annotation").performClick()
         compose.onNodeWithText("Supprimer",substring=false).performClick()

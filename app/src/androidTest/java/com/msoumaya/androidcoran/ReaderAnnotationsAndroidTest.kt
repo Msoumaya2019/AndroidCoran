@@ -52,4 +52,16 @@ class ReaderAnnotationsAndroidTest {
   val pdf=exportAnnotationPages(context,repo.quran,state,"coranTest",listOf(1,2),true)
   try { ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY).use { fd -> PdfRenderer(fd).use { renderer -> assertEquals(2,renderer.pageCount);renderer.openPage(0).use { page -> assertEquals(595,page.width);assertEquals(842,page.height) } } } } finally { pdf.delete() }
  }
+ @Test fun eraserRecordsOneDeletionPerMarkEvenWhileStateUpdateIsPending() {
+  runBlocking { repo.awaitReady() };val data=repo.quran.qcfData(context,1)
+  instrumentation.runOnMainSync {
+   val view=MushafView(context);view.load(repo.quran,1,"coranTest",data,null,null);view.layout(0,0,1000,2120);view.annotationMode=true;view.stylusOnly=true;view.inkTool="eraser"
+   view.annotations=listOf(newReaderInk(1,InkStroke(listOf(InkPoint(.1f,.2f),InkPoint(.3f,.2f))),listOf(1)))
+   val bitmap=Bitmap.createBitmap(1000,2120,Bitmap.Config.ARGB_8888);try { view.draw(Canvas(bitmap)) } finally { bitmap.recycle() }
+   var erased=0;var created=0;view.onInkErase={erased++};view.onInkStroke={_,_->created++}
+   sendReaderStylus(view,listOf(.1f to .2f,.15f to .2f,.2f to .2f,.25f to .2f,.3f to .2f))
+   assertEquals(1,erased);assertEquals(0,created)
+  }
+ }
+
 }
