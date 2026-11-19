@@ -1,5 +1,7 @@
 # Vérification de la référence — 18 novembre 2026
 
+> Historique : l’adaptation tablette et le format d’annotation décrits ici sont remplacés par la [mise à jour du 19 novembre](REFERENCE_UPDATES_2026-11-19.md). Les résultats du 18 novembre concernent uniquement le code daté de cette journée.
+
 Lecture seule du dépôt Msoumaya2019/coran-memoire. main reste f538ae37565abf70032e7e215fe57c8b96c2152f : aucune nouveauté sur la branche principale.
 
 La branche feat/roqya-audio-space est passée de 79631ce3d55d51a64a86366a74127b1ef4a7d890 à b0afa0f3f177c99b401d3ec427187b8ba0eb7c81. Elle reste distincte de main. Les cinq nouveaux commits sont :

@@ -21,3 +21,5 @@ Les champs readerAnnotations et reader.tablet utilisent le JSON utilisateur exis
 La fusion du nouveau format suit les dates comme Expo ; une suppression empêche une ancienne sauvegarde de rétablir la note et une annulation explicite peut la restaurer avec un nouvel horodatage. La synchronisation entre appareils et avec Expo doit encore être vérifiée avec un compte réel.
 
 Les tests d’émulateur utilisent des événements stylet synthétiques. Le confort, la précision et le rejet de paume avec un stylet physique restent à vérifier.
+
+Validation du 19 novembre : 47 tests téléphone et 19 tablette réussis en CI Android 15 ; 19 réussis dans chacune des deux orientations tablette en local. Les limites et références exactes figurent dans [le rapport de mise à jour](REFERENCE_UPDATES_2026-11-19.md).
