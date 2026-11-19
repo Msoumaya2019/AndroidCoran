@@ -12,3 +12,10 @@ internal fun sendReaderStylus(target: View,points: List<Pair<Float,Float>>) {
   try { target.dispatchTouchEvent(event) } finally { event.recycle() }
  }
 }
+
+internal fun captureReaderState(label: String,semantics: String) {
+ val i=androidx.test.platform.app.InstrumentationRegistry.getInstrumentation();val dir=i.targetContext.getExternalFilesDir(null)?:return
+ java.io.File(dir,label+"-semantics.txt").writeText(semantics)
+ val bitmap=i.uiAutomation.takeScreenshot()?:return
+ try { java.io.File(dir,label+"-screen.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it) } } finally { bitmap.recycle() }
+}

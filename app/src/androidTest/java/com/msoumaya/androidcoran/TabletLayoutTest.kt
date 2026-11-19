@@ -1,6 +1,6 @@
 package com.msoumaya.androidcoran
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.msoumaya.androidcoran.domain.*
 import kotlinx.coroutines.runBlocking
@@ -14,7 +14,7 @@ class TabletLayoutTest {
  private fun fixture(block: ()->Unit) {
   val repo=(compose.activity.application as CoranApplication).repository;runBlocking { repo.awaitReady() };assertNull(repo.user.value);val saved=repo.state.value
   runBlocking { repo.mutate { defaultState().with("reader" to defaultState().obj("reader").with("tablet" to TabletPreferences(mode="on").toJson()),"lastRead" to json("verseId" to 1,"page" to 1)) } }
-  try { compose.waitForIdle();block() } finally {
+  try { compose.waitForIdle();block() } catch(e: Throwable) { captureReaderState("tablet",compose.onRoot(useUnmergedTree=true).printToString());throw e } finally {
    if(compose.onAllNodesWithContentDescription("Afficher les commandes").fetchSemanticsNodes().isNotEmpty()) compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
    runBlocking { repo.mutate { saved.with("reader" to saved.obj("reader").with("tablet" to TabletPreferences.from(saved.obj("reader").obj("tablet")).toJson())) } }
   }
@@ -22,7 +22,7 @@ class TabletLayoutTest {
  @Test fun navigationRetainsReferenceTabsRatherThanPreviousSideRail() = fixture {
   compose.onNodeWithTag("tablet-navigation").assertDoesNotExist()
   compose.onNodeWithText("Programme",useUnmergedTree=true).performClick();compose.onNodeWithText("Mon programme").assertExists()
-  compose.activityRule.scenario.recreate();compose.onNodeWithText("Programme",useUnmergedTree=true).assertIsDisplayed();compose.onNodeWithText("Mon programme").assertExists()
+  compose.activityRule.scenario.recreate();compose.waitUntil(10000) { compose.onNode(hasText("Programme") and hasClickAction()).isDisplayed() };compose.onNode(hasText("Programme") and hasClickAction()).assertIsDisplayed();compose.onNodeWithText("Mon programme").assertExists()
  }
  @Test fun readerToolsAndNotesFollowWindowOrientationAndHideInFullscreen() = fixture {
   compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
@@ -32,6 +32,7 @@ class TabletLayoutTest {
   compose.onNodeWithTag(if(sidebars) "tablet-tools-vertical" else "tablet-tools-floating").assertIsDisplayed()
   compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
   compose.onNodeWithTag(if(sidebars) "tablet-notes-sidebar" else "tablet-notes-overlay").assertIsDisplayed()
+  captureReaderState("tablet-reader",compose.onRoot(useUnmergedTree=true).printToString())
   compose.onNodeWithText("Fermer",substring=false).performClick()
   compose.onNodeWithText("Lecture plein écran",substring=false).performScrollTo().performClick()
   compose.onNodeWithTag("tablet-reader-actions").assertDoesNotExist();compose.onNodeWithTag("tablet-tools-floating").assertDoesNotExist();compose.onNodeWithTag("tablet-tools-vertical").assertDoesNotExist()
@@ -40,12 +41,13 @@ class TabletLayoutTest {
  }
  @Test fun doublePageUsesEvenLeftOddRightAndSinglePageInPortrait() = fixture {
   compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
-  compose.onNodeWithText("Double page",substring=false).performScrollTo().performClick();compose.waitForIdle()
+  compose.onNodeWithText("Double page",substring=false).performScrollTo().performClick();compose.waitUntil(10000) { (compose.activity.application as CoranApplication).repository.state.value.obj("reader").obj("tablet").str("spread")=="double" };compose.waitForIdle()
   val decor=compose.activity.window.decorView;val d=compose.activity.resources.displayMetrics.density
   val expected=tabletLayout(TabletPreferences(mode="on",spread="double"),"tablet",decor.width/d,decor.height/d).doublePage
   compose.onNodeWithTag("printed-page-1").assertExists()
-  if(expected) { compose.onNodeWithTag("printed-page-2").assertExists();assertTrue(compose.onNodeWithTag("printed-page-2").fetchSemanticsNode().boundsInRoot.left<compose.onNodeWithTag("printed-page-1").fetchSemanticsNode().boundsInRoot.left) }
+  if(expected) { compose.waitUntil(10000) { compose.onAllNodesWithTag("printed-page-2").fetchSemanticsNodes().isNotEmpty() };compose.onNodeWithTag("printed-page-2").assertExists();assertTrue(compose.onNodeWithTag("printed-page-2").fetchSemanticsNode().boundsInRoot.left<compose.onNodeWithTag("printed-page-1").fetchSemanticsNode().boundsInRoot.left) }
   else compose.onNodeWithTag("printed-page-2").assertDoesNotExist()
+  captureReaderState("tablet-spread",compose.onRoot(useUnmergedTree=true).printToString())
  }
  @Test fun notebookFiltersAndMasteryPreserveActualMemorization() = fixture {
   val repo=(compose.activity.application as CoranApplication).repository

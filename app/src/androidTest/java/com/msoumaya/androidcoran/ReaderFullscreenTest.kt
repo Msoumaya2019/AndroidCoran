@@ -1,7 +1,7 @@
 package com.msoumaya.androidcoran
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -55,7 +55,7 @@ class ReaderFullscreenTest {
         val learning=json("id" to "fullscreen-learning","start" to 6236,"end" to 6236,"date" to today.toString(),"scheduledDate" to today.toString(),"status" to "todo")
         val known=markKnowledge(defaultState().with("reader" to defaultState().obj("reader").with("tablet" to TabletPreferences(mode="off").toJson())),VerseRange(1,3),"perfect",today).with("sessions" to element(listOf(learning)),"lastRead" to json("verseId" to 1,"page" to 1))
         runBlocking { repo.mutate { repo.review.prepare(repo.review.setQuantity(known,"hizb",today),today) } }
-        try { compose.waitForIdle();block() } finally {
+        try { compose.waitForIdle();block() } catch(e: Throwable) { captureReaderState("reader",compose.onRoot(useUnmergedTree=true).printToString());throw e } finally {
             if(compose.onAllNodesWithContentDescription("Afficher les commandes").fetchSemanticsNodes().isNotEmpty()||compose.onAllNodesWithContentDescription("Masquer les commandes").fetchSemanticsNodes().isNotEmpty()) compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
             compose.waitForIdle()
             runBlocking { repo.mutate { saved.with("reader" to saved.obj("reader").with("tablet" to TabletPreferences.from(saved.obj("reader").obj("tablet")).toJson())) } }
@@ -138,11 +138,12 @@ class ReaderFullscreenTest {
         compose.waitUntil(10000) { var ready=false;compose.runOnUiThread { ready=(findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)?.tag as? Triple<*,*,*>)?.first!=null };ready }
         val existingIds=readerInk(repo.state.value,1).map { it.id }.toSet()
         compose.onNodeWithText("Annoter",substring=false).performScrollTo().performClick()
+        compose.waitUntil(10000) { var enabled=false;compose.runOnUiThread { enabled=findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)?.annotationMode==true };enabled };compose.waitForIdle()
         compose.runOnUiThread { val target=findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)!!;sendReaderStylus(target,listOf(.4f to .3f,.6f to .3f,.6f to .4f,.4f to .4f,.4f to .3f)) }
         compose.waitUntil(10000) { readerInk(repo.state.value,1).any { it.id !in existingIds } }
         val id=readerInk(repo.state.value,1).single { it.id !in existingIds }.id
         compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
-        compose.onNodeWithTag("reader-annotation-"+id).onChildren().filter(hasClickAction()).onFirst().performClick()
+        compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
         compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Zone de note manuscrite").fetchSemanticsNodes().isNotEmpty() }
         compose.runOnUiThread { sendReaderStylus(findReaderView<com.msoumaya.androidcoran.ui.HandwritingView>(compose.activity.window.decorView)!!,listOf(.1f to .2f,.5f to .5f,.9f to .8f)) }
         compose.waitUntil(10000) { readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty() }
@@ -152,7 +153,7 @@ class ReaderFullscreenTest {
         assertTrue(readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty())
         compose.onNodeWithText("Quitter la lecture plein écran").performClick()
         compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
-        compose.onNodeWithTag("reader-annotation-"+id).onChildren().filter(hasClickAction()).onFirst().performClick()
+        compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
         compose.onNodeWithText("Supprimer l’annotation").performClick()
         compose.onNodeWithText("Supprimer",substring=false).performClick()
         compose.waitUntil(10000) { readerInk(repo.state.value,1).none { it.id==id } }
