@@ -22,26 +22,31 @@ import com.msoumaya.androidcoran.domain.*
 import kotlinx.serialization.json.*
 import java.time.Instant
 
-@Composable fun ReaderInkEditor(annotation: ReaderInk,onChange: (ReaderInk)->Unit,onDelete: ()->Unit,onClose: ()->Unit) {
-    var saved by remember(annotation.id) { mutableStateOf(annotation.toJson().toString()) }
+@Composable fun ReaderInkEditor(annotation: ReaderInk,onChange: (ReaderInk)->Unit,onDelete: ()->Unit,onClose: ()->Unit,stylusOnly: Boolean=false,inline: Boolean=false) {
+    var draft by remember(annotation.id) { mutableStateOf(annotation) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
-    val draft=readerInk(json("readerInk" to json("draft" to Json.parseToJsonElement(saved))),annotation.page).firstOrNull()?:annotation
-    fun update(strokes: List<InkStroke>) { val next=draft.copy(note=strokes,updatedAt=Instant.now().toString());saved=next.toJson().toString();onChange(next) }
-    Dialog(onDismissRequest=onClose,properties=DialogProperties(usePlatformDefaultWidth=false)) {
-        Surface(Modifier.widthIn(max=900.dp).fillMaxWidth(.96f).fillMaxHeight(.9f),shape=MaterialTheme.shapes.large) {
-            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                Text("Annotation manuscrite · page "+annotation.page,style=MaterialTheme.typography.titleLarge)
-                Text("Écrivez librement au stylet. Les traits sont sauvegardés sans conversion en texte.")
+    var handwriting by rememberSaveable(annotation.id) { mutableStateOf(true) }
+    fun update(next: ReaderInk) { val value=next.copy(updatedAt=annotationTime(draft.updatedAt));draft=value;onChange(value) }
+    val body: @Composable ()->Unit = {
+        Column(Modifier.fillMaxSize().padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            Text("Annotation · page "+annotation.page,style=MaterialTheme.typography.titleLarge)
+            Row { FilterChip(!handwriting,{handwriting=false},label={Text("Commentaire")});FilterChip(handwriting,{handwriting=true},label={Text("Stylet")}) }
+            if(!handwriting) OutlinedTextField(draft.text,{update(draft.copy(text=it))},label={Text("Commentaire")},modifier=Modifier.fillMaxWidth().weight(1f))
+            else {
+                Text(if(stylusOnly) "Écrivez avec le stylet" else "Écrivez librement à la main",style=MaterialTheme.typography.bodySmall)
                 BoxWithConstraints(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
                     val padWidth=minOf(maxWidth,maxHeight*1.4f)
-                    AndroidView(factory={HandwritingView(it)},modifier=Modifier.width(padWidth).height(padWidth/1.4f).semantics { contentDescription="Zone de note manuscrite" },update={v -> v.strokes=draft.note;v.onStroke={update(draft.note+it)} })
+                    AndroidView(factory={HandwritingView(it)},modifier=Modifier.width(padWidth).height(padWidth/1.4f).semantics { contentDescription="Zone de note manuscrite" },update={v -> v.stylusOnly=stylusOnly;v.strokes=draft.note;v.onStroke={update(draft.copy(note=draft.note+it))} })
                 }
-                Row { TextButton(enabled=draft.note.isNotEmpty(),onClick={update(draft.note.dropLast(1))}) { Text("Annuler le trait") };TextButton(enabled=draft.note.isNotEmpty(),onClick={update(emptyList())}) { Text("Effacer la note") } }
-                Row { TextButton(onClick={confirmDelete=true}) { Text("Supprimer l’annotation") };Spacer(Modifier.weight(1f));Button(onClick=onClose) { Text("Fermer") } }
+                Row { TextButton(enabled=draft.note.isNotEmpty(),onClick={update(draft.copy(note=draft.note.dropLast(1)))}) { Text("Annuler le trait") };TextButton(enabled=draft.note.isNotEmpty(),onClick={update(draft.copy(note=emptyList()))}) { Text("Effacer la note") } }
             }
+            TextButton(onClick={confirmDelete=true}) { Text("Supprimer l’annotation") }
+            Button(onClick=onClose,modifier=Modifier.fillMaxWidth()) { Text("Fermer") }
         }
     }
-    if(confirmDelete) AlertDialog(onDismissRequest={confirmDelete=false},title={Text("Supprimer cette annotation ?")},text={Text("Le tracé autour du passage et sa note manuscrite seront supprimés.")},confirmButton={TextButton(onClick=onDelete) { Text("Supprimer") }},dismissButton={TextButton(onClick={confirmDelete=false}) { Text("Conserver") }})
+    if(inline) Surface(Modifier.fillMaxSize(),tonalElevation=3.dp,content=body)
+    else Dialog(onDismissRequest=onClose,properties=DialogProperties(usePlatformDefaultWidth=false)) { Surface(Modifier.widthIn(max=900.dp).fillMaxWidth(.96f).fillMaxHeight(.9f),shape=MaterialTheme.shapes.large,content=body) }
+    if(confirmDelete) AlertDialog(onDismissRequest={confirmDelete=false},title={Text("Supprimer cette annotation ?")},text={Text("Le tracé et les commentaires seront supprimés.")},confirmButton={TextButton(onClick=onDelete) { Text("Supprimer") }},dismissButton={TextButton(onClick={confirmDelete=false}) { Text("Conserver") }})
 }
 @Composable fun ReaderInkControls(vm: CoranViewModel,s: JsonObject,page: Int,enabled: Boolean,onToggle: ()->Unit,onEdit: (ReaderInk)->Unit) {
     var list by rememberSaveable(page) { mutableStateOf(false) }

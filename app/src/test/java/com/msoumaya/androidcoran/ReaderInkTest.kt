@@ -35,11 +35,14 @@ class ReaderInkTest {
   val base=defaultState().with("userId" to JsonPrimitive("owner"));val a=newReaderInk(1,stroke,listOf(1));val b=newReaderInk(1,stroke,listOf(2))
   val merged=mergeOfflineState(base,saveReaderInk(base,a),saveReaderInk(base,b));assertEquals(setOf(a.id,b.id),readerInk(merged,1).map { it.id }.toSet())
  }
- @Test fun deletionWinsAgainstConcurrentHandwrittenNoteEdit() {
+ @Test fun legacyDeletionIsRetainedWhileCanonicalAnnotationsFollowSourceTimestampRules() {
   val ink=newReaderInk(1,stroke,listOf(1),"2026-11-18T10:00:00Z")
   val base=saveReaderInk(defaultState().with("userId" to JsonPrimitive("owner")),ink)
   val edited=saveReaderInk(base,ink.copy(note=listOf(stroke),updatedAt="2026-11-18T10:02:00Z"))
   val deleted=deleteReaderInk(base,ink.id,"2026-11-18T10:01:00Z")
-  assertTrue(readerInk(mergeOfflineState(base,edited,deleted),1).isEmpty())
+  val merged=mergeOfflineState(base,edited,deleted)
+  assertTrue(merged.obj("readerInk").obj(ink.id).str("deletedAt").isNotBlank())
+  assertEquals(listOf(stroke),readerInk(merged,1).single().note)
+  // The canonical Expo map deliberately uses the newest timestamp, including an explicit undo.
  }
 }

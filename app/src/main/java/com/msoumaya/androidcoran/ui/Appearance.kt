@@ -20,22 +20,21 @@ import kotlinx.serialization.json.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val cormorant=FontFamily(Font(R.font.cormorant_regular),Font(R.font.cormorant_semibold,FontWeight.SemiBold))
 val arabicInterfaceFont=FontFamily(Font(R.font.amiri_regular))
 private fun color(value: String)=Color(android.graphics.Color.parseColor(value))
 @Composable fun NativeAppTheme(state: JsonObject,content: @Composable ()->Unit) {
     val p=appPalette(state.str("theme","white"),state.str("accent").ifBlank { null })
-    val system=state.str("uiFont","elegant")=="system";val title=if(system) FontFamily.Default else cormorant
-    val body=if(state.str("uiFont")=="classic") cormorant else FontFamily.Default
+    val title=FontFamily.SansSerif
+    val body=FontFamily.SansSerif
     val typography=Typography().let { t -> t.copy(
-        headlineLarge=t.headlineLarge.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.SemiBold,fontSize=30.sp,lineHeight=35.sp),
-        headlineMedium=t.headlineMedium.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.SemiBold),
-        headlineSmall=t.headlineSmall.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.SemiBold),
-        titleLarge=t.titleLarge.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.SemiBold),
-        titleMedium=t.titleMedium.copy(color=color(p.primary),fontFamily=title,fontSize=17.sp,fontWeight=FontWeight.SemiBold),
-        titleSmall=t.titleSmall.copy(color=color(p.primary),fontFamily=title),
-        bodyLarge=t.bodyLarge.copy(fontFamily=body,fontSize=14.sp),bodyMedium=t.bodyMedium.copy(fontFamily=body,fontSize=14.sp),bodySmall=t.bodySmall.copy(fontFamily=body,fontSize=12.sp),
-        labelLarge=t.labelLarge.copy(fontFamily=body),labelMedium=t.labelMedium.copy(fontFamily=body),labelSmall=t.labelSmall.copy(fontFamily=body)
+        headlineLarge=t.headlineLarge.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.Bold,fontSize=30.sp,lineHeight=35.sp),
+        headlineMedium=t.headlineMedium.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.Bold),
+        headlineSmall=t.headlineSmall.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.Bold),
+        titleLarge=t.titleLarge.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.Bold),
+        titleMedium=t.titleMedium.copy(color=color(p.primary),fontFamily=title,fontSize=20.sp,lineHeight=27.sp,fontWeight=FontWeight.Bold),
+        titleSmall=t.titleSmall.copy(color=color(p.primary),fontFamily=title,fontWeight=FontWeight.Bold),
+        bodyLarge=t.bodyLarge.copy(fontFamily=body,fontSize=17.sp,lineHeight=26.sp,fontWeight=FontWeight.Medium),bodyMedium=t.bodyMedium.copy(fontFamily=body,fontSize=16.sp,lineHeight=24.sp,fontWeight=FontWeight.Medium),bodySmall=t.bodySmall.copy(fontFamily=body,fontSize=14.sp,lineHeight=21.sp,fontWeight=FontWeight.Medium),
+        labelLarge=t.labelLarge.copy(fontFamily=body,fontSize=15.sp,fontWeight=FontWeight.SemiBold),labelMedium=t.labelMedium.copy(fontFamily=body,fontSize=14.sp,fontWeight=FontWeight.SemiBold),labelSmall=t.labelSmall.copy(fontFamily=body,fontSize=12.sp,fontWeight=FontWeight.SemiBold)
     ) }
     MaterialTheme(colorScheme=lightColorScheme(primary=color(p.primary),onPrimary=Color.White,primaryContainer=color(p.selected),onPrimaryContainer=color(p.primary),secondary=color(p.gold),secondaryContainer=color(p.selected),onSecondaryContainer=color(p.primary),background=color(p.background),onBackground=color(p.text),surface=color(p.surface),onSurface=color(p.text),surfaceVariant=color(p.soft),onSurfaceVariant=color(p.muted),outline=color(p.line),outlineVariant=color(p.line),surfaceContainer=color(p.surface),surfaceContainerLow=color(p.surface),surfaceContainerHigh=color(p.soft)),typography=typography,shapes=Shapes(small=RoundedCornerShape(14.dp),medium=RoundedCornerShape(20.dp),large=RoundedCornerShape(28.dp)),content=content)
 }
@@ -50,7 +49,7 @@ private fun color(value: String)=Color(android.graphics.Color.parseColor(value))
         Column(Modifier.padding(horizontal=24.dp,vertical=14.dp)) {
             Text("As-Salâm ‘Alaykoum,",fontSize=16.sp)
             Text(state.obj("profile").str("firstName","Bienvenue"),style=MaterialTheme.typography.headlineLarge)
-            Text("Prêt à continuer ton apprentissage ?",fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Prêt à continuer ton apprentissage ?",fontSize=14.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -58,7 +57,7 @@ private fun color(value: String)=Color(android.graphics.Color.parseColor(value))
     Text("Couleur d’accent",style=MaterialTheme.typography.titleMedium)
     accentOptions.forEach { (key,label)-> FilterChip(selected=state.str("accent",if(state.str("theme")=="classic") "green" else if(state.str("theme")=="feminine") "rose" else "prune")==key,onClick={vm.action { vm.repo.mutate { touch(it.with("accent" to JsonPrimitive(key))) } }},label={Text(label)}) }
     Text("Police de l’interface",style=MaterialTheme.typography.titleMedium)
-    listOf("elegant" to "Élégante · titres Cormorant, texte système","system" to "Moderne · police système","classic" to "Classique · titres et textes Cormorant").forEach { (key,label)-> FilterChip(selected=state.str("uiFont","elegant")==key,onClick={vm.action { vm.repo.mutate { touch(it.with("uiFont" to JsonPrimitive(key))) } }},label={Text(label)}) }
+    listOf("modern" to "Moderne · sans empattements, texte renforcé","system" to "Système · texte renforcé").forEach { (key,label)-> FilterChip(selected=state.str("uiFont","modern").let { if(it in listOf("classic","elegant")) "modern" else it }==key,onClick={vm.action { vm.repo.mutate { touch(it.with("uiFont" to JsonPrimitive(key))) } }},label={Text(label)}) }
     Text("Le texte et les pages du Mushaf conservent leur police d’origine.")
     Text("Papier du Coran",style=MaterialTheme.typography.titleMedium)
     paperOptions.forEach { (key,value) -> FilterChip(selected=state.obj("reader").str("paper","ivory")==key,onClick={vm.action { vm.repo.mutate { touch(it.with("reader" to it.obj("reader").with("paper" to JsonPrimitive(key)))) } }},label={Text(value.first)}) }
@@ -70,7 +69,7 @@ private fun color(value: String)=Color(android.graphics.Color.parseColor(value))
         Row(horizontalArrangement=Arrangement.spacedBy(13.dp)) {
             AssetImage("illustrations/reading.png","Lecture du Coran",Modifier.weight(0.46f).height(132.dp))
             Column(Modifier.weight(0.54f),verticalArrangement=Arrangement.spacedBy(5.dp)) {
-                Text("Sourate",fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Sourate",fontSize=14.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(surah.name,style=MaterialTheme.typography.titleLarge)
                 Text(surah.arabic,fontFamily=arabicInterfaceFont,fontSize=22.sp,color=MaterialTheme.colorScheme.secondary)
                 Text("Verset ${verse.ayah} · Page ${vm.repo.quran.sourcePage(id,state.obj("reader").str("mushaf","coranTest"))}",fontSize=11.sp)

@@ -44,7 +44,16 @@ class Repository(private val context: Context) {
         val key=owner+":readerInk";val saved=local.cached(key) as? JsonObject?:json()
         val merged=mergeReaderInkCopies(saved,state.obj("readerInk"))
         if(merged!=saved) local.cache(key,merged)
-        return if(merged.isEmpty()&&state["readerInk"]==null) state else state.with("readerInk" to merged)
+        val sourceKey=owner+":readerAnnotations"
+        val sourceSaved=local.cached(sourceKey) as? JsonObject?:json()
+        val canonical=mergeSourceAnnotations(sourceSaved,state.obj("readerAnnotations"))
+        if(canonical!=sourceSaved) local.cache(sourceKey,canonical)
+        var result=if(merged.isEmpty()&&state["readerInk"]==null) state else state.with("readerInk" to merged)
+        if(canonical.isNotEmpty()||state["readerAnnotations"]!=null) result=result.with("readerAnnotations" to canonical)
+        val tabletKey=owner+":tabletPreferences"
+        val tablet=state.obj("reader")["tablet"] as? JsonObject?:local.cached(tabletKey) as? JsonObject
+        if(tablet!=null) { local.cache(tabletKey,tablet);result=result.with("reader" to result.obj("reader").with("tablet" to tablet)) }
+        return result
     }
     suspend fun awaitReady()=ready.await()
     suspend fun refreshReminders(): Unit = withContext(Dispatchers.IO) { awaitReady();lock.withLock { LocalReminders.schedule(context,_state.value.obj("notifications").flag("learning"),account) } }

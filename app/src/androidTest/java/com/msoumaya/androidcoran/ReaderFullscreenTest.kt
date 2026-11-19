@@ -53,12 +53,12 @@ class ReaderFullscreenTest {
         val saved=repo.state.value
         val today=LocalDate.now()
         val learning=json("id" to "fullscreen-learning","start" to 6236,"end" to 6236,"date" to today.toString(),"scheduledDate" to today.toString(),"status" to "todo")
-        val known=markKnowledge(defaultState(),VerseRange(1,3),"perfect",today).with("sessions" to element(listOf(learning)),"lastRead" to json("verseId" to 1,"page" to 1))
+        val known=markKnowledge(defaultState().with("reader" to defaultState().obj("reader").with("tablet" to TabletPreferences(mode="off").toJson())),VerseRange(1,3),"perfect",today).with("sessions" to element(listOf(learning)),"lastRead" to json("verseId" to 1,"page" to 1))
         runBlocking { repo.mutate { repo.review.prepare(repo.review.setQuantity(known,"hizb",today),today) } }
         try { compose.waitForIdle();block() } finally {
             if(compose.onAllNodesWithContentDescription("Afficher les commandes").fetchSemanticsNodes().isNotEmpty()||compose.onAllNodesWithContentDescription("Masquer les commandes").fetchSemanticsNodes().isNotEmpty()) compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
             compose.waitForIdle()
-            runBlocking { repo.mutate { saved } }
+            runBlocking { repo.mutate { saved.with("reader" to saved.obj("reader").with("tablet" to TabletPreferences.from(saved.obj("reader").obj("tablet")).toJson())) } }
         }
     }
     @Test fun freeReadingHidesBarsAndRestoresThemOnExit() = fixture {
@@ -133,47 +133,30 @@ class ReaderFullscreenTest {
     }
     @Test fun handwrittenOutlineAndNotePersistThroughReaderRecreationAndCanBeDeleted() = fixture {
         val repo=(compose.activity.application as CoranApplication).repository
-        fun view(): com.msoumaya.androidcoran.ui.MushafView? {
-            fun find(v: android.view.View): com.msoumaya.androidcoran.ui.MushafView? {
-                if(v is com.msoumaya.androidcoran.ui.MushafView) return v
-                if(v is android.view.ViewGroup) for(i in 0 until v.childCount) find(v.getChildAt(i))?.let { return it }
-                return null
-            }
-            return find(compose.activity.window.decorView)
-        }
+        runBlocking { repo.mutate { it.with("reader" to it.obj("reader").with("tablet" to TabletPreferences(mode="on").toJson())) } }
         compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
-        compose.waitUntil(10000) { var ready=false;compose.runOnUiThread { ready=(view()?.tag as? Triple<*,*,*>)?.first!=null };ready }
+        compose.waitUntil(10000) { var ready=false;compose.runOnUiThread { ready=(findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)?.tag as? Triple<*,*,*>)?.first!=null };ready }
         val existingIds=readerInk(repo.state.value,1).map { it.id }.toSet()
-        compose.onNodeWithContentDescription("Annoter au stylet").performClick()
-        compose.waitUntil(10000) { var enabled=false;compose.runOnUiThread { enabled=view()?.annotationMode==true };enabled }
-        compose.runOnUiThread {
-            val target=view()!!;val down=android.os.SystemClock.uptimeMillis()
-            for(i in 0..24) {
-                val angle=i*2*Math.PI/24
-                val x=target.width*.5f+(kotlin.math.cos(angle)*target.width*.1).toFloat()
-                val y=target.height*.4f+(kotlin.math.sin(angle)*target.height*.04).toFloat()
-                val action=when(i) { 0->android.view.MotionEvent.ACTION_DOWN;24->android.view.MotionEvent.ACTION_UP;else->android.view.MotionEvent.ACTION_MOVE }
-                val event=android.view.MotionEvent.obtain(down,down+i*10,action,1,arrayOf(android.view.MotionEvent.PointerProperties().apply { id=0;toolType=android.view.MotionEvent.TOOL_TYPE_STYLUS }),arrayOf(android.view.MotionEvent.PointerCoords().apply { this.x=x;this.y=y;pressure=.8f;size=.1f }),0,0,1f,1f,0,0,android.view.InputDevice.SOURCE_STYLUS,0)
-                try { target.dispatchTouchEvent(event) } finally { event.recycle() }
-            }
-        }
+        compose.onNodeWithText("Annoter",substring=false).performScrollTo().performClick()
+        compose.runOnUiThread { val target=findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)!!;sendReaderStylus(target,listOf(.4f to .3f,.6f to .3f,.6f to .4f,.4f to .4f,.4f to .3f)) }
         compose.waitUntil(10000) { readerInk(repo.state.value,1).any { it.id !in existingIds } }
-        compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Zone de note manuscrite").fetchSemanticsNodes().isNotEmpty() }
         val id=readerInk(repo.state.value,1).single { it.id !in existingIds }.id
-        compose.onNodeWithContentDescription("Zone de note manuscrite").performTouchInput { swipe(centerLeft,centerRight,300) }
+        compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
+        compose.onNodeWithTag("reader-annotation-"+id).onChildren().filter(hasClickAction()).onFirst().performClick()
+        compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Zone de note manuscrite").fetchSemanticsNodes().isNotEmpty() }
+        compose.runOnUiThread { sendReaderStylus(findReaderView<com.msoumaya.androidcoran.ui.HandwritingView>(compose.activity.window.decorView)!!,listOf(.1f to .2f,.5f to .5f,.9f to .8f)) }
         compose.waitUntil(10000) { readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty() }
         compose.onNodeWithText("Fermer",substring=false).performClick()
+        compose.onNodeWithText("Lecture plein écran",substring=false).performScrollTo().performClick()
         compose.activityRule.scenario.recreate();assertFullscreen()
-        assertEquals(id,readerInk(repo.state.value,1).single { it.id==id }.id)
         assertTrue(readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty())
-        val annotations=readerInk(repo.state.value,1);val ink=annotations.single { it.id==id }
-        val label="Annotation "+(annotations.indexOf(ink)+1)+(if(ink.verses.isNotEmpty()) " · "+repo.quran.reference(VerseRange(ink.verses.min(),ink.verses.max())) else "")
-        compose.onNodeWithContentDescription("Annotations de cette page ("+annotations.size+")").performClick()
-        compose.onNodeWithText(label,substring=false).performClick()
+        compose.onNodeWithText("Quitter la lecture plein écran").performClick()
+        compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
+        compose.onNodeWithTag("reader-annotation-"+id).onChildren().filter(hasClickAction()).onFirst().performClick()
         compose.onNodeWithText("Supprimer l’annotation").performClick()
         compose.onNodeWithText("Supprimer",substring=false).performClick()
         compose.waitUntil(10000) { readerInk(repo.state.value,1).none { it.id==id } }
-        assertTrue(repo.state.value.obj("readerInk").obj(id).str("deletedAt").isNotBlank())
+        assertTrue(repo.state.value.obj("readerAnnotations").obj(id).str("deletedAt").isNotBlank())
     }
     @Test fun recreationRestoresFullscreenReader() = fixture {
         compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()

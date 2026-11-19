@@ -1,17 +1,23 @@
-# Annoter le Mushaf à la main
+# Annotations et cahier du Mushaf
 
-1. Dans Réglages, choisir **Mushaf QPC**. Les annotations sont disponibles dans la lecture libre, l’apprentissage et la révision avec cette édition.
-2. Ouvrir la page en plein écran et toucher l’icône crayon en haut à gauche.
-3. Entourer librement le mot ou le passage au stylet. Le tracé est conservé tel quel, sans reconnaissance de forme ni déplacement des mots du Mushaf.
-4. Lever le stylet : une fiche de note s’ouvre. Écrire directement à la main dans la zone blanche. Chaque trait terminé est sauvegardé ; aucune conversion en texte n’est effectuée.
-5. Fermer la fiche : le tracé rouge reste visible sur la page.
+1. Dans Réglages → Affichage et appareil, laisser Mode tablette sur Automatique sur une tablette, ou choisir Activé pour disposer des outils sur un téléphone. Stylet uniquement est activé par défaut ; le désactiver permet de dessiner au doigt.
+2. Ouvrir le Coran depuis Lecture, Apprentissage ou Révision. Toucher Annoter puis sélectionner Stylo pour entourer librement sans reconnaissance de forme. Les outils offrent aussi cercle, surligneur, souligné, flèche, gomme et note. Couleur et épaisseur règle les six couleurs, l’encre/crayon et les largeurs.
+3. Le tracé est sauvegardé en levant le stylet. Toucher le repère ou Mes annotations pour ajouter une note. L’outil Ajouter une note ouvre directement sa fiche.
+4. Dans Stylet, écrire à la main dans la zone blanche ; chaque trait terminé est sauvegardé. Annuler le trait corrige le dernier trait. Le commentaire clavier peut coexister avec les traits dans l’onglet Commentaire.
+5. Fermer conserve le repère. Supprimer l’annotation puis confirmer retire le repère et les deux commentaires.
 
-Toucher le contour ou l’icône des annotations de la page permet de rouvrir la note. **Annuler le trait** enlève le dernier trait de la note ; **Effacer la note** conserve le contour. **Supprimer l’annotation** puis confirmer retire le contour et la note.
+Un appui long sur un mot QCF ou de la lecture simplifiée propose les actions du mot ou du verset entier, l’écoute, la répétition et la difficulté. Sur les éditions en images, le verset est disponible ; Choisir un mot dans le Coran avec Tajwid ouvre le même passage dans l’édition possédant les coordonnées de mots.
 
-Les coordonnées du tracé suivent la page lors des changements de taille ; la zone manuscrite conserve ses proportions. Les préférences de compte restent isolées : les annotations invitées ne deviennent pas automatiquement celles d’un compte connecté.
+Mon cahier de révision regroupe toutes les éditions, avec filtres et tris. Favori et Passage maîtrisé sont propres à la note : ils ne valident pas automatiquement un apprentissage. Marquer difficile réutilise le marqueur existant de révision. Toucher une note rouvre sa page et son édition.
 
-## Conservation et limites de validation
+En paysage suffisamment large, les outils et les annotations occupent leurs panneaux dédiés. En portrait, les outils sont sous la page et les notes dans un panneau flottant. Double page place la page impaire à droite. Lecture plein écran masque les panneaux en conservant les tracés ; Quitter la lecture plein écran les rétablit. Le bouton habituel Afficher les commandes donne toujours accès à l’audio et aux validations.
 
-Une copie locale durable par compte protège les annotations si une ancienne version distante ne renvoie pas ce champ. Les suppressions conservent une marque sans le contenu manuscrit pour éviter la réapparition lors de fusions concurrentes. Aucune migration Supabase n’a été appliquée.
+Exporter propose un PNG de la page courante ou un PDF de 1 à 20 pages. Le cahier peut exporter le texte des notes filtrées ou cochées. Aucune conversion automatique des traits en texte n’est effectuée.
 
-Les tests automatisés utilisent Android 15, des événements stylet synthétiques, des fichiers locaux et plusieurs tailles de fenêtre. La précision, le confort et le rejet de paume avec un stylet physique restent à vérifier. La synchronisation entre appareils et avec Expo reste non validée ; ne pas la présenter comme acquise.
+## Conservation et validation
+
+Les champs readerAnnotations et reader.tablet utilisent le JSON utilisateur existant. Les anciennes notes readerInk sont conservées. Chaque compte et l’invité ont leur copie locale distincte. Aucun changement du backend n’est nécessaire.
+
+La fusion du nouveau format suit les dates comme Expo ; une suppression empêche une ancienne sauvegarde de rétablir la note et une annulation explicite peut la restaurer avec un nouvel horodatage. La synchronisation entre appareils et avec Expo doit encore être vérifiée avec un compte réel.
+
+Les tests d’émulateur utilisent des événements stylet synthétiques. Le confort, la précision et le rejet de paume avec un stylet physique restent à vérifier.

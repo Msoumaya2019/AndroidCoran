@@ -8,12 +8,14 @@ import com.msoumaya.androidcoran.domain.*
 internal fun drawHandwriting(canvas: Canvas,strokes: List<InkStroke>,width: Float,height: Float,color: Int=Color.rgb(173,42,48)) {
     val paint=Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color=color;strokeCap=Paint.Cap.ROUND;strokeJoin=Paint.Join.ROUND;style=Paint.Style.STROKE }
     strokes.forEach { stroke ->
+        paint.color=stroke.color?.let { runCatching { Color.parseColor(it) }.getOrNull() }?:color
         stroke.points.zipWithNext().forEach { (a,b) -> paint.strokeWidth=(width*.0027f*(.5f+b.pressure*.5f)).coerceAtLeast(1f);canvas.drawLine(a.x*width,a.y*height,b.x*width,b.y*height,paint) }
         if(stroke.points.size==1) { val p=stroke.points.first();paint.style=Paint.Style.FILL;canvas.drawCircle(p.x*width,p.y*height,width*.0017f,paint);paint.style=Paint.Style.STROKE }
     }
 }
 class HandwritingView(context: Context): View(context) {
     var strokes: List<InkStroke> = emptyList();set(value) { field=value;invalidate() }
+    var stylusOnly=false
     var onStroke: (InkStroke)->Unit={}
     private val draft=mutableListOf<InkPoint>()
     private var drawing=false
@@ -21,6 +23,7 @@ class HandwritingView(context: Context): View(context) {
     override fun onDraw(canvas: Canvas) { super.onDraw(canvas);drawHandwriting(canvas,strokes+if(draft.isEmpty()) emptyList() else listOf(InkStroke(draft)),width.toFloat(),height.toFloat(),Color.rgb(28,39,43)) }
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if(width==0||height==0) return false
+        if(stylusOnly&&event.getToolType(0)!=MotionEvent.TOOL_TYPE_STYLUS) return false
         if(event.pointerCount>1) { drawing=false;draft.clear();invalidate();return true }
         when(event.actionMasked) {
             MotionEvent.ACTION_DOWN -> { drawing=true;parent?.requestDisallowInterceptTouchEvent(true);draft.clear();add(event) }
