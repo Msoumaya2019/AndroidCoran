@@ -18,8 +18,8 @@ suspend fun renderAnnotationPage(context: Context,q: Quran,s: JsonObject,source:
   require(payload.first!=null||payload.second!=null) { "Télécharge d’abord cette édition" }
   return withContext(Dispatchers.Main) {
    val w=payload.second?.width?:1000;val h=payload.second?.height?:2120
-   val view=MushafView(context);view.load(q,page,source,payload.first,payload.second,payload.third);view.paper=paperColor(s.obj("reader").str("paper"));view.annotations=allReaderInk(s,source);view.layout(0,0,w,h)
-   Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888).also { view.draw(Canvas(it)) }
+   val view=MushafView(context);view.load(q,page,source,payload.first,payload.second,payload.third);view.paper=paperColor(s.obj("reader").str("paper"));view.annotations=allReaderInk(s,source);val prefs=TabletPreferences.from(s.obj("reader").obj("tablet"));val density=context.resources.displayMetrics.density;val shortSide=if(android.os.Build.VERSION.SDK_INT>=30) context.getSystemService(android.view.WindowManager::class.java).maximumWindowMetrics.bounds.let { minOf(it.width(),it.height())/density } else context.resources.configuration.smallestScreenWidthDp.toFloat();view.marginEnabled=prefs.mode=="on"||(prefs.mode=="auto"&&shortSide>=600)||hasMarginInk(view.annotations.filter { it.page==page });val size=workspaceDimensions(w.toFloat(),h.toFloat(),view.marginEnabled);val outW=kotlin.math.ceil(size.first).toInt();val outH=kotlin.math.ceil(size.second).toInt();view.layout(0,0,outW,outH)
+   Bitmap.createBitmap(outW,outH,Bitmap.Config.ARGB_8888).also { view.draw(Canvas(it)) }
   }
  } finally { payload.second?.recycle() }
 }

@@ -10,7 +10,9 @@ import kotlinx.serialization.json.*
 /** Native Canvas painter: keeps the reference's words, 122-unit lines and page proportions. */
 class MushafView(context: Context): View(context) {
     var annotationOwner="";set(value) { if(field!=value) { inkDraft.clear();inkDrawing=false };field=value }
-    var annotationMode=false
+    var annotationMode=false;set(value) { if(field&&!value) { inkDraft.clear();inkDrawing=false;onInkActive(false);parent?.requestDisallowInterceptTouchEvent(false) };field=value }
+    var marginEnabled=false
+    var annotationsEnabled=true
     var stylusOnly=false
     var inkTool="pen";var inkColor="#16A34A";var inkWidth=.003f;var inkPenStyle="ink"
     var onSelection: (JsonObject)->Unit={}
@@ -41,8 +43,9 @@ class MushafView(context: Context): View(context) {
     private var inkDrawing=false
     private val erasedIds=mutableSetOf<String>()
     private fun eraseAt(x: Float,y: Float) { annotationAt(x,y)?.let { if(erasedIds.add(it.id)) onInkErase(it) } }
-    private fun inkPoint(x: Float,y: Float,pressure: Float)=InkPoint(((x-left-offsetX)/(ratio*zoom)/paperWidth()).coerceIn(0f,1f),((y-top-offsetY)/(ratio*zoom)/paperHeight()).coerceIn(0f,1f),pressure.coerceIn(.1f,1f))
+    private fun inkPoint(x: Float,y: Float,pressure: Float)=workspacePoint((x-left-offsetX)/(ratio*zoom)/paperWidth(),(y-top-offsetY)/(ratio*zoom)/paperHeight(),marginEnabled).copy(pressure=pressure.coerceIn(.1f,1f))
     private fun annotationAt(x: Float,y: Float): ReaderInk? {
+        if(!annotationsEnabled) return null
         val p=inkPoint(x,y,1f)
         return annotations.filter { it.source==source }.lastOrNull { ink ->
             val areas=zones(ink)
@@ -99,7 +102,8 @@ class MushafView(context: Context): View(context) {
     }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas);val b=bitmap;val w=b?.width?.toFloat()?:1000f;val h=b?.height?.toFloat()?:2120f
-        ratio=minOf(width/w,height/h);left=(width-w*ratio)/2;top=(height-h*ratio)/2
+        val space=workspaceDimensions(w,h,marginEnabled);ratio=minOf(width/space.first,height/space.second);left=(width-space.first*ratio)/2+(if(marginEnabled) w*NOTE_MARGIN_X*ratio else 0f);top=(height-space.second*ratio)/2+(if(marginEnabled) h*NOTE_MARGIN_Y*ratio else 0f)
+        canvas.drawColor(Color.WHITE)
         canvas.save();canvas.translate(left+offsetX,top+offsetY);canvas.scale(ratio*zoom,ratio*zoom);regions.clear();wordRegions.clear();wordDetails.clear()
         if(b!=null) { paint.color=Color.WHITE;canvas.drawBitmap(b,0f,0f,paint)
             bounds?.forEach { raw -> val r=raw.jsonArray;if(r.size>=7) { val surah=r[0].jsonPrimitive.int;val ayah=r[1].jsonPrimitive.int;val q=(context.applicationContext as com.msoumaya.androidcoran.CoranApplication).repository.quran;val id=q.id(surah,ayah);val rect=RectF(r[3].jsonPrimitive.float,r[5].jsonPrimitive.float,r[4].jsonPrimitive.float,r[6].jsonPrimitive.float);regions+=rect to id;overlay(canvas,rect,id) } }
@@ -115,9 +119,9 @@ class MushafView(context: Context): View(context) {
                     "basmallah" -> { paint.color=Color.BLACK;paint.typeface=font("basmala");paint.textSize=80f;val surah=lines.drop(i+1).firstOrNull { it.jsonObject.arr("words").isNotEmpty() }?.jsonObject?.arr("words")?.first()?.jsonArray?.get(1)?.jsonPrimitive?.int?:d.num("surah");val text=when(surah) { 2->"ﲚﲛﲞﲤ";95,97->"ﭗﲫﲮﲴ";else->"ﲪﲫﲮﲴ" };canvas.drawText(text,500f-paint.measureText(text)/2,cy-(paint.fontMetrics.ascent+paint.fontMetrics.descent)/2,paint) }
                 }
             }
-        };annotations.filter { it.source==source&&(it.page==page||it.anchor!=null) }.forEach { ink -> val areas=zones(ink);if(ink.anchor==null||areas.isNotEmpty()) drawReaderMark(canvas,ink,areas,w,h) }
+        };if(annotationsEnabled) annotations.filter { it.source==source&&(it.page==page||it.anchor!=null) }.forEach { ink -> val areas=zones(ink);if(ink.anchor==null||areas.isNotEmpty()) drawReaderMark(canvas,ink,areas,w,h) }
         if(inkDraft.isNotEmpty()) drawReaderMark(canvas,ReaderInk("draft",page,listOf(InkStroke(inkDraft)),emptyList(),emptyList(),"",source=source,tool=inkTool,color=inkColor,width=inkWidth,penStyle=inkPenStyle),emptyList(),w,h)
         canvas.restore()
     }
-    private fun overlay(canvas: Canvas,r: RectF,id: Int) { val color=when { id==playing -> 0x5554734E;id==selected -> 0x557B285C;id in difficulties -> 0x33A85353;id in bookmarks -> 0x33C89A52;else -> return };paint.color=color;canvas.drawRoundRect(r,8f,8f,paint) }
+    private fun overlay(canvas: Canvas,r: RectF,id: Int) { if(id==playing) { paint.color=Color.argb(82,246,196,69);paint.style=Paint.Style.FILL;canvas.drawRoundRect(r,8f,8f,paint);paint.color=Color.argb(82,183,131,19);paint.style=Paint.Style.STROKE;paint.strokeWidth=2f;canvas.drawRoundRect(r,8f,8f,paint);paint.style=Paint.Style.FILL;return };val color=when {id==selected -> 0x557B285C;id in difficulties -> 0x33A85353;id in bookmarks -> 0x33C89A52;else -> return };paint.color=color;canvas.drawRoundRect(r,8f,8f,paint) }
 }

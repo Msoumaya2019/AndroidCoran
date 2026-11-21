@@ -152,6 +152,7 @@ class ReaderFullscreenTest {
         compose.runOnUiThread { sendReaderStylus(findReaderView<com.msoumaya.androidcoran.ui.HandwritingView>(compose.activity.window.decorView)!!,listOf(.1f to .2f,.5f to .5f,.9f to .8f)) }
         compose.waitUntil(10000) { readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty() }
         compose.onNodeWithText("Fermer",substring=false).performClick()
+        compose.onNodeWithText("Annoter",substring=false).performScrollTo().performClick()
         compose.onNodeWithText("Lecture plein écran",substring=false).performScrollTo().performClick()
         compose.activityRule.scenario.recreate();assertFullscreen()
         assertTrue(readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty())

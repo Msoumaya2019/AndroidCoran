@@ -8,14 +8,14 @@ data class InkStroke(val points: List<InkPoint>,val color: String?=null)
 data class ReaderInk(val id: String,val page: Int,val outlines: List<InkStroke>,val note: List<InkStroke>,val verses: List<Int>,val updatedAt: String,val deletedAt: String?=null,val source: String="coranTest",val tool: String="pen",val color: String="#AD2A30",val width: Float=.003f,val penStyle: String="ink",val text: String="",val anchor: JsonObject?=null,val favorite: Boolean=false,val masteredAt: String?=null,val createdAt: String?=null)
 private fun pointJson(p: InkPoint)=json("x" to p.x,"y" to p.y,"pressure" to p.pressure)
 private fun inkJson(strokes: List<InkStroke>)=JsonArray(strokes.map { stroke -> JsonArray(stroke.points.map(::pointJson)) })
-private fun inkStrokes(value: JsonArray)=value.mapNotNull { raw ->
+private fun inkStrokes(value: JsonArray,margins: Boolean=false)=value.mapNotNull { raw ->
  val array=if(raw is JsonObject) raw.arr("points") else raw as? JsonArray?:return@mapNotNull null
  val points=array.mapNotNull point@ { p ->
   val a=p as? JsonArray;val o=p as? JsonObject
   val x=((o?.get("x")?:a?.getOrNull(0)) as? JsonPrimitive)?.floatOrNull
   val y=((o?.get("y")?:a?.getOrNull(1)) as? JsonPrimitive)?.floatOrNull
   val pressure=((o?.get("pressure")?:a?.getOrNull(2)) as? JsonPrimitive)?.floatOrNull?:1f
-  if(x==null||y==null||!x.isFinite()||!y.isFinite()||!pressure.isFinite()) null else InkPoint(x.coerceIn(0f,1f),y.coerceIn(0f,1f),pressure.coerceIn(.1f,1f))
+  if(x==null||y==null||!x.isFinite()||!y.isFinite()||!pressure.isFinite()) null else workspacePoint(x,y,margins).copy(pressure=pressure.coerceIn(.1f,1f))
  }
  if(points.isEmpty()) null else InkStroke(points.take(12000),(raw as? JsonObject)?.str("color")?.takeIf { it.isNotBlank()&&it!="#1C272B" })
 }
@@ -23,7 +23,7 @@ fun ReaderInk.toJson()=json("id" to id,"page" to page,"outlines" to inkJson(outl
 fun ReaderInk.toSourceJson()=toJson().with("points" to JsonArray(outlines.firstOrNull()?.points.orEmpty().map(::pointJson)),"handwriting" to JsonArray(note.map { json("points" to JsonArray(it.points.map(::pointJson)),"color" to (it.color?:"#1C272B")) }),"related" to verses.firstOrNull()?.let { json("verseId" to it) }.let { it?:JsonNull })
 fun inkFromJson(r: JsonObject): ReaderInk? {
  if(r.str("id").isBlank()||r.num("page") !in 1..604) return null
- val outline=if(r["outlines"] is JsonArray) inkStrokes(r.arr("outlines")) else inkStrokes(JsonArray(listOf(r.arr("points"))))
+ val outline=if(r["outlines"] is JsonArray) inkStrokes(r.arr("outlines"),true) else inkStrokes(JsonArray(listOf(r.arr("points"))),true)
  val anchor=r["anchor"] as? JsonObject
  val ids=r.arr("verses").mapNotNull { (it as? JsonPrimitive)?.intOrNull }.ifEmpty { listOf(anchor?.num("verseId")?:r.obj("related").num("verseId")).filter { it in 1..6236 } }
  return ReaderInk(r.str("id"),r.num("page"),outline,inkStrokes(if(r["handwriting"] is JsonArray) r.arr("handwriting") else r.arr("note")),ids,r.str("updatedAt"),r.str("deletedAt").ifBlank { null },r.str("source","coranTest"),r.str("tool","pen"),r.str("color","#AD2A30"),((r["width"] as? JsonPrimitive)?.floatOrNull?:.003f).coerceIn(.001f,.06f),r.str("penStyle","ink"),r.str("text"),anchor,r.flag("favorite"),r.str("masteredAt").ifBlank { null },r.str("createdAt").ifBlank { null })

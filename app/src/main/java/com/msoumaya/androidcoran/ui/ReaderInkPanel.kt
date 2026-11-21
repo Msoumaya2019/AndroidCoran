@@ -26,6 +26,7 @@ import java.time.Instant
     var draft by remember(annotation.id) { mutableStateOf(annotation) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var handwriting by rememberSaveable(annotation.id) { mutableStateOf(true) }
+    var allowFinger by rememberSaveable(annotation.id) { mutableStateOf(!stylusOnly) }
     fun update(next: ReaderInk) { val value=next.copy(updatedAt=annotationTime(draft.updatedAt));draft=value;onChange(value) }
     val body: @Composable ()->Unit = {
         Column(Modifier.fillMaxSize().padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -33,10 +34,11 @@ import java.time.Instant
             Row { FilterChip(!handwriting,{handwriting=false},label={Text("Commentaire")});FilterChip(handwriting,{handwriting=true},label={Text("Stylet")}) }
             if(!handwriting) OutlinedTextField(draft.text,{update(draft.copy(text=it))},label={Text("Commentaire")},modifier=Modifier.fillMaxWidth().weight(1f))
             else {
-                Text(if(stylusOnly) "Écrivez avec le stylet" else "Écrivez librement à la main",style=MaterialTheme.typography.bodySmall)
+                Text(if(stylusOnly&&!allowFinger) "Écrivez avec le stylet" else "Écrivez librement à la main",style=MaterialTheme.typography.bodySmall)
+                FilterChip(selected=allowFinger,onClick={allowFinger=!allowFinger},label={Text(if(allowFinger) "Doigt et stylet autorisés" else "Autoriser le doigt ou un stylet non reconnu")})
                 BoxWithConstraints(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
                     val padWidth=minOf(maxWidth,maxHeight*1.4f)
-                    AndroidView(factory={HandwritingView(it)},modifier=Modifier.width(padWidth).height(padWidth/1.4f).semantics { contentDescription="Zone de note manuscrite" },update={v -> v.stylusOnly=stylusOnly;v.strokes=draft.note;v.onStroke={update(draft.copy(note=draft.note+it))} })
+                    AndroidView(factory={HandwritingView(it)},modifier=Modifier.width(padWidth).height(padWidth/1.4f).semantics { contentDescription="Zone de note manuscrite" },update={v -> v.stylusOnly=stylusOnly&&!allowFinger;v.strokes=draft.note;v.onStroke={update(draft.copy(note=draft.note+it))} })
                 }
                 Row { TextButton(enabled=draft.note.isNotEmpty(),onClick={update(draft.copy(note=draft.note.dropLast(1)))}) { Text("Annuler le trait") };TextButton(enabled=draft.note.isNotEmpty(),onClick={update(draft.copy(note=emptyList()))}) { Text("Effacer la note") } }
             }

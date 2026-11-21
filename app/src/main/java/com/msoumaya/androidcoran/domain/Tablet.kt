@@ -8,12 +8,15 @@ data class TabletPreferences(val mode: String="auto",val toolsVisible: Boolean=t
   return TabletPreferences(s.str("mode").takeIf { it in listOf("auto","on","off") }?:"auto",s.flag("toolsVisible",true),s.flag("stylusOnly",true),s.str("color").takeIf { Regex("#[0-9a-fA-F]{6}").matches(it) }?:"#16A34A",width("penWidth",.003f,.001f,.012f),width("highlightWidth",.018f,.006f,.06f),if(s.str("penStyle")=="pencil") "pencil" else "ink",if(s.str("spread")=="double") "double" else "single")
  } }
 }
-data class TabletLayout(val enabled: Boolean,val landscape: Boolean,val sidebars: Boolean,val doublePage: Boolean,val centerWidth: Float)
+data class TabletLayout(val enabled: Boolean,val landscape: Boolean,val sidebars: Boolean,val doublePage: Boolean,val centerWidth: Float,val notesOverlay: Boolean=false)
 fun tabletLayout(p: TabletPreferences,device: String,width: Float,height: Float,notesOpen: Boolean=false): TabletLayout {
  val enabled=p.mode=="on"||p.mode!="off"&&device!="phone"&&width>=(if(device=="tablet") 600 else 768)&&height>=360
  val landscape=width>height;val sidebars=enabled&&landscape&&width>=1000&&height>=480
- val center=(width-(if(sidebars&&p.toolsVisible) 72 else 0)-(if(sidebars&&notesOpen) 280 else 0)).coerceAtLeast(0f)
- return TabletLayout(enabled,landscape,sidebars,enabled&&landscape&&p.spread=="double"&&center>=640&&height>=460,center)
+ val available=(width-(if(sidebars&&p.toolsVisible&&p.spread!="double") 72 else 0)).coerceAtLeast(0f)
+ val double=enabled&&landscape&&p.spread=="double"&&available>=640&&height>=460
+ val overlay=!sidebars||double
+ val center=(available-(if(sidebars&&notesOpen&&!overlay) 280 else 0)).coerceAtLeast(0f)
+ return TabletLayout(enabled,landscape,sidebars,double,center,overlay)
 }
 fun spreadPages(page: Int,double: Boolean): List<Int> { val p=page.coerceIn(1,604);if(!double) return listOf(p);val right=if(p%2==1) p else p-1;return listOf(right+1,right) }
 fun nextSpread(page: Int,direction: Int,double: Boolean): Int = if(!double) (page+direction).coerceIn(1,604) else ((if(page%2==1) page else page-1)+direction*2).coerceIn(1,603)

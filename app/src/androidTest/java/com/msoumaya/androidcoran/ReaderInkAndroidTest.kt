@@ -67,4 +67,15 @@ class ReaderInkAndroidTest {
   compose.onNodeWithText("Conserver").performClick();compose.runOnIdle { assertFalse(deleted) }
   compose.onNodeWithText("Supprimer l’annotation").performClick();compose.onNodeWithText("Supprimer",substring=false).performClick();compose.runOnIdle { assertTrue(deleted) }
  }
+ @Test fun passiveStylusCanBeExplicitlyAllowedInCommentPadAndPermissionRestores() {
+  val latest=androidx.compose.runtime.mutableStateOf(newReaderInk(1,InkStroke(listOf(InkPoint(.1f,.2f))),listOf(1)))
+  val restore=StateRestorationTester(compose)
+  restore.setContent { MaterialTheme { ReaderInkEditor(latest.value,{latest.value=it},{},{},stylusOnly=true) } }
+  compose.onNodeWithContentDescription("Zone de note manuscrite").performTouchInput { swipe(centerLeft,centerRight,300) };compose.runOnIdle { assertTrue(latest.value.note.isEmpty()) }
+  compose.onNodeWithText("Autoriser le doigt ou un stylet non reconnu").performClick()
+  restore.emulateSavedInstanceStateRestore()
+  compose.onNodeWithText("Doigt et stylet autorisés").assertExists()
+  compose.onNodeWithContentDescription("Zone de note manuscrite").performTouchInput { swipe(centerLeft,centerRight,300) };compose.runOnIdle { assertEquals(1,latest.value.note.size) }
+ }
+
 }

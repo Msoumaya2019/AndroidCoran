@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.msoumaya.androidcoran.domain.*
 import com.msoumaya.androidcoran.ui.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.*
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,6 +27,9 @@ class ReaderAnnotationsAndroidTest {
    assertEquals(0,notes);assertEquals(0,marks)
    sendReaderStylus(note,listOf(.1f to .2f,.5f to .5f,.9f to .8f));sendReaderStylus(page,listOf(.1f to .2f,.5f to .2f,.9f to .2f))
    assertEquals(1,notes);assertEquals(1,marks);assertEquals(0,turns);assertEquals(listOf(true,false),active)
+   note.stylusOnly=false;page.stylusOnly=false
+   listOf(note,page).forEach { target -> listOf(MotionEvent.ACTION_DOWN,MotionEvent.ACTION_MOVE,MotionEvent.ACTION_UP).forEachIndexed { i,action -> val e=MotionEvent.obtain(10,10L+i,action,target.width*(.1f+i*.1f),target.height*.2f,0);try { target.dispatchTouchEvent(e) } finally { e.recycle() } } }
+   assertEquals(2,notes);assertEquals(2,marks);assertEquals(0,turns)
   }
  }
  @Test fun qcfLongPressSelectionUsesRealWordIdentityAndVerseRegions() {
@@ -43,7 +47,7 @@ class ReaderAnnotationsAndroidTest {
  @Test fun pngAndMultipagePdfKeepOriginalPageGeometryAndVisibleInk() = runBlocking {
   repo.awaitReady()
   val stroke=InkStroke(listOf(InkPoint(.1f,.2f),InkPoint(.3f,.3f)))
-  val state=saveReaderInk(defaultState(),newReaderInk(1,stroke,listOf(1)).copy(color="#16A34A",width=.01f))
+  val state=saveReaderInk(defaultState().with("reader" to json("tablet" to TabletPreferences(mode="off").toJson())),newReaderInk(1,stroke,listOf(1)).copy(color="#16A34A",width=.01f))
   val png=exportAnnotationPages(context,repo.quran,state,"coranTest",listOf(1),false)
   try {
    val bitmap=BitmapFactory.decodeFile(png.absolutePath);try { assertEquals(1000,bitmap.width);assertEquals(2120,bitmap.height);val p=bitmap.getPixel(200,530);assertTrue(Color.green(p)>Color.red(p)+40) } finally { bitmap.recycle() }
@@ -61,6 +65,34 @@ class ReaderAnnotationsAndroidTest {
    var erased=0;var created=0;view.onInkErase={erased++};view.onInkStroke={_,_->created++}
    sendReaderStylus(view,listOf(.1f to .2f,.15f to .2f,.2f to .2f,.25f to .2f,.3f to .2f))
    assertEquals(1,erased);assertEquals(0,created)
+  }
+ }
+
+ @Test fun marginStrokeSurvivesNativeCaptureSerializationAndExport() = runBlocking {
+  repo.awaitReady();val data=repo.quran.qcfData(context,1);var captured: InkStroke?=null
+  instrumentation.runOnMainSync {
+   val view=MushafView(context);view.load(repo.quran,1,"coranTest",data,null,null);view.marginEnabled=true;view.annotationMode=true;view.layout(0,0,1700,2460);view.onInkStroke={stroke,_ -> captured=stroke}
+   val bitmap=Bitmap.createBitmap(1700,2460,Bitmap.Config.ARGB_8888);try { view.draw(Canvas(bitmap)) } finally { bitmap.recycle() }
+   // The page origin is (350,169.6), so the first point lies 200px into the left margin.
+   sendReaderStylus(view,listOf(150f/1700 to 593.6f/2460,250f/1700 to 700f/2460))
+  }
+  val stroke=captured!!;assertEquals(-.2f,stroke.points.first().x,.001f)
+  val ink=newReaderInk(1,stroke,emptyList());val restored=inkFromJson(ink.toSourceJson())!!;assertEquals(stroke,restored.outlines.single())
+  val state=saveReaderInk(defaultState().with("reader" to json("tablet" to TabletPreferences(mode="off").toJson())),restored)
+  val file=exportAnnotationPages(context,repo.quran,state,"coranTest",listOf(1),false)
+  try { val image=BitmapFactory.decodeFile(file.absolutePath);try { assertEquals(1700,image.width);assertEquals(2460,image.height);assertTrue(Color.red(image.getPixel(150,594))>100);assertTrue(Color.green(image.getPixel(150,594))<150) } finally { image.recycle() } } finally { file.delete() }
+ }
+ @Test fun yellowPlaybackOverlayTakesPriorityAndRestoresDifficultyTint() {
+  runBlocking { repo.awaitReady() };val data=repo.quran.qcfData(context,1)
+  instrumentation.runOnMainSync {
+   val view=MushafView(context);view.load(repo.quran,1,"coranTest",data,null,null);view.layout(0,0,1000,2120);view.difficulties=setOf(1);view.playing=1
+   val image=Bitmap.createBitmap(1000,2120,Bitmap.Config.ARGB_8888)
+   try { view.draw(Canvas(image));var region: JsonObject?=null
+    for(y in 200..1900 step 20) { for(x in 40..960 step 20) { val hit=view.selectionAt(x.toFloat(),y.toFloat());if(hit?.num("verseId")==1) { region=hit.arr("regions").first().jsonObject;break } };if(region!=null) break }
+    assertNotNull(region);val x=(region!!.getValue("x").jsonPrimitive.float*1000+3).toInt();val y=(region!!.getValue("y").jsonPrimitive.float*2120+3).toInt()
+    val yellow=image.getPixel(x,y);assertTrue(Color.green(yellow)-Color.blue(yellow)>20)
+    view.playing=null;view.draw(Canvas(image));val normal=image.getPixel(x,y);assertTrue(kotlin.math.abs(Color.green(normal)-Color.blue(normal))<15)
+   } finally { image.recycle() }
   }
  }
 

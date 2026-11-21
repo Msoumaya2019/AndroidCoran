@@ -68,4 +68,17 @@ class TabletLayoutTest {
   compose.onNodeWithText("Fermer",substring=false).performClick()
  }
 
+ @Test fun fullscreenCanEnableFingerDrawingAndPreservesItsPreference() = fixture {
+  val repo=(compose.activity.application as CoranApplication).repository
+  compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
+  compose.onNodeWithContentDescription("Sélection").performClick()
+  compose.onNodeWithText("Lecture plein écran",substring=false).performScrollTo().performClick()
+  compose.onNodeWithText("Annoter",substring=false).performClick()
+  compose.onNodeWithTag("tablet-tools-floating").assertIsDisplayed()
+  compose.onNodeWithText("Autoriser le doigt",substring=false).performClick()
+  compose.waitUntil(10000) { !TabletPreferences.from(repo.state.value.obj("reader").obj("tablet")).stylusOnly }
+  compose.activityRule.scenario.recreate();compose.onNodeWithText("Doigt activé").assertIsDisplayed();compose.onNodeWithTag("tablet-tools-floating").assertIsDisplayed()
+  compose.onNodeWithText("Terminer les annotations").performClick();compose.onNodeWithTag("tablet-tools-floating").assertDoesNotExist()
+ }
+
 }
