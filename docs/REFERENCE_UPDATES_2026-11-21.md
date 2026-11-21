@@ -33,7 +33,7 @@ Les fonctionnalités antérieures de la branche Roqya, non fusionnée dans main 
 
 ## Validation
 
-Premier code vérifié : 7c194cf218a9285cce66cb38e5f59ab3798dafdb. Les résultats ci-dessous précèdent les derniers correctifs de découpage et de surlignage continu ; leurs résultats finaux seront consignés ensuite.
+Code final vérifié : 599d641252ec319e930c5a679633e39e06cc4386. La compilation finale, Lint et les 190 tests JVM ont réussi dans [Actions](https://github.com/Msoumaya2019/AndroidCoran/actions/runs/44909139212). Les [suites finales Android 15](https://github.com/Msoumaya2019/AndroidCoran/actions/runs/44909139266) ont réussi : 53 tests téléphone et 26 tests tablette. Ces résultats incluent la continuité du surlignage entre les mots QCF et images, les espaces conservés entre lignes et la protection du Canvas voisin. Les premiers résultats ci-dessous précèdent ces derniers correctifs.
 
 - [Compilation, Lint, APK et tests JVM](https://github.com/Msoumaya2019/AndroidCoran/actions/runs/44906911958) réussis : 190 JVM, zéro échec et zéro test ignoré. Compilation locale complète également réussie.
 - [Suites Android 15](https://github.com/Msoumaya2019/AndroidCoran/actions/runs/44906911956) réussies : 50 tests téléphone et 23 tests tablette, zéro échec, erreur ou test ignoré. Rapports XML/HTML téléchargés et comptes vérifiés.
@@ -42,4 +42,7 @@ Premier code vérifié : 7c194cf218a9285cce66cb38e5f59ab3798dafdb. Les résultat
 
 Testé indique ces scénarios, pas une recette exhaustive. L’action rapide réutilisant les notes a été contrôlée dans le code mais n’a pas de nouveau parcours UI spécifique ; les marges des éditions en images, toutes les transformations de zoom, tous les exports de 20 pages et tous les menus ne sont pas déclarés intégralement validés. Honor Pad 10, stylet réel, rejet de paume, récitations distantes et synchronisation réelle entre applications/comptes restent non validés. Aucune interaction avec un compte réel ni changement backend pendant les tests.
 
-Le contrôle visuel local et le checksum de l’APK livré sont consignés après récupération du dernier artefact.
+En local, les 26 tests tablette Android 15 ont réussi au format 1600×1000. Capture finale examinée : pages 2/1 visibles côte à côte dans le bon ordre RTL. Les 3 279 fichiers de référence sont inchangés (SHA-256), état Git original propre. Émulateur de test arrêté après restauration de sa taille et densité. Appareils physiques et synchronisation réelle restent non validés.
+
+APK final Actions (code 599d641), SHA-256 : 4D0EC5659C08E7B8E3ACA2D2FE1E018241602B030CFFD7923F111D855476ECA6. Rapports XML finaux vérifiés : téléphone 53 et tablette 26, zéro échec/erreur/ignoré.
+

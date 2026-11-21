@@ -740,4 +740,6 @@ Audit : main inchangé à 42dedf8, branche tablette à bb6b295 (deux nouveaux co
 
 ### Surlignage audio continu — demande du 21 novembre
 
-MushafView : fusion des rectangles des mots du verset courant en une bande par ligne, pour QCF et les éditions en images. Les glyphes et couleurs du texte restent inchangés ; le jaune est prioritaire sur les autres repères. La lecture simplifiée conserve son fond continu de verset. Découpage de chaque Canvas pour empêcher une page d’effacer sa voisine. Implémenté ; nouveaux tests de pixels En développement. Backend inchangé.
+MushafView : fusion des rectangles des mots du verset courant en une bande par ligne, pour QCF et les éditions en images. Les glyphes et couleurs du texte restent inchangés ; le jaune est prioritaire sur les autres repères. La lecture simplifiée conserve son fond continu de verset. Découpage de chaque Canvas pour empêcher une page d’effacer sa voisine. Implémenté ; Testé : continuité entre mots, espaces entre lignes conservés et protection de la page voisine. Backend inchangé.
+
+Validation finale du code 599d641 : 190 tests JVM, 53 tests téléphone et 26 tests tablette réussis dans GitHub Actions, sans échec ni test ignoré ; 26 tests tablette également réussis en local. Double page contrôlée visuellement. Détails et limites dans le rapport du 21 novembre : appareils/stylets réels et synchronisation Supabase réelle restent non validés. Référence Expo : 3 279 fichiers inchangés, état Git propre. Aucun changement Swift.
