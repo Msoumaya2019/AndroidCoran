@@ -33,11 +33,11 @@ class ReaderInteractionAndroidTest {
    v.onSelection={menus++};beforeX=(x-field(v,"left")-field(v,"offsetX"))/field(v,"zoom");beforeY=(y-field(v,"top")-field(v,"offsetY"))/field(v,"zoom")
    touch(v,MotionEvent.ACTION_DOWN,listOf(x-60 to y),down)
    touch(v,MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),listOf(x-60 to y,x+60 to y),down)
-   for(span in listOf(80f,100f,130f,160f)) touch(v,MotionEvent.ACTION_MOVE,listOf(x-span to y,x+span to y),down)
+   for(span in listOf(80f,110f,150f,200f,240f,280f,300f)) { SystemClock.sleep(35);touch(v,MotionEvent.ACTION_MOVE,listOf(x-span to y,x+span to y),down) }
    v.draw(Canvas(b));assertTrue(field(v,"zoom")>1f)
    assertEquals(beforeX,(x-field(v,"left")-field(v,"offsetX"))/field(v,"zoom"),.01f);assertEquals(beforeY,(y-field(v,"top")-field(v,"offsetY"))/field(v,"zoom"),.01f)
-   touch(v,MotionEvent.ACTION_MOVE,listOf(x-110 to y+30,x+210 to y+30),down);v.draw(Canvas(b));assertEquals(beforeX,(x+50-field(v,"left")-field(v,"offsetX"))/field(v,"zoom"),.01f);assertEquals(beforeY,(y+30-field(v,"top")-field(v,"offsetY"))/field(v,"zoom"),.01f)
-   touch(v,MotionEvent.ACTION_POINTER_UP or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),listOf(x-110 to y+30,x+210 to y+30),down);touch(v,MotionEvent.ACTION_UP,listOf(x-160 to y),down)
+   touch(v,MotionEvent.ACTION_MOVE,listOf(x-250 to y+30,x+350 to y+30),down);v.draw(Canvas(b));assertEquals(beforeX,(x+50-field(v,"left")-field(v,"offsetX"))/field(v,"zoom"),.01f);assertEquals(beforeY,(y+30-field(v,"top")-field(v,"offsetY"))/field(v,"zoom"),.01f)
+   touch(v,MotionEvent.ACTION_POINTER_UP or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),listOf(x-110 to y+30,x+210 to y+30),down);touch(v,MotionEvent.ACTION_UP,listOf(x-300 to y),down)
   }
   SystemClock.sleep(ViewConfiguration.getLongPressTimeout()+100L);compose.runOnIdle { assertEquals(0,menus) }
  }
@@ -77,9 +77,9 @@ class ReaderInteractionAndroidTest {
  @Test fun floatingNoteCanBeDraggedWithoutSavingOrOpeningAnotherNote() {
   val ink=newReaderInk(1,InkStroke(listOf(InkPoint(.2f,.3f))),listOf(1));var saves=0
   compose.setContent { MaterialTheme { ReaderInkEditor(ink,{saves++},{},{}) } }
-  val before=compose.onNodeWithTag("floating-note-window").fetchSemanticsNode().boundsInRoot
+  val before=compose.onNodeWithContentDescription("Déplacer la note").fetchSemanticsNode().boundsInRoot
   compose.onNodeWithContentDescription("Déplacer la note").performTouchInput { swipe(center,center+androidx.compose.ui.geometry.Offset(100f,20f),300) }
-  val after=compose.onNodeWithTag("floating-note-window").fetchSemanticsNode().boundsInRoot
+  val after=compose.onNodeWithContentDescription("Déplacer la note").fetchSemanticsNode().boundsInRoot
   assertTrue(after.left>before.left);compose.onNodeWithText("Enregistrer",substring=false).assertIsNotEnabled();compose.runOnIdle { assertEquals(0,saves) }
  }
  @Test fun curlRevealsTheNextSheetAndCanRunInBothDirections() {

@@ -49,7 +49,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
             } catch(e: Exception) { if(e is CancellationException) throw e;vm.repo.feedback(e.message?:"Image illisible");draft=null }
             finally { loaded?.recycle() }
         }
-        DisposableEffect(bitmap) { val loaded=bitmap;onDispose { loaded?.recycle() } }
+        // Compose may retain a painter for a final frame after disposal; let Android release displayed bitmaps.
         AvatarCropDialog(bitmap,busy,onClose={draft=null},onConfirm={ selection ->
             scope.launch {
                 busy=true
@@ -79,7 +79,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
   } catch(e: Exception) { if(e is CancellationException) throw e;repo.feedback("Photo locale indisponible") }
   finally { loaded?.recycle() }
  }
- DisposableEffect(bitmap) { val loaded=bitmap;onDispose { loaded?.recycle() } }
+ // Compose may retain a painter for a final frame after disposal; let Android release displayed bitmaps.
  bitmap?.let { androidx.compose.foundation.Image(it.asImageBitmap(),"Photo choisie pour ce compte",Modifier.size(100.dp).clip(CircleShape),contentScale=ContentScale.Crop) }
  if(!validAvatarEmail(email)) Text("Saisis ton e-mail pour choisir une photo.")
 }
