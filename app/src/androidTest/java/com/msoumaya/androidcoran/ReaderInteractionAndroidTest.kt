@@ -56,7 +56,7 @@ class ReaderInteractionAndroidTest {
   var opened="";var menus=0;var point=0f to 0f
   compose.runOnIdle {
    val base=newReaderInk(1,InkStroke(listOf(InkPoint(.5f,.4f))),listOf(1)).copy(tool="note",text="Note",categories=listOf("Note personnelle"),iconColor="#DB2777")
-   v.annotations=(1..3).map { base.copy(id="note-$it") };v.onInkClick={opened=it.id};v.onSelection={menus++};v.draw(Canvas(b))
+   v.annotations=(1..3).map { base.copy(id="note-$it") };v.onInkClick={opened=it.id};v.onSelection={menus++};v.annotationMode=true;v.draw(Canvas(b))
    @Suppress("UNCHECKED_CAST") val icons=MushafView::class.java.getDeclaredField("noteIcons").apply { isAccessible=true }.get(v) as Map<String,RectF>
    assertEquals(3,icons.size);icons.values.toList().zipWithNext().forEach { (a,b) -> assertFalse(RectF.intersects(a,b)) }
    val r=icons.getValue("note-2");point=(field(v,"left")+r.centerX()*field(v,"ratio")) to (field(v,"top")+r.centerY()*field(v,"ratio"));val t=SystemClock.uptimeMillis();touch(v,MotionEvent.ACTION_DOWN,listOf(point),t);touch(v,MotionEvent.ACTION_UP,listOf(point),t)

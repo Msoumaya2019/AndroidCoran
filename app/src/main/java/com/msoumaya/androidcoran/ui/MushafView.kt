@@ -20,6 +20,7 @@ class MushafView(context: Context): View(context) {
     private var curlForward=true
     private var curlAnimator: android.animation.ValueAnimator?=null
     private var capturing=false
+    private var iconGesture=false
     private var multiGesture=false
     private var gestureMoved=false
     private var lastFocusX=0f;private var lastFocusY=0f
@@ -83,7 +84,7 @@ class MushafView(context: Context): View(context) {
     })
     private val gestures=GestureDetector(context,object: GestureDetector.SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent)=true
-        override fun onSingleTapConfirmed(e: MotionEvent): Boolean { if(!annotationMode&&!multiGesture&&!gestureMoved) { val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);noteIcons.entries.lastOrNull { it.value.contains(x,y) }?.let { hit -> annotations.firstOrNull { it.id==hit.key }?.let(onInkClick) } };return true }
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean { if(!multiGesture&&!gestureMoved) { val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);noteIcons.entries.lastOrNull { it.value.contains(x,y) }?.let { hit -> annotations.firstOrNull { it.id==hit.key }?.let(onInkClick) } };return true }
         override fun onLongPress(e: MotionEvent) { if(!annotationMode&&!multiGesture&&!gestureMoved&&curlProgress>=1f) selectionAt(e.x,e.y)?.let { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);onVerse(it.num("verseId"));onSelection(it) } }
         override fun onDoubleTap(e: MotionEvent): Boolean { if(zoom>1f) { zoom=1f;offsetX=0f;offsetY=0f;invalidate() } else zoomAt(2f,e.x,e.y);return true }
         override fun onScroll(e1: MotionEvent?,e2: MotionEvent,distanceX: Float,distanceY: Float): Boolean { gestureMoved=true;if(zoom>1f) { offsetX-=distanceX;offsetY-=distanceY;invalidate() };return true }
@@ -97,7 +98,7 @@ class MushafView(context: Context): View(context) {
     private fun font(name: String): Typeface { val file=when(name) { "surah-name"->"surah-name-v4";"basmala"->"vertopal.com_QCF_Bismillah-Regular";else->name };return fonts[file] ?: Typeface.createFromAsset(context.assets,"fonts/$file.ttf").also { fonts.put(file,it) } }
     override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
         if(curlProgress<1f) return true
-        if(event.actionMasked==MotionEvent.ACTION_DOWN) { multiGesture=false;gestureMoved=false }
+        if(event.actionMasked==MotionEvent.ACTION_DOWN) { multiGesture=false;gestureMoved=false;val px=(event.x-left-offsetX)/(ratio*zoom);val py=(event.y-top-offsetY)/(ratio*zoom);iconGesture=annotationMode&&inkTool!="eraser"&&noteIcons.values.any { it.contains(px,py) } }
         if(event.pointerCount>1) {
             val cx=(0 until event.pointerCount).sumOf { event.getX(it).toDouble() }.toFloat()/event.pointerCount
             val cy=(0 until event.pointerCount).sumOf { event.getY(it).toDouble() }.toFloat()/event.pointerCount
@@ -107,10 +108,11 @@ class MushafView(context: Context): View(context) {
         scale.onTouchEvent(event)
         if(event.pointerCount>1||multiGesture) {
             if(!multiGesture) { val cancel=MotionEvent.obtain(event);cancel.action=MotionEvent.ACTION_CANCEL;gestures.onTouchEvent(cancel);cancel.recycle() }
-            multiGesture=true;gestureMoved=true;inkDrawing=false;inkDraft.clear();onInkActive(false);parent?.requestDisallowInterceptTouchEvent(true)
+            multiGesture=true;iconGesture=false;gestureMoved=true;inkDrawing=false;inkDraft.clear();onInkActive(false);parent?.requestDisallowInterceptTouchEvent(true)
             if(event.actionMasked==MotionEvent.ACTION_UP||event.actionMasked==MotionEvent.ACTION_CANCEL) parent?.requestDisallowInterceptTouchEvent(false)
             invalidate();return true
         }
+        if(iconGesture) { gestures.onTouchEvent(event);return true }
         if(inkDrawing&&stylusOnly&&event.getToolType(0)!=MotionEvent.TOOL_TYPE_STYLUS) return true
         if(annotationMode&&(data!=null||bitmap!=null)&&(!stylusOnly||event.getToolType(0)==MotionEvent.TOOL_TYPE_STYLUS)) {
             if(event.pointerCount>1) { inkDrawing=false;inkDraft.clear();onInkActive(false);scale.onTouchEvent(event);invalidate();return true }
