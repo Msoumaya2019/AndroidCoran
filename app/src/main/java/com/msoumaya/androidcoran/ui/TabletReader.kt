@@ -48,6 +48,14 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
   if(record) { undo=(undo+InkOperation(previous,ink)).takeLast(40);redo=emptyList() }
   vm.action { vm.repo.mutate { if(vm.repo.user.value==expectedOwner) saveReaderInk(it,ink,restore).let { next -> next.with("reader" to next.obj("reader").with("noteCategories" to element((next.obj("reader").arr("noteCategories").mapNotNull { c -> (c as? JsonPrimitive)?.contentOrNull }+ink.categories).distinct()))) } else it } }
  }
+ suspend fun persistNote(ink: ReaderInk) {
+  check(vm.repo.user.value==expectedOwner) {"Le compte a changé. Rouvrez la note."}
+  val previous=allReaderInk(vm.repo.state.value).firstOrNull {it.id==ink.id}
+  vm.repo.mutate {check(vm.repo.user.value==expectedOwner) {"Le compte a changé."};saveReaderNote(it,ink)}
+  check(vm.repo.user.value==expectedOwner&&allReaderInk(vm.repo.state.value).any {it.id==ink.id&&it.updatedAt==ink.updatedAt}) {"La note a été modifiée ailleurs. Rouvrez-la avant d’enregistrer."}
+  undo=(undo+InkOperation(previous,ink)).takeLast(40);redo=emptyList()
+  annotating=false;tool="select";notesOpen=false;options=false;readerOptions=false;selection=null;onClearSelection()
+ }
  fun remove(ink: ReaderInk,record: Boolean=true) {
   if(record) { undo=(undo+InkOperation(ink,ink.copy(deletedAt=annotationTime(ink.updatedAt),updatedAt=annotationTime(ink.updatedAt)))).takeLast(40);redo=emptyList() }
   vm.action { vm.repo.mutate { if(vm.repo.user.value==expectedOwner) deleteReaderInk(it,ink.id,annotationTime(ink.updatedAt)) else it } }
@@ -144,8 +152,8 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
       }
       }
       }
-      if(controls.floatingTools) TabletToolbar(false,tool,{startDrawing(it)},{options=true},::undoInk,::redoInk,undo.isNotEmpty(),redo.isNotEmpty())
      }
+     if(controls.floatingTools) Box(Modifier.align(Alignment.BottomCenter)) {TabletToolbar(false,tool,{startDrawing(it)},{options=true},::undoInk,::redoInk,undo.isNotEmpty(),redo.isNotEmpty())}
      if(controls.canAnnotate&&notesOpen&&!immersive&&layout.notesOverlay) Surface(Modifier.align(Alignment.CenterEnd).widthIn(max=340.dp).fillMaxWidth(.9f).fillMaxHeight(.9f).testTag("tablet-notes-overlay"),tonalElevation=6.dp,shape=MaterialTheme.shapes.large) { editorOrNotes() }
     }
     if(controls.canAnnotate&&notesOpen&&!immersive&&!layout.notesOverlay) Surface(Modifier.width(280.dp).fillMaxHeight().testTag("tablet-notes-sidebar"),tonalElevation=3.dp) { editorOrNotes() }
@@ -166,7 +174,7 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
    if(double) TextButton(onClick={change(prefs.copy(spread="single"))}) { Text("Une seule page") }
    TextButton(onClick={immersive=false}) { Text("Quitter la lecture plein écran") }
   }
-  if(edit!=null) ReaderInkEditor(edit,{save(it);pendingJson=null},onDelete={if(pending==null) remove(edit);pendingJson=null;editing=null},onClose={pendingJson=null;editing=null},stylusOnly=prefs.stylusOnly,availableCategories=(noteCategories+state.obj("reader").arr("noteCategories").mapNotNull { (it as? JsonPrimitive)?.contentOrNull }+allReaderInk(state).flatMap { it.categories }).distinct())
+  if(edit!=null) ReaderInkEditor(edit,{save(it);pendingJson=null},onDelete={if(pending==null) remove(edit);pendingJson=null;editing=null},onClose={pendingJson=null;editing=null},stylusOnly=prefs.stylusOnly,startEditing=pending!=null,onSave={persistNote(it)},availableCategories=(noteCategories+state.obj("reader").arr("noteCategories").mapNotNull { (it as? JsonPrimitive)?.contentOrNull }+allReaderInk(state).flatMap { it.categories }).distinct())
   if(options) TabletInkPreferences(prefs,::change) { options=false }
   if(notebook) AnnotationNotebook(vm,state,onOpen={ink ->
    notebook=false

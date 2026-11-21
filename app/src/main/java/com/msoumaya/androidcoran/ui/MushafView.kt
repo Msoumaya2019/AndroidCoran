@@ -26,6 +26,7 @@ class MushafView(context: Context): View(context) {
     private var lastFocusX=0f;private var lastFocusY=0f
     private var lastMultiX=0f;private var lastMultiY=0f
     private val noteIcons=mutableMapOf<String,RectF>()
+    private val noteHitIcons=mutableMapOf<String,RectF>()
     var annotationsEnabled=true
     var stylusOnly=false
     var inkTool="pen";var inkColor="#16A34A";var inkWidth=.003f;var inkPenStyle="ink"
@@ -85,7 +86,7 @@ class MushafView(context: Context): View(context) {
     })
     private val gestures=GestureDetector(context,object: GestureDetector.SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent)=true
-        override fun onSingleTapConfirmed(e: MotionEvent): Boolean { if(!multiGesture&&!gestureMoved) { val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);noteIcons.entries.lastOrNull { it.value.contains(x,y) }?.let { hit -> annotations.firstOrNull { it.id==hit.key }?.let(onInkClick) } };return true }
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean { if(!multiGesture&&!gestureMoved) { val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);noteHitIcons.entries.lastOrNull { it.value.contains(x,y) }?.let { hit -> annotations.firstOrNull { it.id==hit.key }?.let(onInkClick) } };return true }
         override fun onLongPress(e: MotionEvent) { if(!annotationMode&&!multiGesture&&!gestureMoved&&curlProgress>=1f) selectionAt(e.x,e.y)?.let { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);onVerse(it.num("verseId"));onSelection(it) } }
         override fun onDoubleTap(e: MotionEvent): Boolean { onViewportChange(); if(zoom>1f) { zoom=1f;offsetX=0f;offsetY=0f;invalidate() } else zoomAt(2f,e.x,e.y);return true }
         override fun onScroll(e1: MotionEvent?,e2: MotionEvent,distanceX: Float,distanceY: Float): Boolean { gestureMoved=true;onViewportChange();if(zoom>1f) { offsetX-=distanceX;offsetY-=distanceY;invalidate() };return true }
@@ -99,7 +100,7 @@ class MushafView(context: Context): View(context) {
     private fun font(name: String): Typeface { val file=when(name) { "surah-name"->"surah-name-v4";"basmala"->"vertopal.com_QCF_Bismillah-Regular";else->name };return fonts[file] ?: Typeface.createFromAsset(context.assets,"fonts/$file.ttf").also { fonts.put(file,it) } }
     override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
         if(curlProgress<1f) return true
-        if(event.actionMasked==MotionEvent.ACTION_DOWN) { multiGesture=false;gestureMoved=false;val px=(event.x-left-offsetX)/(ratio*zoom);val py=(event.y-top-offsetY)/(ratio*zoom);iconGesture=annotationMode&&inkTool!="eraser"&&noteIcons.values.any { it.contains(px,py) } }
+        if(event.actionMasked==MotionEvent.ACTION_DOWN) { multiGesture=false;gestureMoved=false;val px=(event.x-left-offsetX)/(ratio*zoom);val py=(event.y-top-offsetY)/(ratio*zoom);iconGesture=annotationMode&&inkTool!="eraser"&&noteHitIcons.values.any { it.contains(px,py) } }
         if(event.pointerCount>1) {
             onViewportChange()
             val cx=(0 until event.pointerCount).sumOf { event.getX(it).toDouble() }.toFloat()/event.pointerCount
@@ -168,14 +169,14 @@ class MushafView(context: Context): View(context) {
         canvas.restore();if(!capturing) curlBitmap?.let { drawPageCurl(canvas,it,curlProgress,curlForward) };canvas.restore()
     }
     private fun drawNoteIcons(canvas: Canvas,w: Float,h: Float) {
-        noteIcons.clear();if(!annotationsEnabled) return
-        val size=maxOf(w*.038f,20f/(ratio*zoom));val gap=size*.25f
+        noteIcons.clear();noteHitIcons.clear();if(!annotationsEnabled) return
+        val size=maxOf(w*.045f,24f*resources.displayMetrics.density/(ratio*zoom));val touch=maxOf(size,44f*resources.displayMetrics.density/(ratio*zoom));val gap=touch-size+size*.18f
         val notes=annotations.filter { it.source==source&&it.page==page&&(it.tool=="note"||it.text.isNotBlank()||it.note.isNotEmpty()||it.title.isNotBlank()||it.categories.isNotEmpty()) }.sortedWith(compareBy<ReaderInk> { zones(it).firstOrNull()?.top?:it.outlines.firstOrNull()?.points?.firstOrNull()?.y?.times(h)?:0f }.thenBy { it.id })
         var nextY=0f;var column=0
         notes.forEach { ink ->
             val desired=zones(ink).firstOrNull()?.top?:ink.outlines.firstOrNull()?.points?.firstOrNull()?.y?.times(h)?:0f
             var y=maxOf(desired,nextY).coerceAtLeast(0f);if(y+size>h) { column++;y=0f }
-            val x=w+w*.025f+column*(size+gap);val r=RectF(x,y,x+size,y+size);noteIcons[ink.id]=r;nextY=y+size+gap
+            val x=w+w*.025f+column*(size+gap);val r=RectF(x,y,x+size,y+size);noteIcons[ink.id]=r;noteHitIcons[ink.id]=RectF(r).apply {inset(-(touch-size)/2,-(touch-size)/2)};nextY=y+size+gap
             drawNoteIcon(canvas,r,ink.iconColor)
         }
     }

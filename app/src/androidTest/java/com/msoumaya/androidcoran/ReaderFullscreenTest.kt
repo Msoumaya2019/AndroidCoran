@@ -148,13 +148,13 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
+        compose.onNodeWithText("Modifier",substring=false).performClick()
         compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Zone de note manuscrite").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Autoriser le doigt ou un stylet non reconnu").performScrollTo().performClick()
         compose.onNodeWithContentDescription("Zone de note manuscrite").performTouchInput { swipe(centerLeft,centerRight,300) }
         compose.onNodeWithText("Note personnelle").performScrollTo().performClick()
         compose.onNodeWithText("Enregistrer",substring=false).performClick()
         compose.waitUntil(10000) { readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty() }
-        compose.onNodeWithText("Annoter",substring=false).performScrollTo().performClick()
         compose.onNodeWithText("Lecture plein écran",substring=false).performScrollTo().performClick()
         compose.activityRule.scenario.recreate();assertFullscreen()
         assertTrue(readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty())
@@ -162,6 +162,7 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
+        compose.onNodeWithText("Modifier",substring=false).performClick()
         compose.onNodeWithContentDescription("Supprimer l’annotation").performClick()
         compose.onNodeWithText("Supprimer",substring=false).performClick()
         compose.waitUntil(10000) { readerInk(repo.state.value,1).none { it.id==id } }
