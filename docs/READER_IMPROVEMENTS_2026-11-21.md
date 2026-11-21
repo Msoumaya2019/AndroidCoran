@@ -24,7 +24,7 @@ Les tracés libres ordinaires continuent à être sauvegardés immédiatement. L
 
 L’effet de courbure est un rendu Canvas par maillage, pas une simulation physique 3D ; le choix de désactivation est disponible dans Réglages. Les animations système désactivées suppriment aussi les animations de durée Android. Le Tajwid simplifié utilise une liste de versets, sans feuille de Mushaf à courber. La double page conserve son mode de lecture : revenir à une seule page pour dessiner.
 
-Les mesures de fluidité sur tablette physique, le rejet de paume matériel, les stylets réels et la synchronisation avec un compte Supabase réel doivent être vérifiés sur appareil. Aucune validation de ces points n’est revendiquée par les tests synthétiques. 
+Les mesures de fluidité sur tablette physique, le rejet de paume matériel, les stylets réels et la synchronisation avec un compte Supabase réel doivent être vérifiés sur appareil. Aucune validation de ces points n’est revendiquée par les tests synthétiques.
 
 ## Résultats exécutés
 
