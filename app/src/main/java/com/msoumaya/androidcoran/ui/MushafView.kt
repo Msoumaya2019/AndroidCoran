@@ -176,7 +176,7 @@ class MushafView(context: Context): View(context) {
         notes.forEach { ink ->
             val desired=zones(ink).firstOrNull()?.top?:ink.outlines.firstOrNull()?.points?.firstOrNull()?.y?.times(h)?:0f
             var y=maxOf(desired,nextY).coerceAtLeast(0f);if(y+size>h) { column++;y=0f }
-            val x=w+w*.025f+column*(size+gap);val r=RectF(x,y,x+size,y+size);noteIcons[ink.id]=r;noteHitIcons[ink.id]=RectF(r).apply {inset(-(touch-size)/2,-(touch-size)/2)};nextY=y+size+gap
+            val x=w+w*.025f+column*(size+gap);val r=RectF(x,y,x+size,y+size);noteIcons[ink.id]=r;noteHitIcons[ink.id]=RectF(maxOf(w+w*.005f,r.centerX()-touch/2),r.centerY()-touch/2,maxOf(w+w*.005f,r.centerX()-touch/2)+touch,r.centerY()+touch/2);nextY=y+size+gap
             drawNoteIcon(canvas,r,ink.iconColor)
         }
     }
