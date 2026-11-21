@@ -12,6 +12,17 @@ class MushafView(context: Context): View(context) {
     var annotationOwner="";set(value) { if(field!=value) { inkDraft.clear();inkDrawing=false };field=value }
     var annotationMode=false;set(value) { if(field&&!value) { inkDraft.clear();inkDrawing=false;onInkActive(false);parent?.requestDisallowInterceptTouchEvent(false) };field=value }
     var marginEnabled=false
+    var workspaceBounds: RectF?=null
+    var pageCurlEnabled=true
+    private var curlBitmap: Bitmap?=null
+    private var curlProgress=1f
+    private var curlForward=true
+    private var curlAnimator: android.animation.ValueAnimator?=null
+    private var capturing=false
+    private var multiGesture=false
+    private var gestureMoved=false
+    private var lastFocusX=0f;private var lastFocusY=0f
+    private val noteIcons=mutableMapOf<String,RectF>()
     var annotationsEnabled=true
     var stylusOnly=false
     var inkTool="pen";var inkColor="#16A34A";var inkWidth=.003f;var inkPenStyle="ink"
@@ -63,18 +74,35 @@ class MushafView(context: Context): View(context) {
     private var data: JsonObject?=null;private var bitmap: Bitmap?=null;private var bounds: JsonArray?=null
     private val fonts=LruCache<String,Typeface>(4);private val regions=mutableListOf<Pair<RectF,Int>>();private val paint=Paint(Paint.ANTI_ALIAS_FLAG)
     private var zoom=1f;private var offsetX=0f;private var offsetY=0f;private var ratio=1f;private var left=0f;private var top=0f
-    private val scale=ScaleGestureDetector(context,object: ScaleGestureDetector.SimpleOnScaleGestureListener() { override fun onScale(detector: ScaleGestureDetector): Boolean { zoom=(zoom*detector.scaleFactor).coerceIn(1f,3f);invalidate();return true } })
-    private val gestures=GestureDetector(context,object: GestureDetector.SimpleOnGestureListener() {
-        override fun onDown(e: android.view.MotionEvent)=true
-        override fun onSingleTapConfirmed(e: android.view.MotionEvent): Boolean { annotationAt(e.x,e.y)?.let { onInkClick(it);return true };val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);regions.lastOrNull { it.first.contains(x,y) }?.let { onVerse(it.second) };return true }
-        override fun onLongPress(e: MotionEvent) { selectionAt(e.x,e.y)?.let(onSelection) }
-        override fun onDoubleTap(e: android.view.MotionEvent): Boolean { zoom=if(zoom>1f) 1f else 2f;offsetX=0f;offsetY=0f;invalidate();return true }
-        override fun onScroll(e1: android.view.MotionEvent?,e2: android.view.MotionEvent,distanceX: Float,distanceY: Float): Boolean { if(zoom>1f) { offsetX-=distanceX;offsetY-=distanceY;invalidate() };return true }
-        override fun onFling(e1: android.view.MotionEvent?,e2: android.view.MotionEvent,velocityX: Float,velocityY: Float): Boolean { if(!inkDrawing&&zoom==1f&&e1!=null&&kotlin.math.abs(e2.x-e1.x)>80&&kotlin.math.abs(velocityX)>150) onPage(if(e2.x>e1.x) page+1 else page-1);return true }
+    private fun zoomAt(factor: Float,x: Float,y: Float) { val t=ReaderTransform(zoom,offsetX,offsetY).scale(factor,x,y,left,top);zoom=t.zoom;offsetX=t.x;offsetY=t.y;invalidate() }
+    private val scale=ScaleGestureDetector(context,object: ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScaleBegin(d: ScaleGestureDetector): Boolean { lastFocusX=d.focusX;lastFocusY=d.focusY;return true }
+        override fun onScale(d: ScaleGestureDetector): Boolean { offsetX+=d.focusX-lastFocusX;offsetY+=d.focusY-lastFocusY;zoomAt(d.scaleFactor,d.focusX,d.focusY);lastFocusX=d.focusX;lastFocusY=d.focusY;return true }
     })
-    fun load(q: Quran,page: Int,source: String,document: JsonObject?,image: Bitmap?,regions: JsonArray?) { this.page=page;this.source=source;inkDrawing=false;inkDraft.clear();data=document;bitmap=image;bounds=regions;zoom=1f;offsetX=0f;offsetY=0f;invalidate();contentDescription="Mushaf page $page" }
+    private val gestures=GestureDetector(context,object: GestureDetector.SimpleOnGestureListener() {
+        override fun onDown(e: MotionEvent)=true
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean { if(!annotationMode&&!multiGesture&&!gestureMoved) { val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);noteIcons.entries.lastOrNull { it.value.contains(x,y) }?.let { hit -> annotations.firstOrNull { it.id==hit.key }?.let(onInkClick) } };return true }
+        override fun onLongPress(e: MotionEvent) { if(!annotationMode&&!multiGesture&&!gestureMoved&&curlProgress>=1f) selectionAt(e.x,e.y)?.let { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);onVerse(it.num("verseId"));onSelection(it) } }
+        override fun onDoubleTap(e: MotionEvent): Boolean { if(zoom>1f) { zoom=1f;offsetX=0f;offsetY=0f;invalidate() } else zoomAt(2f,e.x,e.y);return true }
+        override fun onScroll(e1: MotionEvent?,e2: MotionEvent,distanceX: Float,distanceY: Float): Boolean { gestureMoved=true;if(zoom>1f) { offsetX-=distanceX;offsetY-=distanceY;invalidate() };return true }
+        override fun onFling(e1: MotionEvent?,e2: MotionEvent,velocityX: Float,velocityY: Float): Boolean { if(!inkDrawing&&!multiGesture&&zoom==1f&&e1!=null&&kotlin.math.abs(e2.x-e1.x)>80&&kotlin.math.abs(velocityX)>150) onPage(if(e2.x>e1.x) page+1 else page-1);return true }
+    })
+    fun load(q: Quran,page: Int,source: String,document: JsonObject?,image: Bitmap?,regions: JsonArray?) { val previousPage=this.page
+        val old=if(pageCurlEnabled&&!capturing&&this.page!=page&&width>0&&height>0&&(data!=null||bitmap!=null)) { capturing=true;try { Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888).also { draw(Canvas(it)) } } finally { capturing=false } } else null
+        curlAnimator?.cancel();curlBitmap?.recycle();curlBitmap=null;curlProgress=1f
+        if(old!=null) { curlBitmap=old;curlForward=page>previousPage;curlProgress=0f;curlAnimator=android.animation.ValueAnimator.ofFloat(0f,1f).apply { duration=480;interpolator=android.view.animation.AccelerateDecelerateInterpolator();addUpdateListener { curlProgress=it.animatedValue as Float;invalidate();if(curlProgress>=1f) { curlBitmap?.recycle();curlBitmap=null } };start() } }
+        this.page=page;this.source=source;inkDrawing=false;inkDraft.clear();data=document;bitmap=image;bounds=regions;zoom=1f;offsetX=0f;offsetY=0f;invalidate();contentDescription="Mushaf page $page" }
     private fun font(name: String): Typeface { val file=when(name) { "surah-name"->"surah-name-v4";"basmala"->"vertopal.com_QCF_Bismillah-Regular";else->name };return fonts[file] ?: Typeface.createFromAsset(context.assets,"fonts/$file.ttf").also { fonts.put(file,it) } }
     override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+        if(curlProgress<1f) return true
+        if(event.actionMasked==MotionEvent.ACTION_DOWN) { multiGesture=false;gestureMoved=false }
+        scale.onTouchEvent(event)
+        if(event.pointerCount>1||multiGesture) {
+            if(!multiGesture) { val cancel=MotionEvent.obtain(event);cancel.action=MotionEvent.ACTION_CANCEL;gestures.onTouchEvent(cancel);cancel.recycle() }
+            multiGesture=true;gestureMoved=true;inkDrawing=false;inkDraft.clear();onInkActive(false);parent?.requestDisallowInterceptTouchEvent(true)
+            if(event.actionMasked==MotionEvent.ACTION_UP||event.actionMasked==MotionEvent.ACTION_CANCEL) parent?.requestDisallowInterceptTouchEvent(false)
+            invalidate();return true
+        }
         if(inkDrawing&&stylusOnly&&event.getToolType(0)!=MotionEvent.TOOL_TYPE_STYLUS) return true
         if(annotationMode&&(data!=null||bitmap!=null)&&(!stylusOnly||event.getToolType(0)==MotionEvent.TOOL_TYPE_STYLUS)) {
             if(event.pointerCount>1) { inkDrawing=false;inkDraft.clear();onInkActive(false);scale.onTouchEvent(event);invalidate();return true }
@@ -98,11 +126,12 @@ class MushafView(context: Context): View(context) {
             }
             invalidate();return true
         }
-        scale.onTouchEvent(event);if(!scale.isInProgress) gestures.onTouchEvent(event);return true
+        if(!scale.isInProgress) gestures.onTouchEvent(event);return true
     }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas);canvas.save();canvas.clipRect(0f,0f,width.toFloat(),height.toFloat());val b=bitmap;val w=b?.width?.toFloat()?:1000f;val h=b?.height?.toFloat()?:2120f
-        val space=workspaceDimensions(w,h,marginEnabled);ratio=minOf(width/space.first,height/space.second);left=(width-space.first*ratio)/2+(if(marginEnabled) w*NOTE_MARGIN_X*ratio else 0f);top=(height-space.second*ratio)/2+(if(marginEnabled) h*NOTE_MARGIN_Y*ratio else 0f)
+        val workspace=workspaceBounds?:inkWorkspace(if(annotationsEnabled) annotations.filter { it.page==page&&it.source==source } else emptyList(),marginEnabled).let { RectF(it.left,it.top,it.right,it.bottom) }
+        val space=workspace.width()*w to workspace.height()*h;ratio=minOf(width/space.first,height/space.second);left=(width-space.first*ratio)/2-workspace.left*w*ratio;top=(height-space.second*ratio)/2-workspace.top*h*ratio
         canvas.drawColor(Color.WHITE)
         canvas.save();canvas.translate(left+offsetX,top+offsetY);canvas.scale(ratio*zoom,ratio*zoom);regions.clear();wordRegions.clear();wordDetails.clear()
         if(b!=null) { paint.color=Color.WHITE;canvas.drawBitmap(b,0f,0f,paint);val playbackLines=mutableMapOf<Int,MutableList<RectF>>()
@@ -123,8 +152,22 @@ class MushafView(context: Context): View(context) {
             }
         };if(annotationsEnabled) annotations.filter { it.source==source&&(it.page==page||it.anchor!=null) }.forEach { ink -> val areas=zones(ink);if(ink.anchor==null||areas.isNotEmpty()) drawReaderMark(canvas,ink,areas,w,h) }
         if(inkDraft.isNotEmpty()) drawReaderMark(canvas,ReaderInk("draft",page,listOf(InkStroke(inkDraft)),emptyList(),emptyList(),"",source=source,tool=inkTool,color=inkColor,width=inkWidth,penStyle=inkPenStyle),emptyList(),w,h)
-        canvas.restore();canvas.restore()
+        drawNoteIcons(canvas,w,h)
+        canvas.restore();if(!capturing) curlBitmap?.let { drawPageCurl(canvas,it,curlProgress,curlForward) };canvas.restore()
     }
+    private fun drawNoteIcons(canvas: Canvas,w: Float,h: Float) {
+        noteIcons.clear();if(!annotationsEnabled) return
+        val size=maxOf(w*.038f,20f/(ratio*zoom));val gap=size*.25f
+        val notes=annotations.filter { it.source==source&&it.page==page&&(it.tool=="note"||it.text.isNotBlank()||it.note.isNotEmpty()||it.title.isNotBlank()||it.categories.isNotEmpty()) }.sortedWith(compareBy<ReaderInk> { zones(it).firstOrNull()?.top?:it.outlines.firstOrNull()?.points?.firstOrNull()?.y?.times(h)?:0f }.thenBy { it.id })
+        var nextY=0f;var column=0
+        notes.forEach { ink ->
+            val desired=zones(ink).firstOrNull()?.top?:ink.outlines.firstOrNull()?.points?.firstOrNull()?.y?.times(h)?:0f
+            var y=maxOf(desired,nextY).coerceAtLeast(0f);if(y+size>h) { column++;y=0f }
+            val x=w+w*.025f+column*(size+gap);val r=RectF(x,y,x+size,y+size);noteIcons[ink.id]=r;nextY=y+size+gap
+            drawNoteIcon(canvas,r,ink.iconColor)
+        }
+    }
+    override fun onDetachedFromWindow() { curlAnimator?.cancel();curlBitmap?.recycle();curlBitmap=null;super.onDetachedFromWindow() }
     private fun drawPlaybackBand(canvas: Canvas,areas: List<RectF>) { val id=playing?:return;if(areas.isEmpty()) return;overlay(canvas,RectF(areas.minOf { it.left },areas.minOf { it.top },areas.maxOf { it.right },areas.maxOf { it.bottom }),id) }
     private fun overlay(canvas: Canvas,r: RectF,id: Int) { if(id==playing) { paint.color=Color.argb(82,246,196,69);paint.style=Paint.Style.FILL;canvas.drawRoundRect(r,8f,8f,paint);paint.color=Color.argb(82,183,131,19);paint.style=Paint.Style.STROKE;paint.strokeWidth=2f;canvas.drawRoundRect(r,8f,8f,paint);paint.style=Paint.Style.FILL;return };val color=when {id==selected -> 0x557B285C;id in difficulties -> 0x33A85353;id in bookmarks -> 0x33C89A52;else -> return };paint.color=color;canvas.drawRoundRect(r,8f,8f,paint) }
 }

@@ -149,9 +149,11 @@ class ReaderFullscreenTest {
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
         compose.waitUntil(10000) { compose.onAllNodesWithContentDescription("Zone de note manuscrite").fetchSemanticsNodes().isNotEmpty() }
-        compose.runOnUiThread { sendReaderStylus(findReaderView<com.msoumaya.androidcoran.ui.HandwritingView>(compose.activity.window.decorView)!!,listOf(.1f to .2f,.5f to .5f,.9f to .8f)) }
+        compose.onNodeWithText("Autoriser le doigt ou un stylet non reconnu").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Zone de note manuscrite").performTouchInput { swipe(centerLeft,centerRight,300) }
+        compose.onNodeWithText("Note personnelle").performScrollTo().performClick()
+        compose.onNodeWithText("Enregistrer",substring=false).performClick()
         compose.waitUntil(10000) { readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty() }
-        compose.onNodeWithText("Fermer",substring=false).performClick()
         compose.onNodeWithText("Annoter",substring=false).performScrollTo().performClick()
         compose.onNodeWithText("Lecture plein écran",substring=false).performScrollTo().performClick()
         compose.activityRule.scenario.recreate();assertFullscreen()
@@ -160,7 +162,7 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
-        compose.onNodeWithText("Supprimer l’annotation").performClick()
+        compose.onNodeWithContentDescription("Supprimer l’annotation").performClick()
         compose.onNodeWithText("Supprimer",substring=false).performClick()
         compose.waitUntil(10000) { readerInk(repo.state.value,1).none { it.id==id } }
         assertTrue(repo.state.value.obj("readerAnnotations").obj(id).str("deletedAt").isNotBlank())
