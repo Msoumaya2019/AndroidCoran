@@ -36,7 +36,8 @@ class ReaderInteractionAndroidTest {
    for(span in listOf(80f,100f,130f,160f)) touch(v,MotionEvent.ACTION_MOVE,listOf(x-span to y,x+span to y),down)
    v.draw(Canvas(b));assertTrue(field(v,"zoom")>1f)
    assertEquals(beforeX,(x-field(v,"left")-field(v,"offsetX"))/field(v,"zoom"),.01f);assertEquals(beforeY,(y-field(v,"top")-field(v,"offsetY"))/field(v,"zoom"),.01f)
-   touch(v,MotionEvent.ACTION_POINTER_UP or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),listOf(x-160 to y,x+160 to y),down);touch(v,MotionEvent.ACTION_UP,listOf(x-160 to y),down)
+   touch(v,MotionEvent.ACTION_MOVE,listOf(x-110 to y+30,x+210 to y+30),down);v.draw(Canvas(b));assertEquals(beforeX,(x+50-field(v,"left")-field(v,"offsetX"))/field(v,"zoom"),.01f);assertEquals(beforeY,(y+30-field(v,"top")-field(v,"offsetY"))/field(v,"zoom"),.01f)
+   touch(v,MotionEvent.ACTION_POINTER_UP or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),listOf(x-110 to y+30,x+210 to y+30),down);touch(v,MotionEvent.ACTION_UP,listOf(x-160 to y),down)
   }
   SystemClock.sleep(ViewConfiguration.getLongPressTimeout()+100L);compose.runOnIdle { assertEquals(0,menus) }
  }
@@ -49,7 +50,7 @@ class ReaderInteractionAndroidTest {
  }
  @Test fun stylusCanDrawAtBothOuterScreenEdgesWithoutCoordinateClamping()=fixture { v,_ ->
   var stroke: InkStroke?=null
-  compose.runOnIdle { v.annotationMode=true;v.stylusOnly=true;v.onInkStroke={s,_ -> stroke=s};val t=SystemClock.uptimeMillis();touch(v,MotionEvent.ACTION_DOWN,listOf(4f to 300f),t,MotionEvent.TOOL_TYPE_STYLUS);touch(v,MotionEvent.ACTION_MOVE,listOf(1394f to 350f),t,MotionEvent.TOOL_TYPE_STYLUS);touch(v,MotionEvent.ACTION_UP,listOf(1395f to 360f),t,MotionEvent.TOOL_TYPE_STYLUS);assertTrue(stroke!!.points.first().x< -.35f);assertTrue(stroke!!.points.last().x>1.35f);assertEquals(stroke,inkFromJson(newReaderInk(1,stroke!!,emptyList()).toSourceJson())!!.outlines.single()) }
+  compose.runOnIdle { v.annotationMode=true;v.stylusOnly=true;v.onInkStroke={s,_ -> stroke=s};val t=SystemClock.uptimeMillis();touch(v,MotionEvent.ACTION_DOWN,listOf(4f to 300f),t,MotionEvent.TOOL_TYPE_STYLUS);touch(v,MotionEvent.ACTION_MOVE,listOf(1394f to 350f),t,MotionEvent.TOOL_TYPE_STYLUS);touch(v,MotionEvent.ACTION_UP,listOf(1395f to 360f),t,MotionEvent.TOOL_TYPE_STYLUS);assertTrue(stroke!!.points.first().x< -.35f);assertTrue(stroke!!.points.last().x>1.35f);assertEquals(stroke,inkFromJson(newReaderInk(1,stroke!!,emptyList()).toSourceJson())!!.outlines.single());val scale=field(v,"ratio");v.annotations=listOf(newReaderInk(1,stroke!!,emptyList()));val frame=Bitmap.createBitmap(1400,1000,Bitmap.Config.ARGB_8888);try {v.draw(Canvas(frame));assertEquals(scale,field(v,"ratio"),0f)} finally {frame.recycle()} }
  }
  @Test fun marginNoteIconsDoNotOverlapAndTapOpensOnlyThatNote()=fixture { v,b ->
   var opened="";var menus=0;var point=0f to 0f

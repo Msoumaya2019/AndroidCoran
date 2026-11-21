@@ -11,7 +11,8 @@ import kotlinx.serialization.json.*
 class MushafView(context: Context): View(context) {
     var annotationOwner="";set(value) { if(field!=value) { inkDraft.clear();inkDrawing=false };field=value }
     var annotationMode=false;set(value) { if(field&&!value) { inkDraft.clear();inkDrawing=false;onInkActive(false);parent?.requestDisallowInterceptTouchEvent(false) };field=value }
-    var marginEnabled=false
+    private var fittedWorkspace: RectF?=null
+    var marginEnabled=false;set(value) { if(field!=value) fittedWorkspace=null;field=value }
     var workspaceBounds: RectF?=null
     var pageCurlEnabled=true
     private var curlBitmap: Bitmap?=null
@@ -22,6 +23,7 @@ class MushafView(context: Context): View(context) {
     private var multiGesture=false
     private var gestureMoved=false
     private var lastFocusX=0f;private var lastFocusY=0f
+    private var lastMultiX=0f;private var lastMultiY=0f
     private val noteIcons=mutableMapOf<String,RectF>()
     var annotationsEnabled=true
     var stylusOnly=false
@@ -77,7 +79,7 @@ class MushafView(context: Context): View(context) {
     private fun zoomAt(factor: Float,x: Float,y: Float) { val t=ReaderTransform(zoom,offsetX,offsetY).scale(factor,x,y,left,top);zoom=t.zoom;offsetX=t.x;offsetY=t.y;invalidate() }
     private val scale=ScaleGestureDetector(context,object: ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(d: ScaleGestureDetector): Boolean { lastFocusX=d.focusX;lastFocusY=d.focusY;return true }
-        override fun onScale(d: ScaleGestureDetector): Boolean { offsetX+=d.focusX-lastFocusX;offsetY+=d.focusY-lastFocusY;zoomAt(d.scaleFactor,d.focusX,d.focusY);lastFocusX=d.focusX;lastFocusY=d.focusY;return true }
+        override fun onScale(d: ScaleGestureDetector): Boolean { zoomAt(d.scaleFactor,d.focusX,d.focusY);lastFocusX=d.focusX;lastFocusY=d.focusY;return true }
     })
     private val gestures=GestureDetector(context,object: GestureDetector.SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent)=true
@@ -91,11 +93,17 @@ class MushafView(context: Context): View(context) {
         val old=if(pageCurlEnabled&&!capturing&&this.page!=page&&width>0&&height>0&&(data!=null||bitmap!=null)) { capturing=true;try { Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888).also { draw(Canvas(it)) } } finally { capturing=false } } else null
         curlAnimator?.cancel();curlBitmap?.recycle();curlBitmap=null;curlProgress=1f
         if(old!=null) { curlBitmap=old;curlForward=page>previousPage;curlProgress=0f;curlAnimator=android.animation.ValueAnimator.ofFloat(0f,1f).apply { duration=480;interpolator=android.view.animation.AccelerateDecelerateInterpolator();addUpdateListener { curlProgress=it.animatedValue as Float;invalidate();if(curlProgress>=1f) { curlBitmap?.recycle();curlBitmap=null } };start() } }
-        this.page=page;this.source=source;inkDrawing=false;inkDraft.clear();data=document;bitmap=image;bounds=regions;zoom=1f;offsetX=0f;offsetY=0f;invalidate();contentDescription="Mushaf page $page" }
+        fittedWorkspace=null;this.page=page;this.source=source;inkDrawing=false;inkDraft.clear();data=document;bitmap=image;bounds=regions;zoom=1f;offsetX=0f;offsetY=0f;invalidate();contentDescription="Mushaf page $page" }
     private fun font(name: String): Typeface { val file=when(name) { "surah-name"->"surah-name-v4";"basmala"->"vertopal.com_QCF_Bismillah-Regular";else->name };return fonts[file] ?: Typeface.createFromAsset(context.assets,"fonts/$file.ttf").also { fonts.put(file,it) } }
     override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
         if(curlProgress<1f) return true
         if(event.actionMasked==MotionEvent.ACTION_DOWN) { multiGesture=false;gestureMoved=false }
+        if(event.pointerCount>1) {
+            val cx=(0 until event.pointerCount).sumOf { event.getX(it).toDouble() }.toFloat()/event.pointerCount
+            val cy=(0 until event.pointerCount).sumOf { event.getY(it).toDouble() }.toFloat()/event.pointerCount
+            if(multiGesture&&event.actionMasked==MotionEvent.ACTION_MOVE) { offsetX+=cx-lastMultiX;offsetY+=cy-lastMultiY }
+            lastMultiX=cx;lastMultiY=cy
+        }
         scale.onTouchEvent(event)
         if(event.pointerCount>1||multiGesture) {
             if(!multiGesture) { val cancel=MotionEvent.obtain(event);cancel.action=MotionEvent.ACTION_CANCEL;gestures.onTouchEvent(cancel);cancel.recycle() }
@@ -130,7 +138,7 @@ class MushafView(context: Context): View(context) {
     }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas);canvas.save();canvas.clipRect(0f,0f,width.toFloat(),height.toFloat());val b=bitmap;val w=b?.width?.toFloat()?:1000f;val h=b?.height?.toFloat()?:2120f
-        val workspace=workspaceBounds?:inkWorkspace(if(annotationsEnabled) annotations.filter { it.page==page&&it.source==source } else emptyList(),marginEnabled).let { RectF(it.left,it.top,it.right,it.bottom) }
+        val workspace=workspaceBounds?:fittedWorkspace?:inkWorkspace(if(annotationsEnabled) annotations.filter { it.page==page&&it.source==source } else emptyList(),marginEnabled).let { RectF(it.left,it.top,it.right,it.bottom) }.also { fittedWorkspace=it }
         val space=workspace.width()*w to workspace.height()*h;ratio=minOf(width/space.first,height/space.second);left=(width-space.first*ratio)/2-workspace.left*w*ratio;top=(height-space.second*ratio)/2-workspace.top*h*ratio
         canvas.drawColor(Color.WHITE)
         canvas.save();canvas.translate(left+offsetX,top+offsetY);canvas.scale(ratio*zoom,ratio*zoom);regions.clear();wordRegions.clear();wordDetails.clear()
@@ -167,6 +175,7 @@ class MushafView(context: Context): View(context) {
             drawNoteIcon(canvas,r,ink.iconColor)
         }
     }
+    override fun onSizeChanged(w: Int,h: Int,oldw: Int,oldh: Int) { super.onSizeChanged(w,h,oldw,oldh);fittedWorkspace=null }
     override fun onDetachedFromWindow() { curlAnimator?.cancel();curlBitmap?.recycle();curlBitmap=null;super.onDetachedFromWindow() }
     private fun drawPlaybackBand(canvas: Canvas,areas: List<RectF>) { val id=playing?:return;if(areas.isEmpty()) return;overlay(canvas,RectF(areas.minOf { it.left },areas.minOf { it.top },areas.maxOf { it.right },areas.maxOf { it.bottom }),id) }
     private fun overlay(canvas: Canvas,r: RectF,id: Int) { if(id==playing) { paint.color=Color.argb(82,246,196,69);paint.style=Paint.Style.FILL;canvas.drawRoundRect(r,8f,8f,paint);paint.color=Color.argb(82,183,131,19);paint.style=Paint.Style.STROKE;paint.strokeWidth=2f;canvas.drawRoundRect(r,8f,8f,paint);paint.style=Paint.Style.FILL;return };val color=when {id==selected -> 0x557B285C;id in difficulties -> 0x33A85353;id in bookmarks -> 0x33C89A52;else -> return };paint.color=color;canvas.drawRoundRect(r,8f,8f,paint) }

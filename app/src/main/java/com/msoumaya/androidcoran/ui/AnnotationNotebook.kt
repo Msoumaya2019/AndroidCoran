@@ -31,6 +31,7 @@ import kotlinx.serialization.json.*
     LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
      if(rows.isEmpty()) item { Text("Aucune annotation pour ces filtres") }
      items(rows,key={it.id}) { n -> Panel(n.title.ifBlank { n.source+" · page "+n.page },n.text.ifBlank { if(n.note.isNotEmpty()) "Note manuscrite" else annotationToolLabel(n.tool) },{onOpen(n)}) {
+      if(n.categories.isNotEmpty()) Text(n.categories.joinToString(" · "),style=MaterialTheme.typography.labelMedium)
       Row { Checkbox(n.id in chosen,{chosen=if(it) chosen+n.id else chosen-n.id});TextButton(onClick={onSave(n.copy(favorite=!n.favorite,updatedAt=annotationTime(n.updatedAt)))}) { Text(if(n.favorite) "Retirer des favoris" else "Favori") } }
       TextButton(onClick={onSave(n.copy(masteredAt=if(n.masteredAt==null) annotationTime() else null,updatedAt=annotationTime(n.updatedAt)))}) { Text(if(n.masteredAt==null) "Passage maîtrisé" else "Retirer la maîtrise") }
       n.verses.firstOrNull()?.let { id -> Text(vm.repo.quran.reference(VerseRange(id,id)));TextButton(onClick={vm.action { vm.repo.mutate { vm.repo.review.toggleDifficulty(it,id) } }}) { Text(if(id in difficultIds) "Retirer la difficulté" else "Marquer difficile") } }
