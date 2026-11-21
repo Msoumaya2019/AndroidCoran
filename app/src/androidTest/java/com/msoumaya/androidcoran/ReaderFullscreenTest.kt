@@ -164,7 +164,7 @@ class ReaderFullscreenTest {
         compose.activityRule.scenario.recreate();assertFullscreen()
         assertTrue(readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty())
         if(compose.onAllNodesWithContentDescription("Quitter la lecture plein écran").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithContentDescription("Quitter la lecture plein écran").performClick() else compose.onNodeWithText("Quitter la lecture plein écran").performClick()
-        compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
+        openReaderNotes()
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
         compose.onNodeWithText("Modifier",substring=false).performClick()
