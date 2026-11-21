@@ -17,6 +17,11 @@ import java.time.LocalDate
 @RunWith(AndroidJUnit4::class)
 class ReaderFullscreenTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    private fun openReaderNotes() {
+        val tablet=compose.activity.getSystemService(android.view.WindowManager::class.java).maximumWindowMetrics.bounds.let {minOf(it.width(),it.height())/compose.activity.resources.displayMetrics.density>=600}
+        if(tablet) {compose.waitUntil(10000) {compose.onAllNodesWithTag("tablet-compact-header").fetchSemanticsNodes().isNotEmpty()};compose.onNodeWithTag("tablet-tab-notes").performClick()}
+        else compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
+    }
     private fun barsHidden(): Boolean {
         var hidden=false
         compose.runOnUiThread {
@@ -145,7 +150,7 @@ class ReaderFullscreenTest {
         compose.runOnUiThread { val target=findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)!!;sendReaderStylus(target,listOf(.4f to .3f,.6f to .3f,.6f to .4f,.4f to .4f,.4f to .3f)) }
         compose.waitUntil(10000) { readerInk(repo.state.value,1).any { it.id !in existingIds } }
         val id=readerInk(repo.state.value,1).single { it.id !in existingIds }.id
-        if(compose.onAllNodesWithTag("tablet-compact-header").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithText("Mes notes",substring=false).performClick() else compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
+        openReaderNotes()
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
         compose.onNodeWithText("Modifier",substring=false).performClick()
