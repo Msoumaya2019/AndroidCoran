@@ -18,6 +18,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -225,6 +227,9 @@ import java.time.Instant
     val record=studyId?.let { s.obj("studyProgress").obj("$mode:$it") }?:json()
     val planned=if(session!=null) range(session) else if(record.isNotEmpty()) range(record) else task?.range
     val through=record.num("through",(planned?.start?:1)-1)
+    var frenchAnchor by remember {mutableStateOf<androidx.compose.ui.geometry.Rect?>(null)}
+    var frenchNote by rememberSaveable { mutableStateOf<String?>(null) }
+    var recorderVerse by rememberSaveable { mutableStateOf<Int?>(null) }
     var showRecorder by rememberSaveable { mutableStateOf(false) };var recordingActive by remember { mutableStateOf(false) }
     var showSurahPicker by rememberSaveable { mutableStateOf(false) }
     var showCompletion by rememberSaveable(studyId) { mutableStateOf(false) };var completionGrade by rememberSaveable(studyId) { mutableStateOf("perfect") };var submitting by remember(studyId) { mutableStateOf(false) }
@@ -233,7 +238,7 @@ import java.time.Instant
     val pageRange=if(source=="coranTest"&&payload.first!=null) { val ids=payload.first!!.arr("lines").flatMap { it.jsonObject.arr("words") }.map { val a=it.jsonArray;q.id(a[1].jsonPrimitive.int,a[2].jsonPrimitive.int) };VerseRange(ids.min(),ids.max()) } else q.sourceRange(page,source)
     LaunchedEffect(page,source,payload.first) { if(source!="coranTest"||payload.first!=null) vm.action { vm.repo.mutate { val now=Instant.now().toString();touch(it.with("lastRead" to json("page" to page,"verseId" to pageRange.start,"readAt" to now),"readPages" to element((it.arr("readPages").map { p->p.jsonPrimitive.int }+page).distinct()))) } } }
     LaunchedEffect(current?.verseId) { if(current!=null&&!annotationBusy&&s.obj("reader").flag("followAudio",true)) { val next=q.sourcePage(current!!.verseId,source);if(next!=page) onPage(next) } }
-    LaunchedEffect(selected) { if(selected!=null) controlsVisible=true }
+
     fun command(action: String) { context.startService(Intent(context,RecitationService::class.java).setAction(action)) }
     if(showSurahPicker) ReaderSurahPicker(q,page,source,{showSurahPicker=false},{ next -> showSurahPicker=false;onPage(next) },{ id -> command("STOP");selected=null;showSurahPicker=false;onChangeSurah(id) })
     Box(Modifier.fillMaxSize()) {
@@ -244,12 +249,9 @@ import java.time.Instant
         }
         Row(Modifier.fillMaxWidth().padding(horizontal=12.dp),verticalAlignment=Alignment.CenterVertically) { TextButton(onClick={onPage(page+1)}) { Text("Suivante") };Text("$page / 604",Modifier.weight(1f),textAlign=TextAlign.Center);TextButton(onClick={onPage(page-1)}) { Text("Précédente") };TextButton(onClick={french=!french}) { Text(if(french) "Arabe" else "Français") } }
         }
-        if(source=="coran_1441"&&payload.second==null) { Column(Modifier.weight(1f).padding(20.dp)) { Text("Télécharge le Coran 1441 depuis Réglages → Téléchargements");Button(onClick={QuranDownloadWorker.enqueue(context)}) { Text("Lancer le téléchargement") } } } else if(french) LazyColumn(Modifier.weight(1f).padding(16.dp)) { items(pageRange.ids) { id -> Column(Modifier.fillMaxWidth().combinedClickable(onClick={},onLongClick={readerHostView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);selected=id}).background(if(selected==id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(10.dp)) { Text("${q.verse(id).surah}:${q.verse(id).ayah} · ${q.french(id)}",lineHeight=25.sp);val notes=q.frenchNotes(id);if(notes.isNotBlank()) Text(notes,Modifier.padding(top=5.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } } } else TabletReader(vm,s,page,source,payload,selected,current?.verseId,{selected=it},onPage,{id,repeat -> context.startService(Intent(context,RecitationService::class.java).setAction("PLAY_RANGE").putExtra("start",id).putExtra("end",id).putExtra("reciter",reciterId).putExtra("count",if(repeat) 3 else 1).putExtra("each",true)) },{annotationBusy=it},Modifier.fillMaxWidth().weight(1f))
+        if(source=="coran_1441"&&payload.second==null) { Column(Modifier.weight(1f).padding(20.dp)) { Text("Télécharge le Coran 1441 depuis Réglages → Téléchargements");Button(onClick={QuranDownloadWorker.enqueue(context)}) { Text("Lancer le téléchargement") } } } else if(french) LazyColumn(Modifier.weight(1f).padding(16.dp)) { items(pageRange.ids) { id -> var textBounds by remember(id) {mutableStateOf<androidx.compose.ui.geometry.Rect?>(null)};Column(Modifier.fillMaxWidth().onGloballyPositioned {textBounds=it.boundsInRoot()}.combinedClickable(onClick={},onLongClick={readerHostView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);frenchAnchor=textBounds;selected=id}).background(if(selected==id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(10.dp)) { Text("${q.verse(id).surah}:${q.verse(id).ayah} · ${q.french(id)}",lineHeight=25.sp);val notes=q.frenchNotes(id);if(notes.isNotBlank()) Text(notes,Modifier.padding(top=5.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } } } else TabletReader(vm,s,page,source,payload,selected,current?.verseId,{selected=it},onPage,{id,repeat -> context.startService(Intent(context,RecitationService::class.java).setAction("PLAY_RANGE").putExtra("start",id).putExtra("end",id).putExtra("reciter",reciterId).putExtra("count",if(repeat) 3 else 1).putExtra("each",true)) },{annotationBusy=it},Modifier.fillMaxWidth().weight(1f),onRecord={id -> command("STOP");recorderVerse=id;showRecorder=true},onClearSelection={selected=null})
         if(controlsVisible) {
-        if(selected!=null) {
-            val id=selected!!
-            SelectedVerseActions(q,id,s.obj("difficultyMarkers").obj(id.toString())["user"]?.let { it!=JsonNull }==true,{vm.action { vm.repo.mutate { Bookmarks(q).save(it,id,source,page) } }},{startInput=id.toString();endInput=id.toString();showAudio=true},{vm.action { vm.repo.mutate { vm.repo.review.toggleDifficulty(it,id) } }},{selected=null})
-        }
+
 
         if(task?.consolidationOffset!=null) {
             val pending=vm.repo.review.consolidations(s).any { row -> row.range.ids.any { it in task.range.ids }&&row.steps.firstOrNull { it.completed==null }?.offset==task.consolidationOffset }
@@ -280,12 +282,14 @@ import java.time.Instant
             } }
         }
 
-        TextButton(onClick={command("STOP");showRecorder=true},modifier=Modifier.fillMaxWidth()) { Text("Enregistrer ma récitation") }
-        if(showRecorder) AlertDialog(onDismissRequest={if(!recordingActive) showRecorder=false},title={Text("Ma récitation")},text={ Column(Modifier.verticalScroll(rememberScrollState())) { RecorderPanel(vm,fixedRange=planned?.let { vm.repo.study.remaining(it,through) }?:pageRange,compact=true,onActiveChanged={recordingActive=it},onShare=onShareRecitation) } },confirmButton={TextButton(enabled=!recordingActive,onClick={showRecorder=false}) { Text("Fermer") }})
+        TextButton(onClick={command("STOP");recorderVerse=null;showRecorder=true},modifier=Modifier.fillMaxWidth()) { Text("Enregistrer ma récitation") }
         ReaderAudioControls(q,current,isPlaying,passageProgress,activePreferences,{showAudio=true},::command)
         if(showAudio) ReaderAudioDialog(vm,if(startInput.isBlank()&&current!=null) RecitationService.activeRange.value?:pageRange else VerseRange(startInput.toIntOrNull()?:session?.num("start")?:task?.range?.start?:pageRange.start,endInput.toIntOrNull()?:session?.num("end")?:task?.range?.end?:pageRange.end),pageRange,reciterId,{reciterId=it},{showAudio=false;startInput="";endInput=""})
         }
     }
+    if(french&&selected!=null) { val id=selected!!;val v=q.verse(id);VerseFloatingBar(v.surah.toString()+":"+v.ayah,frenchAnchor,s.obj("difficultyMarkers").obj(id.toString())["user"].let { it!=null&&it!=JsonNull },onListen={selected=null;context.startService(Intent(context,RecitationService::class.java).setAction("PLAY_RANGE").putExtra("start",id).putExtra("end",id).putExtra("reciter",reciterId).putExtra("count",1).putExtra("each",true))},onDifficulty={vm.action {vm.repo.mutate {vm.repo.review.toggleDifficulty(it,id)}}},onNote={frenchNote=ReaderInk(java.util.UUID.randomUUID().toString(),page,emptyList(),emptyList(),listOf(id),annotationTime(),source=source,tool="note",anchor=json("verseId" to id)).toJson().toString();selected=null},onRecord={selected=null;command("STOP");recorderVerse=id;showRecorder=true},onClose={selected=null}) }
+    frenchNote?.let { raw -> val ink=inkFromJson(Json.parseToJsonElement(raw).jsonObject)!!;ReaderInkEditor(ink,onChange={n -> vm.action {vm.repo.mutate {saveReaderInk(it,n)}}},onDelete={frenchNote=null},onClose={frenchNote=null},availableCategories=(noteCategories+allReaderInk(s).flatMap { it.categories }).distinct()) }
+        if(showRecorder) AlertDialog(onDismissRequest={if(!recordingActive) showRecorder=false},title={Text("Ma récitation")},text={ Column(Modifier.verticalScroll(rememberScrollState())) { RecorderPanel(vm,fixedRange=recorderVerse?.let { VerseRange(it,it) }?:planned?.let { vm.repo.study.remaining(it,through) }?:pageRange,compact=true,onActiveChanged={recordingActive=it},onShare=onShareRecitation) } },confirmButton={TextButton(enabled=!recordingActive,onClick={showRecorder=false}) { Text("Fermer") }})
     FilledTonalIconButton(onClick={controlsVisible=!controlsVisible},modifier=Modifier.align(Alignment.TopEnd).displayCutoutPadding().padding(4.dp)) {
         Icon(if(controlsVisible) Icons.Default.Fullscreen else Icons.Default.Tune,if(controlsVisible) "Masquer les commandes" else "Afficher les commandes")
     }

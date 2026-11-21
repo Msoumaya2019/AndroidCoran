@@ -3,6 +3,8 @@ package com.msoumaya.androidcoran.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -31,16 +33,17 @@ import kotlinx.serialization.json.*
         rules[id-1].jsonObject.arr("annotations").forEach { a -> val row=a.jsonObject;for(i in row.num("start") until minOf(row.num("end"),chars.size)) colors[i]=row.str("rule") }
         val annotated=buildAnnotatedString { chars.forEachIndexed { i,cp -> val color=when { colors[i]?.startsWith("madd")==true -> Color(0xFFB45375);colors[i]?.startsWith("ikhfa")==true||colors[i]=="iqlab" -> Color(0xFF3A779B);colors[i]?.startsWith("idghaam")==true||colors[i]=="ghunnah" -> Color(0xFF6F5FA5);colors[i]=="qalqalah" -> Color(0xFFB05E32);colors[i]=="silent" -> Color(0xFFA2A2A2);colors[i]!=null -> Color(0xFFA26C44);else -> Color(0xFF241C2B) };pushStyle(SpanStyle(color=color));append(String(Character.toChars(cp)));pop() } }
         Card(modifier=Modifier.fillMaxWidth().padding(vertical=5.dp),colors=CardDefaults.cardColors(containerColor=if(playing==id) Color(0x52F6C445) else if(selected==id) MaterialTheme.colorScheme.primaryContainer else Color.White)) { Column(Modifier.padding(14.dp)) { Row { Text("${q.surah(id).name} · ${q.verse(id).ayah}",fontSize=12.sp,modifier=Modifier.weight(1f));annotations.filter { it.verses.firstOrNull()==id&&(it.tool=="note"||it.note.isNotEmpty()||it.text.isNotBlank()) }.forEach { ink -> IconButton(onClick={onNote(ink)}) { Icon(androidx.compose.material.icons.Icons.Default.StickyNote2,"Ouvrir la note "+ink.title,tint=Color(android.graphics.Color.parseColor(ink.iconColor))) } } };run {
+            var origin by remember(id) { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
             var layout by remember(id) { mutableStateOf<TextLayoutResult?>(null) }
             val words=Regex("\\S+").findAll(annotated.text).toList()
             val marks=annotations.filter { it.anchor?.num("verseId")==id||id in it.verses }
             fun boxes(start: Int,end: Int): List<android.graphics.RectF> { val l=layout?:return emptyList();return (start until end).map { l.getBoundingBox(it) }.groupBy { it.top }.values.map { line -> android.graphics.RectF(line.minOf { it.left },line.first().top,line.maxOf { it.right },line.first().bottom) } }
             fun select(position: androidx.compose.ui.geometry.Offset) {
                 val l=layout?:return;val offset=l.getOffsetForPosition(position);val index=words.indexOfFirst { offset in it.range&&boxes(it.range.first,it.range.last+1).any { r -> r.contains(position.x,position.y) } }
-                val base=json("verseId" to id,"verseRegions" to emptyList<Any>(),"regions" to emptyList<Any>())
+                val line=l.getLineForOffset(offset);val base=json("anchorRootX" to origin.x+position.x,"anchorRootTop" to origin.y+l.getLineTop(line),"anchorRootBottom" to origin.y+l.getLineBottom(line),"verseId" to id,"verseRegions" to emptyList<Any>(),"regions" to emptyList<Any>())
                 onSelection(if(index<0) base else base.with("wordIndex" to JsonPrimitive(index),"wordText" to JsonPrimitive(words[index].value)))
             }
-            Text(annotated,onTextLayout={layout=it},modifier=Modifier.fillMaxWidth().pointerInput(id,annotations) { detectTapGestures(onLongPress={position -> hostView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);onVerse(id);select(position)}) }.drawWithContent {
+            Text(annotated,onTextLayout={layout=it},modifier=Modifier.fillMaxWidth().onGloballyPositioned { origin=it.positionInRoot() }.pointerInput(id,annotations) { detectTapGestures(onLongPress={position -> hostView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);onVerse(id);select(position)}) }.drawWithContent {
                 drawContent();val l=layout
                 if(l!=null) drawIntoCanvas { canvas -> marks.forEach { ink ->
                     val index=ink.anchor?.get("wordIndex")?.jsonPrimitive?.intOrNull;val word=index?.let { words.getOrNull(it) }

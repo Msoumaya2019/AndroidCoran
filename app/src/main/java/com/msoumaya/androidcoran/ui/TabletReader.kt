@@ -1,8 +1,11 @@
 package com.msoumaya.androidcoran.ui
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalConfiguration
@@ -26,7 +31,7 @@ import kotlinx.serialization.json.*
 import java.util.UUID
 
 private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
-@Composable fun TabletReader(vm: CoranViewModel,s: JsonObject,page: Int,source: String,primary: Triple<JsonObject?,Bitmap?,JsonArray?>,selected: Int?,playing: Int?,onVerse: (Int)->Unit,onPage: (Int)->Unit,onAudio: (Int,Boolean)->Unit,onBusy: (Boolean)->Unit,modifier: Modifier) {
+@Composable fun TabletReader(vm: CoranViewModel,s: JsonObject,page: Int,source: String,primary: Triple<JsonObject?,Bitmap?,JsonArray?>,selected: Int?,playing: Int?,onVerse: (Int)->Unit,onPage: (Int)->Unit,onAudio: (Int,Boolean)->Unit,onBusy: (Boolean)->Unit,modifier: Modifier,onRecord: (Int)->Unit={},onClearSelection: ()->Unit={}) {
  val context=LocalContext.current;val configuration=LocalConfiguration.current;val owner by vm.repo.user.collectAsStateWithLifecycle();val expectedOwner=owner
  val state=if(s.str("userId")==owner.orEmpty()) s else json()
  val prefs=TabletPreferences.from(s.obj("reader").obj("tablet"))
@@ -60,8 +65,14 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
  fun redoInk() { val op=redo.lastOrNull()?:return;redo=redo.dropLast(1);undo=undo+op;if(op.after.deletedAt!=null) remove(op.after,false) else save(op.after.copy(updatedAt=annotationTime(vm.repo.state.value.obj("readerAnnotations").obj(op.after.id).str("updatedAt"))),false,true) }
  fun textExport(notes: List<ReaderInk>) { vm.action { val file=annotationExportFile(context,"txt");file.writeText(noteTextExport(notes) { vm.repo.quran.reference(VerseRange(it,it)) });withContext(Dispatchers.Main) { if(vm.repo.user.value==expectedOwner) shareAnnotationFile(context,file,"text/plain") else file.delete() } } }
  LaunchedEffect(annotating,export,editing) { onBusy(annotating||export||editing!=null) }
+ var rootPosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+ var moreActions by remember { mutableStateOf(false) }
+ fun closeSelection() { selection=null;moreActions=false;onClearSelection() }
+ LaunchedEffect(page,source,owner) { closeSelection() }
+ LaunchedEffect(selection) { if(selection==null) onClearSelection() }
+ BackHandler(selection!=null) {closeSelection()}
  val edit=pending?:allReaderInk(state).firstOrNull { it.id==editing }
- BoxWithConstraints(modifier) {
+ BoxWithConstraints(modifier.onGloballyPositioned { rootPosition=it.positionInRoot() }) {
   val density=context.resources.displayMetrics.density
   val physicalShort=if(android.os.Build.VERSION.SDK_INT>=30) context.getSystemService(android.view.WindowManager::class.java).maximumWindowMetrics.bounds.let { minOf(it.width(),it.height())/density } else configuration.smallestScreenWidthDp.toFloat()
   val device=if(physicalShort>=600) "tablet" else "phone"
@@ -73,7 +84,8 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
   LaunchedEffect(layout.landscape) { if(!layout.landscape) notesOpen=false }
   fun toggleFinger() { change(prefs.copy(stylusOnly=!prefs.stylusOnly,toolsVisible=prefs.stylusOnly||prefs.toolsVisible));if(prefs.stylusOnly) annotating=true }
  fun quick(anchor: JsonObject,kind: String,verse: Boolean=false) {
-  if(double) return
+  if(double&&kind!="note") return
+  if(double) change(prefs.copy(spread="single"))
   val a=if(verse) JsonObject(anchor.filterKeys { it !in listOf("wordId","wordIndex","wordText") }).with("regions" to anchor.arr("verseRegions")) else anchor
   val id=a.num("verseId");val previous=if(kind=="note") null else allReaderInk(vm.repo.state.value,source).firstOrNull { it.anchor?.num("verseId")==id&&it.anchor?.get("wordId")==a["wordId"]&&it.anchor?.get("wordIndex")==a["wordIndex"] }
   val now=annotationTime(previous?.updatedAt)
@@ -122,7 +134,7 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
         visiblePages.forEachIndexed { slot,printedPage ->
          key(source,slot) {
           if(source=="tajweed") TajwidReader(vm.repo.quran,vm.repo.quran.sourceRange(printedPage,source),selected,onVerse,Modifier.weight(1f).fillMaxHeight(),allReaderInk(state,source),playing,onNote={if(edit==null) {editing=it.id;notesOpen=false}}) { a -> if(edit==null) {targetPage=printedPage;selection=a} }
-          else PrintedMushafPage(vm,s,source,printedPage,if(printedPage==page) primary else null,selected,playing,edit==null&&controls.canAnnotate&&annotating&&tool!="select",prefs,tool,if(double) Modifier.width(paneWidth).fillMaxHeight() else Modifier.weight(1f).fillMaxHeight(),double,layout.enabled,onVerse,{onPage(nextSpread(page,if(it>printedPage) 1 else -1,double))},{a -> if(edit==null) { targetPage=printedPage;selection=a } },{ ink -> if(edit==null) { editing=ink.id;notesOpen=false } },{stroke,verses ->
+          else PrintedMushafPage(vm,s,source,printedPage,if(printedPage==page) primary else null,selected,playing,edit==null&&controls.canAnnotate&&annotating&&tool!="select",prefs,tool,if(double) Modifier.width(paneWidth).fillMaxHeight() else Modifier.weight(1f).fillMaxHeight(),double,layout.enabled,onVerse,{onPage(nextSpread(page,if(it>printedPage) 1 else -1,double))},{a -> if(a.flag("dismiss")) closeSelection() else if(edit==null) { targetPage=printedPage;selection=a } },{ ink -> if(edit==null) { editing=ink.id;notesOpen=false } },{stroke,verses ->
            val ink=newReaderInk(printedPage,stroke,verses).copy(source=source,tool=tool,color=prefs.color,width=if(tool=="highlight") prefs.highlightWidth else prefs.penWidth,penStyle=prefs.penStyle,createdAt=annotationTime())
            if(tool=="note") { pendingJson=ink.toJson().toString();editing=ink.id;notesOpen=false } else save(ink)
           },{remove(it)},{active -> onBusy(annotating||active||export||editing!=null)})
@@ -164,7 +176,21 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
    }
   },onSave={save(it)},onClose={notebook=false},onExport=::textExport)
   if(export) AnnotationExportDialog(vm,state,source,page,onBusy) { export=false }
-  selection?.let { a -> AlertDialog(onDismissRequest={selection=null},title={Text(if(a["wordId"]!=null||a["wordIndex"]!=null) "Actions du mot" else "Actions du verset")},text={Column {
+  selection?.let { a ->
+   val id=a.num("verseId");val verse=vm.repo.quran.verse(id)
+   val x=(a["anchorRootX"] as? JsonPrimitive)?.floatOrNull
+   val top=(a["anchorRootTop"] as? JsonPrimitive)?.floatOrNull
+   val bottom=(a["anchorRootBottom"] as? JsonPrimitive)?.floatOrNull
+   val anchor=if(x!=null&&top!=null&&bottom!=null) androidx.compose.ui.geometry.Rect(x-rootPosition.x,top-rootPosition.y,x-rootPosition.x,bottom-rootPosition.y) else null
+   val difficult=state.obj("difficultyMarkers").obj(id.toString())["user"].let { it!=null&&it!=JsonNull }
+   VerseFloatingBar(verse.surah.toString()+":"+verse.ayah,anchor,difficult,
+    onListen={closeSelection();onAudio(id,false)},
+    onDifficulty={vm.action { vm.repo.mutate { vm.repo.review.toggleDifficulty(it,id) } }},
+    onNote={quick(a,"note",true);onClearSelection()},
+    onRecord={closeSelection();onRecord(id)},onClose=::closeSelection,
+    extra={ Box {
+     IconButton(onClick={moreActions=!moreActions},modifier=Modifier.size(32.dp)) { Icon(androidx.compose.material.icons.Icons.Default.MoreHoriz,"Autres actions du verset") }
+     DropdownMenu(moreActions,{moreActions=false}) { Column(Modifier.widthIn(max=340.dp)) {
    if(!double) {
    allReaderInk(state,source).firstOrNull { ink -> ink.anchor?.num("verseId")==a.num("verseId")&&ink.anchor?.get("wordId")==a["wordId"]&&ink.anchor?.get("wordIndex")==a["wordIndex"] }?.let { ink -> TextButton(onClick={selection=null;editing=ink.id}) { Text("Consulter la note") } }
    if(a.str("wordText").isNotBlank()) Text(a.str("wordText"),fontFamily=arabicInterfaceFont)
@@ -180,12 +206,17 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
     }
    }) { Text("Choisir un mot dans le Coran avec Tajwid") }
    }
+   TextButton(onClick={vm.action {vm.repo.mutate { Bookmarks(vm.repo.quran).save(it,a.num("verseId"),source,targetPage) }};closeSelection()}) {Text("Marquer la lecture")}
    Row { TextButton(onClick={selection=null;onAudio(a.num("verseId"),false)}) { Text("Écouter") };TextButton(onClick={selection=null;onAudio(a.num("verseId"),true)}) { Text("Répéter") } }
    TextButton(onClick={vm.action { vm.repo.mutate { vm.repo.review.toggleDifficulty(it,a.num("verseId")) } };selection=null}) { Text("Marquer comme difficile") }
-  }},confirmButton={TextButton(onClick={selection=null}) { Text("Fermer") }}) }
+
+     } }
+    } })
+  }
  }
 }
 @Composable private fun PrintedMushafPage(vm: CoranViewModel,s: JsonObject,source: String,page: Int,primary: Triple<JsonObject?,Bitmap?,JsonArray?>?,selected: Int?,playing: Int?,annotating: Boolean,prefs: TabletPreferences,tool: String,modifier: Modifier,double: Boolean,tablet: Boolean,onVerse: (Int)->Unit,onPage: (Int)->Unit,onSelection: (JsonObject)->Unit,onOpen: (ReaderInk)->Unit,onStroke: (InkStroke,List<Int>)->Unit,onErase: (ReaderInk)->Unit,onActive: (Boolean)->Unit) {
+ var pagePosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
  val context=LocalContext.current;val owner by vm.repo.user.collectAsStateWithLifecycle()
  val loaded by produceState<Pair<Int,Triple<JsonObject?,Bitmap?,JsonArray?>>?>(null,source,page,primary) {
   val ready=primary?.takeIf { it.first!=null||it.second!=null }
@@ -194,11 +225,11 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
  val payload=loaded?.takeIf { it.first==page }?.second
 
  if(source=="coran_1441"&&payload!=null&&payload.second==null) Box(modifier) { Text("Télécharge cette édition depuis Réglages → Téléchargements") }
- else AndroidView(factory={MushafView(it)},modifier=modifier.testTag("printed-page-"+page),update={v ->
+ else AndroidView(factory={MushafView(it)},modifier=modifier.onGloballyPositioned { pagePosition=it.positionInRoot() }.testTag("printed-page-"+page),update={v ->
   v.pageCurlEnabled=prefs.pageCurl
   if(payload!=null&&(v.page!=page||v.source!=source||v.tag!=payload)) { v.load(vm.repo.quran,page,source,payload.first,payload.second,payload.third);v.tag=payload }
   v.paper=paperColor(s.obj("reader").str("paper"));v.selected=selected;v.playing=playing;v.annotationOwner=owner?:"guest";v.annotationMode=annotating;v.stylusOnly=prefs.stylusOnly;v.inkTool=tool;v.inkColor=prefs.color;v.inkWidth=if(tool=="highlight") prefs.highlightWidth else prefs.penWidth;v.inkPenStyle=prefs.penStyle
-  v.annotationsEnabled=true;v.annotations=if(s.str("userId")==owner.orEmpty()) allReaderInk(s,source) else emptyList();v.onVerse=onVerse;v.onPage=onPage;v.onSelection=onSelection;v.onInkClick=onOpen;v.onInkStroke=onStroke;v.onInkErase=onErase;v.onInkActive=onActive
+  v.annotationsEnabled=true;v.annotations=if(s.str("userId")==owner.orEmpty()) allReaderInk(s,source) else emptyList();v.onVerse=onVerse;v.onPage=onPage;v.onViewportChange={onSelection(json("dismiss" to true))};v.onSelection={a -> onSelection(a.with("anchorRootX" to JsonPrimitive(pagePosition.x+((a["anchorX"] as? JsonPrimitive)?.floatOrNull?:0f)),"anchorRootTop" to JsonPrimitive(pagePosition.y+((a["anchorTop"] as? JsonPrimitive)?.floatOrNull?:0f)),"anchorRootBottom" to JsonPrimitive(pagePosition.y+((a["anchorBottom"] as? JsonPrimitive)?.floatOrNull?:0f)))) };v.onInkClick=onOpen;v.onInkStroke=onStroke;v.onInkErase=onErase;v.onInkActive=onActive
   v.marginEnabled=!double||hasMarginInk(v.annotations.filter { it.page==page })||v.annotations.any { it.page==page&&(it.note.isNotEmpty()||it.text.isNotBlank()||it.tool=="note") };v.bookmarks=s.obj("bookmarks").values.map { it.jsonObject }.filter { it.str("deletedAt").isBlank() }.map { it.num("verseId") }.toSet();v.difficulties=s.obj("difficultyMarkers").keys.mapNotNull { it.toIntOrNull() }.toSet();v.invalidate()
  })
 }

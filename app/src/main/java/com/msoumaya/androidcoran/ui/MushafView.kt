@@ -30,6 +30,7 @@ class MushafView(context: Context): View(context) {
     var stylusOnly=false
     var inkTool="pen";var inkColor="#16A34A";var inkWidth=.003f;var inkPenStyle="ink"
     var onSelection: (JsonObject)->Unit={}
+    var onViewportChange: ()->Unit={}
     var onInkErase: (ReaderInk)->Unit={}
     var onInkActive: (Boolean)->Unit={}
     private val wordRegions=mutableMapOf<Int,RectF>()
@@ -48,7 +49,7 @@ class MushafView(context: Context): View(context) {
         val verses=regions.filter { it.second==hit.second }.map { it.first }.groupBy { it.top }.values.map { line -> region(RectF(line.minOf { it.left },line.first().top,line.maxOf { it.right },line.first().bottom)) }
         val word=wordRegions.entries.lastOrNull { it.value.contains(px,py) }
         val details=word?.let { wordDetails[it.key] }?:json()
-        return details.with("verseId" to JsonPrimitive(hit.second),"regions" to element(if(word!=null) listOf(region(word.value)) else verses),"verseRegions" to element(verses))
+        return details.with("anchorX" to JsonPrimitive(x),"anchorTop" to JsonPrimitive(top+offsetY+hit.first.top*ratio*zoom),"anchorBottom" to JsonPrimitive(top+offsetY+hit.first.bottom*ratio*zoom),"verseId" to JsonPrimitive(hit.second),"regions" to element(if(word!=null) listOf(region(word.value)) else verses),"verseRegions" to element(verses))
     }
     var annotations: List<ReaderInk> = emptyList()
     var onInkStroke: (InkStroke,List<Int>)->Unit={_,_->}
@@ -86,8 +87,8 @@ class MushafView(context: Context): View(context) {
         override fun onDown(e: MotionEvent)=true
         override fun onSingleTapConfirmed(e: MotionEvent): Boolean { if(!multiGesture&&!gestureMoved) { val x=(e.x-left-offsetX)/(ratio*zoom);val y=(e.y-top-offsetY)/(ratio*zoom);noteIcons.entries.lastOrNull { it.value.contains(x,y) }?.let { hit -> annotations.firstOrNull { it.id==hit.key }?.let(onInkClick) } };return true }
         override fun onLongPress(e: MotionEvent) { if(!annotationMode&&!multiGesture&&!gestureMoved&&curlProgress>=1f) selectionAt(e.x,e.y)?.let { performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);onVerse(it.num("verseId"));onSelection(it) } }
-        override fun onDoubleTap(e: MotionEvent): Boolean { if(zoom>1f) { zoom=1f;offsetX=0f;offsetY=0f;invalidate() } else zoomAt(2f,e.x,e.y);return true }
-        override fun onScroll(e1: MotionEvent?,e2: MotionEvent,distanceX: Float,distanceY: Float): Boolean { gestureMoved=true;if(zoom>1f) { offsetX-=distanceX;offsetY-=distanceY;invalidate() };return true }
+        override fun onDoubleTap(e: MotionEvent): Boolean { onViewportChange(); if(zoom>1f) { zoom=1f;offsetX=0f;offsetY=0f;invalidate() } else zoomAt(2f,e.x,e.y);return true }
+        override fun onScroll(e1: MotionEvent?,e2: MotionEvent,distanceX: Float,distanceY: Float): Boolean { gestureMoved=true;onViewportChange();if(zoom>1f) { offsetX-=distanceX;offsetY-=distanceY;invalidate() };return true }
         override fun onFling(e1: MotionEvent?,e2: MotionEvent,velocityX: Float,velocityY: Float): Boolean { if(!inkDrawing&&!multiGesture&&zoom==1f&&e1!=null&&kotlin.math.abs(e2.x-e1.x)>80&&kotlin.math.abs(velocityX)>150) onPage(if(e2.x>e1.x) page+1 else page-1);return true }
     })
     fun load(q: Quran,page: Int,source: String,document: JsonObject?,image: Bitmap?,regions: JsonArray?) { val previousPage=this.page
@@ -100,6 +101,7 @@ class MushafView(context: Context): View(context) {
         if(curlProgress<1f) return true
         if(event.actionMasked==MotionEvent.ACTION_DOWN) { multiGesture=false;gestureMoved=false;val px=(event.x-left-offsetX)/(ratio*zoom);val py=(event.y-top-offsetY)/(ratio*zoom);iconGesture=annotationMode&&inkTool!="eraser"&&noteIcons.values.any { it.contains(px,py) } }
         if(event.pointerCount>1) {
+            onViewportChange()
             val cx=(0 until event.pointerCount).sumOf { event.getX(it).toDouble() }.toFloat()/event.pointerCount
             val cy=(0 until event.pointerCount).sumOf { event.getY(it).toDouble() }.toFloat()/event.pointerCount
             if(multiGesture&&event.actionMasked==MotionEvent.ACTION_MOVE) { offsetX+=cx-lastMultiX;offsetY+=cy-lastMultiY }
