@@ -33,8 +33,8 @@ class NoteReadingFlowTest {
   try {
    compose.waitForIdle();compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
    compose.waitUntil(10000) {var ready=false;compose.runOnUiThread {val v=findReaderView<MushafView>(compose.activity.window.decorView);ready=v?.tag is Triple<*,*,*>&&(MushafView::class.java.getDeclaredField("regions").apply {isAccessible=true}.get(v) as List<*>).isNotEmpty()};ready}
-   if(seed!=null) compose.onNodeWithTag("tablet-tab-annoter").performClick()
-   compose.onNodeWithContentDescription("Lecture plein écran").performClick();compose.waitForIdle();block(repo)
+   if(seed!=null) {if(compose.onAllNodesWithTag("tablet-compact-header").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithTag("tablet-tab-annoter").performClick() else compose.onNodeWithText("Annoter",substring=false).performScrollTo().performClick()}
+   if(compose.onAllNodesWithTag("tablet-compact-header").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithContentDescription("Lecture plein écran").performClick() else compose.onNodeWithText("Lecture plein écran",substring=false).performScrollTo().performClick();compose.waitForIdle();block(repo)
   } catch(e: Throwable) {runCatching {captureReaderState("note-flow",compose.onAllNodes(isRoot(),useUnmergedTree=true).onFirst().printToString())};throw e}
   finally {compose.runOnUiThread {compose.activity.onBackPressedDispatcher.onBackPressed()};runBlocking {repo.mutate {latest -> allReaderInk(latest).filter {n -> allReaderInk(saved).none {it.id==n.id}}.fold(latest) {s,n -> deleteReaderInk(s,n.id,annotationTime(n.updatedAt))}};repo.mutate {saved}}}
  }

@@ -21,7 +21,7 @@ import com.msoumaya.androidcoran.domain.*
 @Composable fun tabletReaderMode(p: TabletPreferences): Boolean {
  val c=LocalConfiguration.current;val context=LocalContext.current;val density=context.resources.displayMetrics.density
  val shortest=if(android.os.Build.VERSION.SDK_INT>=30) context.getSystemService(android.view.WindowManager::class.java).maximumWindowMetrics.bounds.let {minOf(it.width(),it.height())/density} else c.smallestScreenWidthDp.toFloat()
- return tabletLayout(p,if(shortest>=600) "tablet" else "phone",c.screenWidthDp.toFloat(),c.screenHeightDp.toFloat()).enabled
+ return shortest>=600&&tabletLayout(p,if(shortest>=600) "tablet" else "phone",c.screenWidthDp.toFloat(),c.screenHeightDp.toFloat()).enabled
 }
 @Composable fun CompactTabletReaderHeader(title: String,active: String,onBack: ()->Unit,onChoosePage: ()->Unit,onFullscreen: ()->Unit,onOptions: ()->Unit,onTab: (String)->Unit) {
  Surface(Modifier.fillMaxWidth().testTag("tablet-compact-header"),color=MaterialTheme.colorScheme.surface) {
