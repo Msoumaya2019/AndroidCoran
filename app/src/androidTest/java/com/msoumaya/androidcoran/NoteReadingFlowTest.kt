@@ -54,7 +54,7 @@ class NoteReadingFlowTest {
    compose.onNodeWithTag("floating-note-window").assertDoesNotExist();compose.onNodeWithTag("verse-floating-bar").assertDoesNotExist();compose.onNodeWithText("Terminer les annotations",substring=false).assertDoesNotExist();compose.onNodeWithTag("tablet-tools-floating").assertDoesNotExist()
    assertEquals(before,pose());compose.runOnUiThread {assertFalse(view().annotationMode);assertEquals("select",view().inkTool)}
    val q=iconCenter(note.id);tap(q.first,q.second);compose.onNodeWithText("Note mise à jour").assertIsDisplayed();compose.onNodeWithText("Modifier",substring=false).assertIsDisplayed()
-   captureReaderState("note-readonly-final",compose.onRoot(useUnmergedTree=true).printToString())
+   captureReaderState("note-readonly-final",compose.onAllNodes(isRoot(),useUnmergedTree=true).onLast().printToString())
    compose.onNodeWithText("Fermer",substring=false).performClick()
   }
  }

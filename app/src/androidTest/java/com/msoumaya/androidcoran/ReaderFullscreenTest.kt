@@ -140,7 +140,7 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("Lire le Coran").performScrollTo().performClick()
         compose.waitUntil(10000) { var ready=false;compose.runOnUiThread { ready=(findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)?.tag as? Triple<*,*,*>)?.first!=null };ready }
         val existingIds=readerInk(repo.state.value,1).map { it.id }.toSet()
-        compose.onNodeWithText("Annoter",substring=false).performScrollTo().performClick()
+        if(compose.onAllNodesWithTag("tablet-compact-header").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithTag("tablet-tab-annoter").performClick() else compose.onNodeWithText("Annoter",substring=false).performScrollTo().performClick()
         compose.waitUntil(10000) { var enabled=false;compose.runOnUiThread { enabled=findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)?.annotationMode==true };enabled };compose.waitForIdle()
         compose.runOnUiThread { val target=findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)!!;sendReaderStylus(target,listOf(.4f to .3f,.6f to .3f,.6f to .4f,.4f to .4f,.4f to .3f)) }
         compose.waitUntil(10000) { readerInk(repo.state.value,1).any { it.id !in existingIds } }
