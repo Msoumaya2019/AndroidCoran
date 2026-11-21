@@ -71,7 +71,7 @@ class ReaderInteractionAndroidTest {
   compose.onNodeWithText("Clavier",substring=false).performClick();compose.onNodeWithText("Écrivez votre note…").performTextInput("Ma note au clavier")
   compose.onNodeWithText("Catégories et couleur · 0 sélectionnée(s)").performClick()
   compose.onNodeWithText("+ Créer une catégorie").performScrollTo().performClick();compose.onNodeWithText("Nom de la catégorie").performTextInput("Mon cours");compose.onNodeWithText("Ajouter",substring=false).performClick()
-  compose.onNodeWithText("Violet",substring=false).performScrollTo().performClick();compose.runOnIdle { assertNull(saved) }
+  compose.onNodeWithText("Violet",substring=false).performScrollTo().performClick();if(compose.onAllNodesWithText("Terminer",substring=false).fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithText("Terminer",substring=false).performClick();compose.runOnIdle { assertNull(saved) }
   compose.onNodeWithText("Enregistrer",substring=false).performClick();compose.runOnIdle { assertEquals("Mon titre",saved!!.title);assertEquals("Ma note au clavier",saved!!.text);assertEquals(listOf("Mon cours"),saved!!.categories);assertEquals("#7C3AED",saved!!.iconColor) }
  }
  @Test fun floatingNoteCanBeDraggedWithoutSavingOrOpeningAnotherNote() {

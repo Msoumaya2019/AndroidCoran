@@ -26,7 +26,7 @@ class ReaderFullscreenTest {
         return hidden
     }
     private fun assertFullscreen() {
-        compose.onNodeWithContentDescription("Afficher les commandes").assertIsDisplayed()
+        if((compose.activity.application as CoranApplication).repository.state.value.obj("reader").obj("tablet").str("mode")=="on") compose.onNodeWithContentDescription("Quitter la lecture plein écran").assertIsDisplayed() else compose.onNodeWithContentDescription("Afficher les commandes").assertIsDisplayed()
         compose.onNodeWithText("Choisir une sourate ou une page").assertDoesNotExist()
         compose.waitUntil(10000) { barsHidden() }
         var windowMetrics=""
@@ -145,7 +145,7 @@ class ReaderFullscreenTest {
         compose.runOnUiThread { val target=findReaderView<com.msoumaya.androidcoran.ui.MushafView>(compose.activity.window.decorView)!!;sendReaderStylus(target,listOf(.4f to .3f,.6f to .3f,.6f to .4f,.4f to .4f,.4f to .3f)) }
         compose.waitUntil(10000) { readerInk(repo.state.value,1).any { it.id !in existingIds } }
         val id=readerInk(repo.state.value,1).single { it.id !in existingIds }.id
-        compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
+        compose.onNodeWithText("Mes notes",substring=false).performScrollTo().performClick()
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()
         compose.onNodeWithText("Modifier",substring=false).performClick()
@@ -155,10 +155,10 @@ class ReaderFullscreenTest {
         compose.onNodeWithText("Note personnelle").performScrollTo().performClick()
         compose.onNodeWithText("Enregistrer",substring=false).performClick()
         compose.waitUntil(10000) { readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty() }
-        compose.onNodeWithText("Lecture plein écran",substring=false).performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Lecture plein écran").performClick()
         compose.activityRule.scenario.recreate();assertFullscreen()
         assertTrue(readerInk(repo.state.value,1).single { it.id==id }.note.isNotEmpty())
-        compose.onNodeWithText("Quitter la lecture plein écran").performClick()
+        compose.onNodeWithContentDescription("Quitter la lecture plein écran").performClick()
         compose.onNodeWithText("Mes annotations",substring=false).performScrollTo().performClick()
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("reader-annotation-"+id))
         compose.onNode(hasText("Page 1") and hasAnyAncestor(hasTestTag("reader-annotation-"+id)),useUnmergedTree=true).performClick()

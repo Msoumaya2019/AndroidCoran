@@ -4,8 +4,14 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.FullscreenExit
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,11 +37,12 @@ import kotlinx.serialization.json.*
 import java.util.UUID
 
 private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
-@Composable fun TabletReader(vm: CoranViewModel,s: JsonObject,page: Int,source: String,primary: Triple<JsonObject?,Bitmap?,JsonArray?>,selected: Int?,playing: Int?,onVerse: (Int)->Unit,onPage: (Int)->Unit,onAudio: (Int,Boolean)->Unit,onBusy: (Boolean)->Unit,modifier: Modifier,onRecord: (Int)->Unit={},onClearSelection: ()->Unit={}) {
+@Composable fun TabletReader(vm: CoranViewModel,s: JsonObject,page: Int,source: String,primary: Triple<JsonObject?,Bitmap?,JsonArray?>,selected: Int?,playing: Int?,onVerse: (Int)->Unit,onPage: (Int)->Unit,onAudio: (Int,Boolean)->Unit,onBusy: (Boolean)->Unit,modifier: Modifier,onRecord: (Int)->Unit={},onClearSelection: ()->Unit={},compactTablet: Boolean=false,onBack: ()->Unit={},onChoosePage: ()->Unit={},translation: Boolean=false,onTranslation: ()->Unit={},onReaderCommands: ()->Unit={}) {
  val context=LocalContext.current;val configuration=LocalConfiguration.current;val owner by vm.repo.user.collectAsStateWithLifecycle();val expectedOwner=owner
  val state=if(s.str("userId")==owner.orEmpty()) s else json()
  val prefs=TabletPreferences.from(s.obj("reader").obj("tablet"))
  var tool by rememberSaveable(owner) { mutableStateOf("pen") };var annotating by rememberSaveable(owner) { mutableStateOf(false) }
+ var displaySettings by remember {mutableStateOf(false)}
  var readerOptions by remember { mutableStateOf(false) }
  var notesOpen by rememberSaveable(owner) { mutableStateOf(false) };var notebook by rememberSaveable(owner) { mutableStateOf(false) };var options by remember { mutableStateOf(false) };var export by remember { mutableStateOf(false) }
  var immersive by rememberSaveable { mutableStateOf(false) };var editing by rememberSaveable(owner) { mutableStateOf<String?>(null) };var selection by remember { mutableStateOf<JsonObject?>(null) };var targetPage by rememberSaveable { mutableIntStateOf(page) }
@@ -62,7 +69,7 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
  }
  fun change(next: TabletPreferences) { vm.action { vm.repo.mutate { if(vm.repo.user.value==expectedOwner) touch(it.with("reader" to it.obj("reader").with("tablet" to next.toJson()))) else it } } }
  fun startDrawing(next: String) {
-  tool=next;annotating=next!="select"
+  tool=next;annotating=compactTablet||next!="select"
   if(source=="tajweed"&&next!="select") vm.action {
    val verse=selected?:vm.repo.quran.sourceRange(page,source).start
    vm.repo.mutate { touch(it.with("reader" to it.obj("reader").with("mushaf" to JsonPrimitive("coranTest")))) }
@@ -86,11 +93,11 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
   val device=if(physicalShort>=600) "tablet" else "phone"
   val layout=tabletLayout(if(immersive) prefs.copy(toolsVisible=false) else prefs,device,maxWidth.value,maxHeight.value,notesOpen&&!immersive)
   val double=layout.doublePage&&source!="tajweed";val pages=spreadPages(page,double)
-  val controls=tabletReaderControls(layout.enabled,double,immersive||!layout.enabled,annotating,prefs.toolsVisible,layout.sidebars)
+  val controls=if(compactTablet) TabletReaderControls(!double,annotating&&!double,false,annotating&&!double) else tabletReaderControls(layout.enabled,double,immersive||!layout.enabled,annotating,prefs.toolsVisible,layout.sidebars)
   val showTools=controls.showTools
   LaunchedEffect(double) { if(double) { annotating=false;notesOpen=false;editing=null;selection=null } }
   LaunchedEffect(layout.landscape) { if(!layout.landscape) notesOpen=false }
-  fun toggleFinger() { change(prefs.copy(stylusOnly=!prefs.stylusOnly,toolsVisible=prefs.stylusOnly||prefs.toolsVisible));if(prefs.stylusOnly) annotating=true }
+  fun toggleFinger() { change(prefs.copy(stylusOnly=!prefs.stylusOnly,toolsVisible=prefs.stylusOnly||prefs.toolsVisible));if(!compactTablet&&prefs.stylusOnly) annotating=true }
  fun quick(anchor: JsonObject,kind: String,verse: Boolean=false) {
   if(double&&kind!="note") return
   if(double) change(prefs.copy(spread="single"))
@@ -109,7 +116,19 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
    }
   }
   Column(Modifier.fillMaxSize()) {
-   if(layout.enabled&&!immersive) {
+   if(compactTablet&&!immersive) {
+    val name=vm.repo.quran.surah(vm.repo.quran.sourceRange(page,source).start).name
+    CompactTabletReaderHeader(name+" · "+page+"/604",if(notebook) "revisions" else if(notesOpen||edit!=null) "notes" else if(annotating) "annoter" else "lecture",onBack,onChoosePage,{immersive=true;readerOptions=false},{readerOptions=!readerOptions}) {tab ->
+     closeSelection();options=false
+     when(tab) {
+      "lecture" -> {annotating=false;tool="select";notesOpen=false;notebook=false}
+      "annoter" -> {if(translation) onTranslation();notesOpen=false;notebook=false;if(double) change(prefs.copy(spread="single"));startDrawing(if(tool=="select") "pen" else tool)}
+      "notes" -> {annotating=false;notesOpen=true;notebook=false}
+      "revisions" -> {annotating=false;notesOpen=false;notebook=true}
+     }
+    }
+   }
+   if(!compactTablet&&layout.enabled&&!immersive) {
     Row(Modifier.fillMaxWidth().padding(end=56.dp).horizontalScroll(rememberScrollState()).testTag("tablet-reader-actions"),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
      if(!double) {
      FilterChip(annotating,{if(annotating) annotating=false else startDrawing(if(tool=="select") "pen" else tool)},label={Text("Annoter")})
@@ -129,7 +148,7 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
     }
    }
    Row(Modifier.weight(1f)) {
-    if(controls.verticalTools) TabletToolbar(true,tool,{startDrawing(it)},{options=true},::undoInk,::redoInk,undo.isNotEmpty(),redo.isNotEmpty())
+    if(!compactTablet&&controls.verticalTools) TabletToolbar(true,tool,{startDrawing(it)},{options=true},::undoInk,::redoInk,undo.isNotEmpty(),redo.isNotEmpty())
     Box(Modifier.weight(1f).fillMaxHeight()) {
      Column(Modifier.fillMaxSize()) {
       Box(Modifier.weight(1f)) { val visiblePages=pages
@@ -141,7 +160,8 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
        Row(Modifier.fillMaxSize(),horizontalArrangement=if(double) Arrangement.spacedBy(gutter,Alignment.CenterHorizontally) else Arrangement.Center) {
         visiblePages.forEachIndexed { slot,printedPage ->
          key(source,slot) {
-          if(source=="tajweed") TajwidReader(vm.repo.quran,vm.repo.quran.sourceRange(printedPage,source),selected,onVerse,Modifier.weight(1f).fillMaxHeight(),allReaderInk(state,source),playing,onNote={if(edit==null) {editing=it.id;notesOpen=false}}) { a -> if(edit==null) {targetPage=printedPage;selection=a} }
+          if(compactTablet&&translation) TabletFrenchPage(vm.repo.quran,printedPage,source,selected,if(double) Modifier.width(paneWidth).fillMaxHeight() else Modifier.weight(1f).fillMaxHeight(),onVerse) {a -> if(edit==null) {targetPage=printedPage;selection=a}}
+          else if(source=="tajweed") TajwidReader(vm.repo.quran,vm.repo.quran.sourceRange(printedPage,source),selected,onVerse,Modifier.weight(1f).fillMaxHeight(),allReaderInk(state,source),playing,onNote={if(edit==null) {editing=it.id;notesOpen=false}}) { a -> if(edit==null) {targetPage=printedPage;selection=a} }
           else PrintedMushafPage(vm,s,source,printedPage,if(printedPage==page) primary else null,selected,playing,edit==null&&controls.canAnnotate&&annotating&&tool!="select",prefs,tool,if(double) Modifier.width(paneWidth).fillMaxHeight() else Modifier.weight(1f).fillMaxHeight(),double,layout.enabled,onVerse,{onPage(nextSpread(page,if(it>printedPage) 1 else -1,double))},{a -> if(a.flag("dismiss")) closeSelection() else if(edit==null) { targetPage=printedPage;selection=a } },{ ink -> if(edit==null) { editing=ink.id;notesOpen=false } },{stroke,verses ->
            val ink=newReaderInk(printedPage,stroke,verses).copy(source=source,tool=tool,color=prefs.color,width=if(tool=="highlight") prefs.highlightWidth else prefs.penWidth,penStyle=prefs.penStyle,createdAt=annotationTime())
            if(tool=="note") { pendingJson=ink.toJson().toString();editing=ink.id;notesOpen=false } else save(ink)
@@ -153,13 +173,17 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
       }
       }
      }
+     if(compactTablet) {
+      FilledTonalIconButton(onClick={onPage(nextSpread(page,1,double))},enabled=page<if(double) 603 else 604,modifier=Modifier.align(Alignment.CenterStart).padding(4.dp).size(36.dp)) {Icon(androidx.compose.material.icons.Icons.Default.ChevronLeft,"Page suivante")}
+      FilledTonalIconButton(onClick={onPage(nextSpread(page,-1,double))},enabled=page>1,modifier=Modifier.align(Alignment.CenterEnd).padding(4.dp).size(36.dp)) {Icon(androidx.compose.material.icons.Icons.Default.ChevronRight,"Page précédente")}
+     }
      if(controls.floatingTools) Box(Modifier.align(Alignment.BottomCenter)) {TabletToolbar(false,tool,{startDrawing(it)},{options=true},::undoInk,::redoInk,undo.isNotEmpty(),redo.isNotEmpty())}
-     if(controls.canAnnotate&&notesOpen&&!immersive&&layout.notesOverlay) Surface(Modifier.align(Alignment.CenterEnd).widthIn(max=340.dp).fillMaxWidth(.9f).fillMaxHeight(.9f).testTag("tablet-notes-overlay"),tonalElevation=6.dp,shape=MaterialTheme.shapes.large) { editorOrNotes() }
+     if((compactTablet||controls.canAnnotate)&&notesOpen&&!immersive&&(compactTablet||layout.notesOverlay)) Surface(Modifier.align(Alignment.CenterEnd).widthIn(max=340.dp).fillMaxWidth(.9f).fillMaxHeight(.9f).testTag("tablet-notes-overlay"),tonalElevation=6.dp,shape=MaterialTheme.shapes.large) { editorOrNotes() }
     }
-    if(controls.canAnnotate&&notesOpen&&!immersive&&!layout.notesOverlay) Surface(Modifier.width(280.dp).fillMaxHeight().testTag("tablet-notes-sidebar"),tonalElevation=3.dp) { editorOrNotes() }
+    if(controls.canAnnotate&&notesOpen&&!immersive&&!compactTablet&&!layout.notesOverlay) Surface(Modifier.width(280.dp).fillMaxHeight().testTag("tablet-notes-sidebar"),tonalElevation=3.dp) { editorOrNotes() }
    }
   }
-  if(!layout.enabled&&!immersive) Box(Modifier.align(Alignment.TopStart).displayCutoutPadding()) {
+  if(!compactTablet&&!layout.enabled&&!immersive) Box(Modifier.align(Alignment.TopStart).displayCutoutPadding()) {
    TextButton(onClick={readerOptions=true}) { Text("⋯") }
    DropdownMenu(readerOptions,{readerOptions=false}) {
     DropdownMenuItem(text={Text(if(annotating) "Terminer les annotations" else "Annoter")},onClick={readerOptions=false;if(annotating) annotating=false else startDrawing("pen")})
@@ -169,10 +193,22 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
     if(source!="tajweed") DropdownMenuItem(text={Text("Exporter")},onClick={readerOptions=false;export=true})
    }
   }
-  if(immersive) Row(Modifier.align(Alignment.TopStart).displayCutoutPadding().padding(end=56.dp).horizontalScroll(rememberScrollState())) {
+  if(immersive&&!compactTablet) Row(Modifier.align(Alignment.TopStart).displayCutoutPadding().padding(end=56.dp).horizontalScroll(rememberScrollState())) {
    if(controls.canAnnotate) { TextButton(onClick={if(annotating) annotating=false else {change(prefs.copy(toolsVisible=true));startDrawing(if(tool=="select") "pen" else tool)}}) { Text(if(annotating) "Terminer les annotations" else "Annoter") };TextButton(onClick={toggleFinger()}) { Text(if(prefs.stylusOnly) "Autoriser le doigt" else "Doigt activé") } }
    if(double) TextButton(onClick={change(prefs.copy(spread="single"))}) { Text("Une seule page") }
    TextButton(onClick={immersive=false}) { Text("Quitter la lecture plein écran") }
+  }
+  if(compactTablet) {
+   if(immersive) IconButton(onClick={immersive=false},modifier=Modifier.align(Alignment.TopEnd).displayCutoutPadding()) {Icon(androidx.compose.material.icons.Icons.Default.FullscreenExit,"Quitter la lecture plein écran")}
+   Box(Modifier.align(Alignment.TopEnd).padding(top=44.dp)) {DropdownMenu(readerOptions,{readerOptions=false}) {
+    DropdownMenuItem(text={Text(if(translation) "Arabe" else "Français")},onClick={readerOptions=false;onTranslation()})
+    DropdownMenuItem(text={Text(if(prefs.spread=="double") {if(layout.landscape) "Une seule page" else "Double page · tourner en paysage"} else "Double page")},onClick={readerOptions=false;annotating=false;notesOpen=false;closeSelection();change(prefs.copy(spread=if(prefs.spread=="double") "single" else "double"))})
+    DropdownMenuItem(text={Text(if(prefs.stylusOnly) "Autoriser le doigt" else "Désactiver l’annotation au doigt")},onClick={readerOptions=false;toggleFinger()})
+    DropdownMenuItem(text={Text("Paramètres d’affichage")},onClick={readerOptions=false;displaySettings=true})
+    DropdownMenuItem(text={Text("Audio et programme")},onClick={readerOptions=false;onReaderCommands()})
+    DropdownMenuItem(text={Text("Exporter")},onClick={readerOptions=false;export=true},enabled=source!="tajweed")
+   }}
+   if(displaySettings) AlertDialog(onDismissRequest={displaySettings=false},title={Text("Paramètres d’affichage")},text={Column(Modifier.verticalScroll(rememberScrollState())) {AppearanceOptions(vm,s);Row {Switch(prefs.pageCurl,{change(prefs.copy(pageCurl=it))});Text("Animation de page courbée")}}},confirmButton={TextButton(onClick={displaySettings=false}) {Text("Fermer")}})
   }
   if(edit!=null) ReaderInkEditor(edit,{save(it);pendingJson=null},onDelete={if(pending==null) remove(edit);pendingJson=null;editing=null},onClose={pendingJson=null;editing=null},stylusOnly=prefs.stylusOnly,startEditing=pending!=null,onSave={persistNote(it)},availableCategories=(noteCategories+state.obj("reader").arr("noteCategories").mapNotNull { (it as? JsonPrimitive)?.contentOrNull }+allReaderInk(state).flatMap { it.categories }).distinct())
   if(options) TabletInkPreferences(prefs,::change) { options=false }
@@ -232,7 +268,7 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
  }
  val payload=loaded?.takeIf { it.first==page }?.second
 
- if(source=="coran_1441"&&payload!=null&&payload.second==null) Box(modifier) { Text("Télécharge cette édition depuis Réglages → Téléchargements") }
+ if(source=="coran_1441"&&payload!=null&&payload.second==null) Column(modifier.padding(20.dp)) { Text("Télécharge cette édition depuis Réglages → Téléchargements");Button(onClick={com.msoumaya.androidcoran.data.QuranDownloadWorker.enqueue(context)}) {Text("Lancer le téléchargement")} }
  else AndroidView(factory={MushafView(it)},modifier=modifier.onGloballyPositioned { pagePosition=it.positionInRoot() }.testTag("printed-page-"+page),update={v ->
   v.pageCurlEnabled=prefs.pageCurl
   if(payload!=null&&(v.page!=page||v.source!=source||v.tag!=payload)) { v.load(vm.repo.quran,page,source,payload.first,payload.second,payload.third);v.tag=payload }
@@ -240,4 +276,14 @@ private data class InkOperation(val before: ReaderInk?,val after: ReaderInk)
   v.annotationsEnabled=true;v.annotations=if(s.str("userId")==owner.orEmpty()) allReaderInk(s,source) else emptyList();v.onVerse=onVerse;v.onPage=onPage;v.onViewportChange={onSelection(json("dismiss" to true))};v.onSelection={a -> onSelection(a.with("anchorRootX" to JsonPrimitive(pagePosition.x+((a["anchorX"] as? JsonPrimitive)?.floatOrNull?:0f)),"anchorRootTop" to JsonPrimitive(pagePosition.y+((a["anchorTop"] as? JsonPrimitive)?.floatOrNull?:0f)),"anchorRootBottom" to JsonPrimitive(pagePosition.y+((a["anchorBottom"] as? JsonPrimitive)?.floatOrNull?:0f)))) };v.onInkClick=onOpen;v.onInkStroke=onStroke;v.onInkErase=onErase;v.onInkActive=onActive
   v.marginEnabled=!double||hasMarginInk(v.annotations.filter { it.page==page })||v.annotations.any { it.page==page&&(it.note.isNotEmpty()||it.text.isNotBlank()||it.tool=="note") };v.bookmarks=s.obj("bookmarks").values.map { it.jsonObject }.filter { it.str("deletedAt").isBlank() }.map { it.num("verseId") }.toSet();v.difficulties=s.obj("difficultyMarkers").keys.mapNotNull { it.toIntOrNull() }.toSet();v.invalidate()
  })
+}
+
+@Composable private fun TabletFrenchPage(q: Quran,page: Int,source: String,selected: Int?,modifier: Modifier,onVerse: (Int)->Unit,onSelection: (JsonObject)->Unit) {
+ val host=androidx.compose.ui.platform.LocalView.current
+ LazyColumn(modifier.padding(horizontal=44.dp,vertical=8.dp)) {items(q.sourceRange(page,source).ids) {id ->
+  var bounds by remember(id) {mutableStateOf(androidx.compose.ui.geometry.Rect.Zero)}
+  Column(Modifier.fillMaxWidth().onGloballyPositioned {bounds=it.boundsInRoot()}.combinedClickable(onClick={},onLongClick={host.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);onVerse(id);onSelection(json("verseId" to id,"anchorRootX" to bounds.center.x,"anchorRootTop" to bounds.top,"anchorRootBottom" to bounds.bottom,"verseRegions" to emptyList<Any>(),"regions" to emptyList<Any>()))}).background(if(selected==id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(10.dp)) {
+   Text(q.verse(id).surah.toString()+":"+q.verse(id).ayah+" · "+q.french(id));val notes=q.frenchNotes(id);if(notes.isNotBlank()) Text(notes,style=MaterialTheme.typography.bodySmall)
+  }
+ }}
 }

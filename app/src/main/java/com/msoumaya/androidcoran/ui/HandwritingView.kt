@@ -38,7 +38,7 @@ class HandwritingView(context: Context): View(context) {
         if(stylusOnly&&event.getToolType(0)!=MotionEvent.TOOL_TYPE_STYLUS) return false
         if(event.pointerCount>1) { drawing=false;draft.clear();invalidate();return true }
         when(event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { val t=noteTransform(width.toFloat(),height.toFloat(),frame());if(event.x<t.x||event.x>t.x+aspect()*t.scale||event.y<t.y||event.y>t.y+t.scale) return false;if(fixedAspect==null) {fixedAspect=aspect().coerceIn(.1f,10f);onAspect(fixedAspect!!)};drawing=true;parent?.requestDisallowInterceptTouchEvent(true);draft.clear();add(event) }
+            MotionEvent.ACTION_DOWN -> { val t=noteTransform(width.toFloat(),height.toFloat(),frame());if(event.x<t.x-2f||event.x>t.x+aspect()*t.scale+2f||event.y<t.y-2f||event.y>t.y+t.scale+2f) return false;if(fixedAspect==null) {fixedAspect=aspect().coerceIn(.1f,10f);onAspect(fixedAspect!!)};drawing=true;parent?.requestDisallowInterceptTouchEvent(true);draft.clear();add(event) }
             MotionEvent.ACTION_MOVE -> { if(!drawing) return true;for(i in 0 until event.historySize) append(event.getHistoricalX(i),event.getHistoricalY(i),event.getHistoricalPressure(i));add(event) }
             MotionEvent.ACTION_UP -> { if(!drawing) return true;drawing=false;add(event);val stroke=InkStroke(draft.toList());draft.clear();onStroke(stroke);parent?.requestDisallowInterceptTouchEvent(false);performClick() }
             MotionEvent.ACTION_CANCEL -> { drawing=false;draft.clear();parent?.requestDisallowInterceptTouchEvent(false) }

@@ -113,7 +113,7 @@ private val inkDraftSaver=Saver<ReaderInk,String>(save={it.toJson().toString()},
        else TextField(draft.text,{update(draft.copy(text=it))},enabled=!saving,modifier=Modifier.fillMaxSize(),placeholder={Text("Écrivez votre note…")},colors=TextFieldDefaults.colors(focusedContainerColor=Color.White,unfocusedContainerColor=Color.White))
       }
       if(handwriting&&!compact) Row {TextButton(enabled=!saving&&draft.note.isNotEmpty(),onClick={update(draft.copy(note=draft.note.dropLast(1)))}) {Text("Annuler le trait")};TextButton(enabled=!saving&&draft.note.isNotEmpty(),onClick={update(draft.copy(note=emptyList()))}) {Text("Effacer la note")}}
-      TextButton(enabled=!saving,onClick={focusManager.clearFocus();keyboard?.hide();if(compact&&!(imeVisible&&resizedHeight==0f)) metadataOpen=true else optionsExpanded=!optionsExpanded}) {Text(if(compact) "Catégories et couleur · "+draft.categories.size+" sélectionnée(s)" else if(optionsExpanded) "Masquer catégories et couleur" else "Catégories et couleur · "+draft.categories.size+" sélectionnée(s)")}
+      TextButton(enabled=!saving,onClick={focusManager.clearFocus();keyboard?.hide();if(compact) metadataOpen=true else optionsExpanded=!optionsExpanded}) {Text(if(compact) "Catégories et couleur · "+draft.categories.size+" sélectionnée(s)" else if(optionsExpanded) "Masquer catégories et couleur" else "Catégories et couleur · "+draft.categories.size+" sélectionnée(s)")}
       if(optionsExpanded&&!compact) metadata()
       if(error.isNotBlank()) Text(error,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
      }
