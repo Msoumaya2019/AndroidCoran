@@ -96,4 +96,40 @@ class ReaderAnnotationsAndroidTest {
   }
  }
 
+ @Test fun adjacentPagePaintingCannotClearItsNeighbourOnSharedCanvas() {
+  runBlocking { repo.awaitReady() };val first=repo.quran.qcfData(context,2);val second=repo.quran.qcfData(context,1)
+  instrumentation.runOnMainSync {
+   val left=MushafView(context);left.load(repo.quran,2,"coranTest",first,null,null);left.layout(0,0,500,1060)
+   val right=MushafView(context);right.load(repo.quran,1,"coranTest",second,null,null);right.layout(0,0,500,1060)
+   val image=Bitmap.createBitmap(1000,1060,Bitmap.Config.ARGB_8888)
+   try { val canvas=Canvas(image);left.draw(canvas);val before=image.getPixel(250,20);assertNotEquals(Color.WHITE,before)
+    canvas.save();canvas.translate(500f,0f);right.draw(canvas);canvas.restore()
+    assertEquals(before,image.getPixel(250,20));assertEquals(before,image.getPixel(750,20))
+   } finally { image.recycle() }
+  }
+ }
+
+ @Test fun qcfPlaybackHighlightFillsTheGapsBetweenWords() {
+  runBlocking { repo.awaitReady() };val data=repo.quran.qcfData(context,1)
+  instrumentation.runOnMainSync {
+   val view=MushafView(context);view.load(repo.quran,1,"coranTest",data,null,null);view.layout(0,0,1000,2120);view.playing=1
+   val image=Bitmap.createBitmap(1000,2120,Bitmap.Config.ARGB_8888)
+   try { view.draw(Canvas(image));val words=mutableMapOf<Int,RectF>()
+    for(y in 200..1900 step 20) { for(x in 40..960 step 20) { val hit=view.selectionAt(x.toFloat(),y.toFloat());if(hit?.num("verseId")==1&&hit.num("wordId")>0) { val r=hit.arr("regions").first().jsonObject;val left=r.getValue("x").jsonPrimitive.float*1000;val top=r.getValue("y").jsonPrimitive.float*2120;words[hit.num("wordId")]=RectF(left,top,left+r.getValue("width").jsonPrimitive.float*1000,top+r.getValue("height").jsonPrimitive.float*2120) } };if(words.size>=2) break }
+    val line=words.values.groupBy { it.top }.values.first { it.size>=2 }.sortedBy { it.left };val pair=line.zipWithNext().first { it.second.left-it.first.right>2f }
+    val x=((pair.first.right+pair.second.left)/2).toInt();val y=(pair.first.top+8).toInt();val color=image.getPixel(x,y)
+    assertTrue("The space between two words must be yellow",Color.green(color)-Color.blue(color)>20)
+   } finally { image.recycle() }
+  }
+ }
+ @Test fun imagePlaybackHighlightJoinsWordsPerLineWithoutFillingBetweenLines() {
+  runBlocking { repo.awaitReady() }
+  instrumentation.runOnMainSync {
+   val paper=Bitmap.createBitmap(1000,200,Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) };val image=Bitmap.createBitmap(1000,200,Bitmap.Config.ARGB_8888)
+   try { val view=MushafView(context);val bounds=element(listOf(listOf(1,1,0,100,200,40,100),listOf(1,1,0,250,350,40,100),listOf(1,1,1,100,200,130,180))).jsonArray;view.load(repo.quran,1,"traditional",null,paper,bounds);view.layout(0,0,1000,200);view.playing=1;view.draw(Canvas(image))
+    val color=image.getPixel(225,70);assertTrue(Color.green(color)-Color.blue(color)>20);assertEquals(Color.WHITE,image.getPixel(225,115))
+   } finally { image.recycle();paper.recycle() }
+  }
+ }
+
 }

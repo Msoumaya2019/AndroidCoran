@@ -737,3 +737,7 @@ Commit fcf92a86f3019c2fabae77ab2479dfe83ec317df : [185 tests JVM, Lint, compilat
 ## Nouveautés Expo 0.9.40 / 0.9.41 — 21 novembre 2026
 
 Audit : main inchangé à 42dedf8, branche tablette à bb6b295 (deux nouveaux commits depuis 22b3090). Marges d’annotation persistantes et exportées, prise en charge explicite du doigt/stylet non reconnu dans la page et la note, annotation plein écran, double page agrandie en lecture seule, priorité audio jaune et réutilisation des notes contextuelles : Implémenté ; tests En développement. Origines, équivalents Kotlin, données et limites : [rapport du 21 novembre](docs/REFERENCE_UPDATES_2026-11-21.md). Aucun changement backend ni écriture dans Expo/Swift.
+
+### Surlignage audio continu — demande du 21 novembre
+
+MushafView : fusion des rectangles des mots du verset courant en une bande par ligne, pour QCF et les éditions en images. Les glyphes et couleurs du texte restent inchangés ; le jaune est prioritaire sur les autres repères. La lecture simplifiée conserve son fond continu de verset. Découpage de chaque Canvas pour empêcher une page d’effacer sa voisine. Implémenté ; nouveaux tests de pixels En développement. Backend inchangé.
